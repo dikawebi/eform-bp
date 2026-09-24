@@ -111,6 +111,11 @@ class UpdateEmployeeRequest extends FormRequest
                     continue;
                 }
 
+                if (! Employee::isActiveLeaderInDepartment((int) $value, (string) $this->input('department', ''))) {
+                    $validator->errors()->add($field, 'Supervisor dan HOD harus berasal dari departemen yang sama.');
+                    continue;
+                }
+
                 if (Employee::wouldCreateCycle((int) $employeeId, (int) $value, 10)) {
                     $validator->errors()->add($field, 'Penugasan atasan membentuk cycle hierarki.');
                 }

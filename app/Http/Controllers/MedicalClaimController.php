@@ -54,7 +54,12 @@ class MedicalClaimController extends Controller
     {
         $this->authorize('create', MedicalClaim::class);
 
-        $employee = Employee::where('user_id', $request->user()->id)->firstOrFail();
+        $employee = Employee::query()->where('user_id', $request->user()->id)->where('active', true)->first();
+        if ($employee === null) {
+            return Inertia::render('MedicalClaims/Unlinked', [
+                'canManageEmployees' => $request->user()->can('employee.manage'),
+            ]);
+        }
 
         return Inertia::render('MedicalClaims/Create', ['meta' => ['benefit_types' => config('eform.medical.benefit_types'), 'required_documents' => config('eform.medical.required_documents'), 'dependents' => $employee->medicalDependents()->where('active', true)->get(['id', 'name', 'relationship'])]]);
     }

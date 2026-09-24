@@ -65,6 +65,10 @@ class StoreEmployeeRequest extends FormRequest
                 $value = $this->input($field);
                 if ($value !== null && $value !== '' && ! Employee::isActiveLeader((int) $value)) {
                     $validator->errors()->add($field, 'Atasan yang dipilih harus karyawan aktif.');
+                    continue;
+                }
+                if ($value !== null && $value !== '' && ! Employee::isActiveLeaderInDepartment((int) $value, (string) $this->input('department', ''))) {
+                    $validator->errors()->add($field, 'Supervisor dan HOD harus berasal dari departemen yang sama.');
                 }
             }
         });

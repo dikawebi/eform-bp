@@ -23,6 +23,26 @@ class MedicalClaimTest extends TestCase
         $this->seed([RolesPermissionsSeeder::class, ApprovalWorkflowSeeder::class]);
     }
 
+    public function test_medical_claim_create_explains_when_login_has_no_linked_employee(): void
+    {
+        $employeeUser = User::factory()->create(['active' => true]);
+        $employeeUser->assignRole('employee');
+
+        $this->actingAs($employeeUser)->get(route('medical-claims.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('MedicalClaims/Unlinked')
+                ->where('canManageEmployees', false));
+
+        $admin = User::factory()->create(['active' => true]);
+        $admin->assignRole('admin');
+        $this->actingAs($admin)->get(route('medical-claims.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('MedicalClaims/Unlinked')
+                ->where('canManageEmployees', true));
+    }
+
     public function test_finance_and_auditor_do_not_receive_medical_detail_or_attachment_data(): void
     {
         [$owner, $employee] = $this->actor('employee');

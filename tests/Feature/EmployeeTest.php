@@ -269,6 +269,39 @@ class EmployeeTest extends TestCase
         ])->assertSessionHasErrors('supervisor_id');
     }
 
+    public function test_supervisor_and_hod_must_be_active_and_from_same_department(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $leader = Employee::factory()->create(['department' => 'HRGA', 'active' => true]);
+        $employee = Employee::factory()->create(['department' => 'Finance']);
+
+        $data = [
+            'employee_number' => $employee->employee_number,
+            'name' => $employee->name,
+            'department' => 'Finance',
+            'level' => $employee->level,
+            'job_title' => $employee->job_title,
+            'employment_status' => 'permanent',
+            'poh_status' => 'local',
+            'supervisor_id' => $leader->id,
+            'hod_id' => $leader->id,
+        ];
+
+        $this->actingAs($admin)->put(route('master.employees.update', $employee), $data)
+            ->assertSessionHasErrors(['supervisor_id', 'hod_id']);
+        $this->assertNull($employee->fresh()->supervisor_id);
+        $this->assertNull($employee->fresh()->hod_id);
+
+        $this->actingAs($admin)->post(route('master.employees.store'), array_merge($data, ['employee_number' => 'DEPT-NEW']))
+            ->assertSessionHasErrors(['supervisor_id', 'hod_id']);
+
+        $leader->update(['department' => 'Finance']);
+        $this->actingAs($admin)->put(route('master.employees.update', $employee), $data)->assertRedirect();
+        $this->assertEquals($leader->id, $employee->fresh()->supervisor_id);
+        $this->assertEquals($leader->id, $employee->fresh()->hod_id);
+    }
+
     // ---------- B4: import ----------
 
     public function test_import_rejects_intra_file_duplicate(): void

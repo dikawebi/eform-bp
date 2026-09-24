@@ -608,6 +608,14 @@ class EmployeeController extends Controller
 
             $model = Employee::query()->find($employeeId);
             if ($model !== null) {
+                if ($supId !== null && ! Employee::isActiveLeaderInDepartment((int) $supId, $model->department)) {
+                    $failed[] = ['row' => $info['line'], 'employee_number' => $nik, 'errors' => 'Supervisor harus berasal dari departemen yang sama.'];
+                    $supId = null;
+                }
+                if ($hodId !== null && ! Employee::isActiveLeaderInDepartment((int) $hodId, $model->department)) {
+                    $failed[] = ['row' => $info['line'], 'employee_number' => $nik, 'errors' => 'HOD harus berasal dari departemen yang sama.'];
+                    $hodId = null;
+                }
                 $model->supervisor_id = $supId;
                 $model->hod_id = $hodId;
                 $model->updated_by = $request->user()->getKey();

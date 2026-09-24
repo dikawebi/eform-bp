@@ -1,9 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
 const inputCls = 'mt-1 block w-full rounded-md border-gray-300 text-sm';
 
 export default function Create({ users, supervisors }) {
+    const isAdmin = usePage().props.auth?.user?.roles?.includes('admin') ?? false;
     const { data, setData, post, processing, errors } = useForm({
         employee_number: '',
         name: '',
@@ -23,6 +24,12 @@ export default function Create({ users, supervisors }) {
         joined_at: '',
         ended_at: '',
     });
+
+    const sameDepartment = supervisors.filter((person) => String(person.department ?? '').trim().toLowerCase() === String(data.department ?? '').trim().toLowerCase() && String(data.department ?? '').trim() !== '');
+    const setDepartment = (department) => {
+        const sameDeptIds = new Set(supervisors.filter((person) => String(person.department ?? '').trim().toLowerCase() === String(department ?? '').trim().toLowerCase() && String(department ?? '').trim() !== '').map((person) => String(person.id)));
+        setData({ ...data, department, supervisor_id: sameDeptIds.has(String(data.supervisor_id)) ? data.supervisor_id : '', hod_id: sameDeptIds.has(String(data.hod_id)) ? data.hod_id : '' });
+    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -48,7 +55,7 @@ export default function Create({ users, supervisors }) {
                         </div>
                         <div>
                             <label className="text-xs font-medium text-gray-600">Departemen</label>
-                            <input value={data.department} onChange={(e) => setData('department', e.target.value)} className={inputCls} />
+                            <input value={data.department} onChange={(e) => setDepartment(e.target.value)} className={inputCls} />
                             {errors.department && <p className="text-xs text-red-600">{errors.department}</p>}
                         </div>
                         <div>
@@ -84,8 +91,9 @@ export default function Create({ users, supervisors }) {
                             <label className="text-xs font-medium text-gray-600">Provinsi POH</label>
                             <input value={data.poh_province} onChange={(e) => setData('poh_province', e.target.value)} className={inputCls} />
                         </div>
-                        <div>
-                            <label className="text-xs font-medium text-gray-600">User login (opsional)</label>
+                        {isAdmin && <div>
+                            <label className="text-xs font-medium text-gray-600">Tautkan akun login ke NIK (opsional)</label>
+                            <p className="mt-1 text-xs text-gray-500">Pilih akun karyawan ini agar dapat mengajukan atas nama sendiri.</p>
                             <select value={data.user_id} onChange={(e) => setData('user_id', e.target.value)} className={inputCls}>
                                 <option value="">— Tanpa user —</option>
                                 {users.map((u) => (
@@ -94,12 +102,13 @@ export default function Create({ users, supervisors }) {
                                     </option>
                                 ))}
                             </select>
-                        </div>
+                            {errors.user_id && <p className="text-xs text-red-600">{errors.user_id}</p>}
+                        </div>}
                         <div>
-                            <label className="text-xs font-medium text-gray-600">Supervisor</label>
+                            <label className="text-xs font-medium text-gray-600">Supervisor · departemen sama</label>
                             <select value={data.supervisor_id} onChange={(e) => setData('supervisor_id', e.target.value)} className={inputCls}>
-                                <option value="">— Tanpa supervisor —</option>
-                                {supervisors.map((s) => (
+                                <option value="">{data.department ? '— Pilih supervisor —' : '— Pilih departemen dulu —'}</option>
+                                {sameDepartment.map((s) => (
                                     <option key={s.id} value={s.id}>
                                         {s.name} ({s.employee_number})
                                     </option>
@@ -108,10 +117,10 @@ export default function Create({ users, supervisors }) {
                             {errors.supervisor_id && <p className="text-xs text-red-600">{errors.supervisor_id}</p>}
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-600">HOD</label>
+                            <label className="text-xs font-medium text-gray-600">HOD · departemen sama</label>
                             <select value={data.hod_id} onChange={(e) => setData('hod_id', e.target.value)} className={inputCls}>
-                                <option value="">— Tanpa HOD —</option>
-                                {supervisors.map((s) => (
+                                <option value="">{data.department ? '— Pilih HOD —' : '— Pilih departemen dulu —'}</option>
+                                {sameDepartment.map((s) => (
                                     <option key={s.id} value={s.id}>
                                         {s.name} ({s.employee_number})
                                     </option>

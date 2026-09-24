@@ -149,6 +149,19 @@ class Employee extends Model
         return static::query()->whereKey($id)->where('active', true)->exists();
     }
 
+    public static function isActiveLeaderInDepartment(?int $id, ?string $department): bool
+    {
+        if ($id === null || trim((string) $department) === '') {
+            return true;
+        }
+
+        $leader = static::query()->select(['id', 'department', 'active'])->find($id);
+
+        return $leader !== null
+            && $leader->active
+            && mb_strtolower(trim((string) $leader->department)) === mb_strtolower(trim($department));
+    }
+
     /**
      * Akun login yang terhubung (satu NIK = satu user).
      */
