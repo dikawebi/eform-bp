@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>eForm BP - Alternatif Mockup</title>
+    <style>
+        :root { font-family: Arial, sans-serif; color: #0f172a; background: #e8eef7; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 28px; }
+        h1 { margin: 0 0 8px; font-size: 28px; }
+        .intro { max-width: 900px; margin-bottom: 24px; color: #475569; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .tabs button { border: 0; border-radius: 999px; padding: 10px 16px; background: #cbd5e1; color: #334155; font-weight: 700; cursor: pointer; }
+        .tabs button.active { background: #0066ff; color: #fff; }
+        .mockup { display: none; overflow: hidden; min-height: 620px; border: 1px solid #cbd5e1; border-radius: 20px; background: #f8fafc; box-shadow: 0 20px 60px #0f172a22; }
+        .mockup.active { display: grid; grid-template-columns: 220px 1fr; }
+        .side { padding: 22px 16px; background: #0f172a; color: #cbd5e1; }
+        .brand { margin-bottom: 34px; color: white; font-weight: 800; letter-spacing: .04em; }
+        .brand small { display: block; margin-top: 5px; color: #60a5fa; font-size: 10px; letter-spacing: .2em; }
+        .group { margin: 22px 0 8px; color: #64748b; font-size: 10px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+        .nav { padding: 10px 11px; border-radius: 9px; margin: 4px 0; font-size: 13px; }
+        .nav.active { background: #0066ff; color: #fff; }
+        .main { padding: 26px 32px; }
+        .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+        .top h2 { margin: 0; font-size: 21px; }
+        .top span { color: #64748b; font-size: 12px; }
+        .hero { display: flex; align-items: end; justify-content: space-between; padding: 24px; border-radius: 16px; color: #fff; background: linear-gradient(120deg, #0066ff, #0f172a); }
+        .hero h3 { margin: 0 0 7px; font-size: 24px; }
+        .hero p { margin: 0; color: #dbeafe; font-size: 13px; }
+        .hero button { border: 0; border-radius: 9px; padding: 11px 15px; background: #fbbf24; color: #422006; font-weight: 800; }
+        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
+        .card { padding: 18px; border: 1px solid #e2e8f0; border-radius: 13px; background: #fff; }
+        .card label { color: #64748b; font-size: 12px; }
+        .card strong { display: block; margin-top: 8px; font-size: 27px; }
+        .card em { display: block; margin-top: 7px; color: #16a34a; font-size: 11px; font-style: normal; }
+        .panel { padding: 20px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
+        .panel h3 { margin: 0 0 15px; font-size: 15px; }
+        .rows { display: grid; gap: 12px; }
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eef2f7; font-size: 13px; }
+        .badge { border-radius: 999px; padding: 5px 9px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 700; }
+        .badge.warn { background: #fef3c7; color: #92400e; }
+        .dark { background: #0b1120; color: #e2e8f0; }
+        .dark .main { background: #0b1120; }
+        .dark .card, .dark .panel { border-color: #263449; background: #111827; }
+        .dark .card label, .dark .top span { color: #94a3b8; }
+        .dark .row { border-color: #263449; }
+        .dark .hero { background: linear-gradient(120deg, #1d4ed8, #172554); }
+        .alt-note { margin-top: 16px; color: #475569; font-size: 13px; }
+        @media (max-width: 700px) { body { padding: 12px; } .mockup.active { grid-template-columns: 1fr; } .side { min-height: 230px; } .cards { grid-template-columns: 1fr; } .main { padding: 20px 16px; } }
+    </style>
+</head>
+<body>
+    <h1>eForm BP: 5 Alternatif Arah Visual</h1>
+    <p class="intro">Gunakan tombol di bawah untuk membandingkan arah desain. Ini adalah mockup rencana, bukan halaman produksi. Pilih satu alternatif untuk diterapkan ke seluruh halaman.</p>
+    <div class="tabs">
+        <button class="active" data-target="a">A. Corporate Command</button>
+        <button data-target="b">B. Calm Workspace</button>
+        <button data-target="c">C. Executive Dark</button>
+        <button data-target="d">D. Dense Operations</button>
+        <button data-target="e">E. Editorial Flow</button>
+    </div>
+
+    <section id="a" class="mockup active">
+        <aside class="side"><div class="brand">PT BORNEO PRIMA<small>eFORM BP</small></div><div class="group">Ruang Kerja</div><div class="nav active">Dashboard</div><div class="nav">Cuti / Izin</div><div class="nav">Perjalanan Dinas</div><div class="nav">Settlement</div><div class="nav">Medical Claim</div><div class="group">Kendali</div><div class="nav">Approval</div><div class="nav">Laporan</div><div class="group">Administrasi</div><div class="nav">Master Data</div><div class="nav">Pengaturan</div></aside>
+        <main class="main"><div class="top"><div><h2>Dasbor</h2><span>Ringkasan aktivitas administrasi Anda</span></div><span>Light / Dark</span></div><div class="hero"><div><h3>Selamat datang kembali</h3><p>Semua pengajuan, approval, dan settlement dalam satu alur.</p></div><button>+ Pengajuan Baru</button></div><div class="cards"><div class="card"><label>Total Pengajuan</label><strong>24</strong><em>+12% bulan ini</em></div><div class="card"><label>Dalam Proses</label><strong>08</strong><em class="warn">3 menunggu approval</em></div><div class="card"><label>Selesai</label><strong>16</strong><em>+8% bulan ini</em></div></div><div class="panel"><h3>Aktivitas Terbaru</h3><div class="rows"><div class="row"><span>Cuti tahunan - BP/LEAVE/0024</span><span class="badge">Disetujui</span></div><div class="row"><span>Perjalanan dinas - BP/TRV/0018</span><span class="badge warn">Dalam review</span></div></div></div></main>
+    </section>
+
+    <section id="b" class="mockup">
+        <aside class="side" style="background:#172554"><div class="brand">BORNEO<span style="color:#60a5fa">.</span><small>ADMINISTRATION HUB</small></div><div class="group">Workspace</div><div class="nav active">Overview</div><div class="nav">Leave & Permit</div><div class="nav">Business Travel</div><div class="nav">Claims & Settlement</div><div class="group">Review</div><div class="nav">Approval Inbox</div><div class="nav">Reports</div><div class="group">Manage</div><div class="nav">People</div><div class="nav">Workflow Settings</div></aside>
+        <main class="main" style="background:#f1f5f9"><div class="top"><div><h2>Overview</h2><span>Thursday, 24 September 2026</span></div><span>Halo, User</span></div><div class="hero" style="background:#fff;color:#0f172a;border:1px solid #dbeafe"><div><h3>Ruang kerja lebih tenang.</h3><p style="color:#64748b">Kelola pengajuan dengan langkah yang jelas dan terukur.</p></div><button>Mulai Pengajuan</button></div><div class="cards"><div class="card"><label>Pengajuan aktif</label><strong>08</strong><em>Semua terpantau</em></div><div class="card"><label>Approval Anda</label><strong>03</strong><em class="warn">Perlu tindakan</em></div><div class="card"><label>Saldo advance</label><strong>Rp 12,4 jt</strong><em>Periode berjalan</em></div></div><div class="panel"><h3>Alur yang sedang berjalan</h3><div class="rows"><div class="row"><span>Travel request <b>BP/TRV/0018</b></span><span class="badge warn">HRGA Review</span></div><div class="row"><span>Medical claim <b>BP/MC/0009</b></span><span class="badge">Completed</span></div></div></div></main>
+    </section>
+
+    <section id="c" class="mockup dark">
+        <aside class="side" style="background:#020617"><div class="brand">PT BORNEO PRIMA<small>eFORM BP</small></div><div class="group">Command Center</div><div class="nav active">Dashboard</div><div class="nav">Cuti / Izin</div><div class="nav">Perjalanan Dinas</div><div class="nav">Settlement</div><div class="nav">Medical Claim</div><div class="group">Governance</div><div class="nav">Approval</div><div class="nav">Audit & Laporan</div><div class="group">System</div><div class="nav">Master Data</div><div class="nav">Pengaturan</div></aside>
+        <main class="main"><div class="top"><div><h2>Command Center</h2><span>Operational visibility for eForm BP</span></div><span style="color:#fbbf24">DARK ACTIVE</span></div><div class="hero"><div><h3>Good morning, Borneo team.</h3><p>4 aktivitas membutuhkan perhatian hari ini.</p></div><button>Review Inbox</button></div><div class="cards"><div class="card"><label>Requests</label><strong>124</strong><em>+18.4% vs last month</em></div><div class="card"><label>Pending approval</label><strong>08</strong><em class="warn">Action required</em></div><div class="card"><label>Completion rate</label><strong>92%</strong><em>Healthy operation</em></div></div><div class="panel"><h3>Priority queue</h3><div class="rows"><div class="row"><span>Travel advance / HOD approval</span><span class="badge warn">High</span></div><div class="row"><span>Medical document validation</span><span class="badge">Normal</span></div></div></div></main>
+    </section>
+
+    <section id="d" class="mockup">
+        <aside class="side" style="background:#111827"><div class="brand">eFORM BP<small>OPERATIONS</small></div><div class="group">Transaksi</div><div class="nav active">Dashboard</div><div class="nav">Cuti / Izin</div><div class="nav">Dinas</div><div class="nav">Settlement</div><div class="group">Kontrol</div><div class="nav">Approval Queue</div><div class="nav">Laporan</div><div class="group">Referensi</div><div class="nav">Karyawan</div><div class="nav">Konfigurasi</div></aside>
+        <main class="main"><div class="top"><div><h2>Operations Dashboard</h2><span>Fast scan for daily processing</span></div><span>Filter: This month</span></div><div class="cards"><div class="card" style="border-top:4px solid #0066ff"><label>All Requests</label><strong>24</strong><em>12 open</em></div><div class="card" style="border-top:4px solid #f59e0b"><label>To Review</label><strong>08</strong><em class="warn">3 overdue</em></div><div class="card" style="border-top:4px solid #16a34a"><label>Completed</label><strong>16</strong><em>On target</em></div></div><div class="panel"><h3>Queue monitor</h3><div class="rows"><div class="row"><span><b>BP/LEAVE/0024</b> &nbsp; Cuti tahunan</span><span class="badge warn">Supervisor</span></div><div class="row"><span><b>BP/TRV/0018</b> &nbsp; Perjalanan dinas</span><span class="badge warn">HRGA</span></div><div class="row"><span><b>BP/SET/0007</b> &nbsp; Settlement</span><span class="badge">Finance</span></div></div></div></main>
+    </section>
+
+    <section id="e" class="mockup">
+        <aside class="side" style="background:#1e293b"><div class="brand">BORNEO PRIMA<small>PEOPLE SERVICES</small></div><div class="group">My workspace</div><div class="nav active">Home</div><div class="nav">My Leave</div><div class="nav">My Trips</div><div class="nav">My Claims</div><div class="group">Team flow</div><div class="nav">Approval Inbox</div><div class="nav">Reports</div><div class="group">Company</div><div class="nav">Employees</div><div class="nav">Workflow</div></aside>
+        <main class="main" style="background:#fffdf8"><div class="top"><div><h2>Home</h2><span>Your administrative journey, in one place</span></div><span>24 Sep 2026</span></div><div class="hero" style="background:linear-gradient(120deg,#0f766e,#164e63)"><div><h3>Make work flow.</h3><p>Ajukan, pantau, dan selesaikan tanpa spreadsheet.</p></div><button>New request</button></div><div class="cards"><div class="card"><label>Leave balance</label><strong>12 hari</strong><em>Available</em></div><div class="card"><label>Open requests</label><strong>03</strong><em class="warn">Needs tracking</em></div><div class="card"><label>Claim total</label><strong>Rp 2,8 jt</strong><em>YTD</em></div></div><div class="panel"><h3>Your timeline</h3><div class="rows"><div class="row"><span>Leave request submitted</span><span>Today, 09:20</span></div><div class="row"><span>Travel settlement completed</span><span>Yesterday</span></div></div></div></main>
+    </section>
+    <p class="alt-note">Rekomendasi awal: <b>A</b> untuk identitas corporate BP, <b>C</b> untuk user operasional intensif, <b>D</b> untuk HRGA/Finance yang bekerja dengan queue.</p>
+    <script>
+        document.querySelectorAll('.tabs button').forEach((button) => button.addEventListener('click', () => {
+            document.querySelectorAll('.tabs button').forEach((item) => item.classList.remove('active'));
+            document.querySelectorAll('.mockup').forEach((item) => item.classList.remove('active'));
+            button.classList.add('active');
+            document.getElementById(button.dataset.target).classList.add('active');
+        }));
+    </script>
+</body>
+</html>
