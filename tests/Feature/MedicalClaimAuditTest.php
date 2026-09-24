@@ -90,6 +90,44 @@ class MedicalClaimAuditTest extends TestCase
         $this->assertDatabaseHas('activity_log', ['subject_id' => $claim->id, 'description' => 'medical.attachment_uploaded']);
     }
 
+    public function test_receipt_uploaded_with_new_draft_is_private_and_authorized(): void
+    {
+        Storage::fake('eform-private');
+        [$user, $employee] = $this->employee('employee');
+        $response = $this->actingAs($user)->post(route('medical-claims.store'), [
+            'benefit_types' => ['rawat_jalan'],
+            'items' => [$this->item('self', '123.45', null, $employee->name)],
+            'receipt' => UploadedFile::fake()->create('bukti.pdf', 10, 'application/pdf'),
+        ]);
+        $claim = MedicalClaim::query()->latest('id')->firstOrFail();
+        $response->assertRedirect(route('medical-claims.show', $claim));
+        $attachment = $claim->attachments()->firstOrFail();
+        $this->assertSame('receipt', $attachment->document_type);
+        $this->assertSame($user->id, $attachment->uploaded_by);
+        $this->assertNotNull($attachment->sha256_hash);
+        $this->assertTrue(Storage::disk('eform-private')->exists($attachment->stored_path));
+        $this->assertDatabaseHas('activity_log', ['subject_id' => $claim->id, 'description' => 'medical.attachment_uploaded']);
+        $this->actingAs($user)->get(route('attachments.download', $attachment))->assertOk();
+
+        [$other] = $this->employee('employee');
+        $this->actingAs($other)->get(route('attachments.download', $attachment))->assertForbidden();
+    }
+
+    public function test_invalid_receipt_cannot_create_medical_draft_or_private_file(): void
+    {
+        Storage::fake('eform-private');
+        [$user, $employee] = $this->employee('employee');
+        $this->actingAs($user)->post(route('medical-claims.store'), [
+            'benefit_types' => ['rawat_jalan'],
+            'items' => [$this->item('self', '123.45', null, $employee->name)],
+            'receipt' => UploadedFile::fake()->create('bukti.txt', 10, 'text/plain'),
+        ])->assertSessionHasErrors('receipt');
+
+        $this->assertDatabaseCount('medical_claims', 0);
+        $this->assertDatabaseCount('attachments', 0);
+        $this->assertSame([], Storage::disk('eform-private')->allFiles());
+    }
+
     public function test_client_total_and_overflow_are_not_accepted(): void
     {
         [$user] = $this->employee('employee');

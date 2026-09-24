@@ -69,15 +69,42 @@ class MedicalClaimController extends Controller
         $this->authorize('create', MedicalClaim::class);
         $user = $request->user();
         $employee = Employee::where('user_id', $user->id)->where('active', true)->firstOrFail();
-        $claim = DB::transaction(function () use ($request, $user, $employee) {
-            $benefitTypes = $request->validated('benefit_types');
-            $claim = new MedicalClaim(['benefit_type' => $benefitTypes[0]]);
-            $claim->forceFill(['benefit_types' => $benefitTypes, 'claim_number' => MedicalClaimNumber::generate(), 'employee_id' => $employee->id, 'employee_number' => $employee->employee_number, 'employee_name' => $employee->name, 'department' => $employee->department, 'employee_snapshot_json' => $employee->only(['id', 'employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status']), 'status' => RequestStatus::Draft, 'created_by' => $user->id, 'updated_by' => $user->id])->save();
-            $this->syncItems($claim, $request->validated('items'));
-            activity()->performedOn($claim)->causedBy($user)->log('medical.created');
+        $storedPath = null;
+        try {
+            $claim = DB::transaction(function () use ($request, $user, $employee, &$storedPath) {
+                $benefitTypes = $request->validated('benefit_types');
+                $claim = new MedicalClaim(['benefit_type' => $benefitTypes[0]]);
+                $claim->forceFill(['benefit_types' => $benefitTypes, 'claim_number' => MedicalClaimNumber::generate(), 'employee_id' => $employee->id, 'employee_number' => $employee->employee_number, 'employee_name' => $employee->name, 'department' => $employee->department, 'employee_snapshot_json' => $employee->only(['id', 'employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status']), 'status' => RequestStatus::Draft, 'created_by' => $user->id, 'updated_by' => $user->id])->save();
+                $this->syncItems($claim, $request->validated('items'));
 
-            return $claim;
-        });
+                if ($file = $request->file('receipt')) {
+                    $storedPath = $file->store('medical/'.$claim->id, 'eform-private');
+                    if ($storedPath === false) {
+                        throw new \RuntimeException('Bukti pembayaran gagal disimpan.');
+                    }
+                    $attachment = $claim->attachments()->create([
+                        'document_type' => 'receipt',
+                        'original_name' => $file->getClientOriginalName(),
+                        'stored_path' => $storedPath,
+                        'mime_type' => $file->getMimeType(),
+                        'file_size' => $file->getSize(),
+                        'sha256_hash' => hash_file('sha256', $file->getRealPath()),
+                        'uploaded_by' => $user->id,
+                    ]);
+                    activity()->performedOn($claim)->causedBy($user)->withProperties(['attachment_id' => $attachment->id, 'document_type' => 'receipt'])->log('medical.attachment_uploaded');
+                }
+
+                activity()->performedOn($claim)->causedBy($user)->log('medical.created');
+
+                return $claim;
+            });
+        } catch (\Throwable $exception) {
+            if ($storedPath !== null) {
+                Storage::disk('eform-private')->delete($storedPath);
+            }
+
+            throw $exception;
+        }
 
         return redirect()->route('medical-claims.show', $claim)->with('success', 'Medical claim draft berhasil dibuat.');
     }
@@ -101,7 +128,7 @@ class MedicalClaimController extends Controller
     public function edit(Request $request, MedicalClaim $medical_claim): Response
     {
         $this->authorize('update', $medical_claim);
-        $medical_claim->load('items');
+        $medical_claim->load(['items', 'attachments']);
 
         $employee = Employee::where('user_id', $request->user()->id)->first();
 
@@ -131,7 +158,7 @@ class MedicalClaimController extends Controller
             $benefitTypes[] = $medical_claim->benefit_type;
         }
 
-        return Inertia::render('MedicalClaims/Edit', ['claim' => ['id' => $medical_claim->id, 'benefit_type' => $medical_claim->benefit_type, 'benefit_types' => $medical_claim->benefit_types ?: [$medical_claim->benefit_type], 'items' => $items], 'meta' => ['benefit_types' => $benefitTypes, 'dependents' => $employee?->medicalDependents()->where('active', true)->get(['id', 'name', 'relationship']) ?? []]]);
+        return Inertia::render('MedicalClaims/Edit', ['claim' => ['id' => $medical_claim->id, 'benefit_type' => $medical_claim->benefit_type, 'benefit_types' => $medical_claim->benefit_types ?: [$medical_claim->benefit_type], 'items' => $items, 'attachments' => $medical_claim->attachments->map(fn (Attachment $attachment) => ['id' => $attachment->id, 'document_type' => $attachment->document_type, 'original_name' => $attachment->original_name, 'download_url' => route('attachments.download', $attachment)])->values()->all()], 'meta' => ['benefit_types' => $benefitTypes, 'dependents' => $employee?->medicalDependents()->where('active', true)->get(['id', 'name', 'relationship']) ?? []]]);
     }
 
     public function update(UpdateMedicalClaimRequest $request, MedicalClaim $medical_claim): RedirectResponse

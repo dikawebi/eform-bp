@@ -20,13 +20,23 @@ export default function Form({ claim, meta, edit = false }) {
     const { data, setData, post, put, processing, errors } = useForm({
         benefit_types: claim?.benefit_types ?? (claim?.benefit_type ? [claim.benefit_type] : [meta?.benefit_types?.[0]].filter(Boolean)),
         items: claim?.items?.map((item) => ({ ...item, treatment_date: item.treatment_date?.slice(0, 10) })) ?? [blank()],
+        receipt: null,
     });
+    const upload = useForm({ file: null, document_type: 'receipt' });
 
     const update = (index, key, value) => setData('items', data.items.map((item, row) => row === index ? { ...item, [key]: value } : item));
     const toggleBenefit = (type) => setData('benefit_types', data.benefit_types.includes(type) ? data.benefit_types.filter((item) => item !== type) : [...data.benefit_types, type]);
     const submit = (event) => {
         event.preventDefault();
         edit ? put(route('medical-claims.update', claim.id)) : post(route('medical-claims.store'));
+    };
+    const uploadReceipt = (event) => {
+        event.preventDefault();
+        upload.post(route('medical-claims.attachments.store', claim.id), {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => upload.reset('file'),
+        });
     };
 
     return (
@@ -68,11 +78,27 @@ export default function Form({ claim, meta, edit = false }) {
                     ))}
                 </section>
 
+                <section className="worksheet-section overflow-hidden">
+                    <header className="worksheet-section-header"><div><p className="worksheet-eyebrow">Sheet Medical Claim · Bagian 03</p><h2 className="text-base font-bold">Bukti pengobatan</h2><p className="text-xs text-slate-500">Nota atau kuitansi diperlukan sebelum klaim diajukan ke HRGA.</p></div></header>
+                    <div className="space-y-3 p-4 sm:p-5">
+                        {!edit ? <div><label htmlFor="medical-receipt" className="block text-sm font-semibold">Lampirkan nota / kuitansi pengobatan</label><input id="medical-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => setData('receipt', event.target.files?.[0] ?? null)} className="mt-2 block w-full rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-700" /><p className="mt-1 text-xs text-slate-500">PDF, JPG, PNG atau WebP; maksimal 5 MB. Dokumen disimpan secara private.</p><InputError message={errors.receipt} className="mt-1" /></div> : <p className="text-sm text-slate-600 dark:text-slate-300">Nota/kuitansi dapat ditambah pada formulir terpisah di bawah, selama klaim masih draf atau dikembalikan.</p>}
+                    </div>
+                </section>
+
                 <div className="flex flex-wrap justify-end gap-3">
                     <Link href="/medical-claims" className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Batal</Link>
                     <button disabled={processing} className="ui-button-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-60">{processing ? 'Menyimpan…' : 'Simpan Draft'}</button>
                 </div>
             </form>
+            {edit && <section className="worksheet-section mx-auto mb-8 max-w-5xl space-y-4 p-5 sm:p-6">
+                <h2 className="text-base font-bold">Lampiran bukti pengobatan</h2>
+                {claim?.attachments?.length > 0 && <ul className="space-y-2 text-sm">{claim.attachments.map((attachment) => <li key={attachment.id}><a href={attachment.download_url} className="font-medium text-blue-700 hover:underline dark:text-blue-400">{attachment.original_name}</a> <span className="text-xs text-slate-500">({attachment.document_type})</span></li>)}</ul>}
+                <form onSubmit={uploadReceipt} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div className="min-w-0 flex-1"><label htmlFor="medical-edit-receipt" className="block text-sm font-semibold">Nota / kuitansi tambahan</label><input id="medical-edit-receipt" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => upload.setData('file', event.target.files?.[0] ?? null)} className="mt-2 block w-full rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-700" /><InputError message={upload.errors.file} className="mt-1" /></div>
+                    <button type="submit" disabled={upload.processing || !upload.data.file} className="ui-button-primary rounded-lg px-4 py-2.5 text-sm disabled:opacity-50">{upload.processing ? 'Mengunggah…' : 'Unggah bukti'}</button>
+                </form>
+                <p className="text-xs text-slate-500">PDF, JPG, PNG atau WebP; maksimal 5 MB. Dokumen disimpan private.</p>
+            </section>}
         </AuthenticatedLayout>
     );
 }
