@@ -42,17 +42,20 @@ class RolesPermissionsSeeder extends Seeder
         'leave.create.onbehalf',
         'leave.view.own',
         'leave.view.all',
+        'leave.view.subordinates',
 
         'travel.create.own',
         'travel.create.onbehalf',
         'travel.view.own',
         'travel.view.all',
+        'travel.view.subordinates',
         'travel.project.flag',
         'travel.submit.onbehalf',
 
         'settlement.create.own',
         'settlement.view.own',
         'settlement.view.all',
+        'settlement.view.subordinates',
         'settlement.review.hrga',
         'settlement.review.finance',
         'settlement.complete',
@@ -60,6 +63,7 @@ class RolesPermissionsSeeder extends Seeder
         'medical.create.own',
         'medical.view.own',
         'medical.view.all',
+        'medical.view.subordinates',
         'medical.review',
         'medical.payment.process',
         'medical.payment.complete',
@@ -80,6 +84,7 @@ class RolesPermissionsSeeder extends Seeder
         'attachment.upload.all',
 
         'workflow.manage',
+        'role.manage',
         'report.export',
         'report.view',
         'advance.process.leave',
@@ -122,8 +127,17 @@ class RolesPermissionsSeeder extends Seeder
         $give = function (string $role, array $permissions): void {
             /** @var Role $roleModel */
             $roleModel = Role::where('name', $role)->where('guard_name', 'web')->firstOrFail();
-            $roleModel->syncPermissions($permissions);
+            // Seed only the baseline permissions. Do not revoke permissions that
+            // an administrator has intentionally added to an existing role.
+            $roleModel->givePermissionTo($permissions);
         };
+
+        // These permissions used to be assigned to supervisor/hod. Revoke only
+        // the obsolete broad read grants; preserve any other custom grants.
+        foreach (['supervisor', 'hod'] as $role) {
+            Role::where('name', $role)->where('guard_name', 'web')->firstOrFail()
+                ->revokePermissionTo(['leave.view.all', 'travel.view.all']);
+        }
 
         $give('admin', array_values(array_diff(self::PERMISSIONS, [
             'advance.process.leave',
@@ -150,9 +164,11 @@ class RolesPermissionsSeeder extends Seeder
             'employee.view.own',
             'employee.view.any',
             'leave.view.own',
-            'leave.view.all',
+            'leave.view.subordinates',
             'travel.view.own',
-            'travel.view.all',
+            'travel.view.subordinates',
+            'settlement.view.subordinates',
+            'medical.view.subordinates',
             'approval.inbox.view',
             'approval.act',
             'attachment.download.own',
@@ -164,9 +180,11 @@ class RolesPermissionsSeeder extends Seeder
             'dashboard.view',
             'employee.view.any',
             'leave.view.own',
-            'leave.view.all',
+            'leave.view.subordinates',
             'travel.view.own',
-            'travel.view.all',
+            'travel.view.subordinates',
+            'settlement.view.subordinates',
+            'medical.view.subordinates',
             'approval.inbox.view',
             'approval.act',
             'attachment.download.own',

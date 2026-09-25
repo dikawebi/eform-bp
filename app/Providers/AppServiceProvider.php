@@ -17,6 +17,7 @@ use App\Policies\AttachmentPolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\LeaveRequestPolicy;
 use App\Policies\MedicalClaimPolicy;
+use App\Policies\RolePolicy;
 use App\Policies\SettlementPolicy;
 use App\Policies\TravelRequestPolicy;
 use App\Support\MedicalConfigValidator;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -57,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Attachment::class, AttachmentPolicy::class);
         Gate::policy(ApprovalRequest::class, ApprovalRequestPolicy::class);
         Gate::policy(ApprovalWorkflow::class, ApprovalWorkflowPolicy::class);
+        Gate::policy(Role::class, RolePolicy::class);
         Relation::morphMap([
             'leave_request' => LeaveRequest::class,
             'travel_request' => TravelRequest::class,

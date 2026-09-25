@@ -228,6 +228,18 @@
 .worksheet-row-header { border-bottom: 1px solid #cbd5e1; background: #f1f5f9; color: #0f172a; }
 .worksheet-row-index { display: inline-flex; height: 1.5rem; width: 1.5rem; align-items: center; justify-content: center; border-radius: 0.25rem; background: #0f172a; color: white; font-size: 0.7rem; font-weight: 800; }
 .worksheet-cell { min-width: 0; background: #fff; padding: 0.75rem; }
+.worksheet-fields { display: grid; gap: 1px; background: #cbd5e1; }
+.worksheet-fields > .worksheet-cell,
+.worksheet-fields > div { min-width: 0; background: #fff; padding: 0.7rem; }
+.worksheet-fields-period { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.worksheet-fields-cost { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.worksheet-fields-travel { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.worksheet-fields-medical { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.worksheet-fields-settlement { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.worksheet-col-span-2 { grid-column: span 2; }
+.worksheet-col-span-3 { grid-column: span 3; }
+.worksheet-col-span-4 { grid-column: span 4; }
+.worksheet-col-span-5 { grid-column: span 5; }
 .worksheet-row > .grid { gap: 1px; background: #cbd5e1; }
 .worksheet-row > .grid > div { min-width: 0; background: #fff; padding: 0.7rem; }
 .worksheet-hint { border-radius: 0.4rem; background: #f8fafc; padding: 0.65rem 0.75rem; color: #64748b; font-size: 0.75rem; line-height: 1.45; }
@@ -235,7 +247,183 @@
 .worksheet-add-row:hover { background: #eff6ff; }
 .worksheet-total { border: 1px solid #bfdbfe; border-radius: 0.5rem; background: #fff; padding: 0.5rem 0.75rem; color: #0052cc; font-size: 0.8rem; font-weight: 800; }
 .worksheet-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border-radius: 0.75rem; background: #0f172a; padding: 1rem 1.25rem; color: white; }
+.travel-sheet { max-width: 1100px; margin-inline: auto; padding: 1.25rem; color: #0f172a; font-family: var(--font-sans); font-size: 0.82rem; }
+.medical-sheet { max-width: 1100px; margin-inline: auto; padding: 1.25rem; color: #0f172a; font-family: var(--font-sans); font-size: 0.82rem; }
+.medical-sheet-header { display: grid; grid-template-columns: 125px minmax(0, 1fr) 280px; min-height: 62px; overflow: hidden; border: 1px solid #bfdbfe; border-radius: 0.9rem; background: linear-gradient(120deg, #0066ff, #0f172a); color: #fff; box-shadow: 0 10px 24px -16px rgb(15 23 42 / 0.55); }
+.medical-sheet-logo, .medical-sheet-title, .medical-sheet-number { display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgb(255 255 255 / .3); padding: .35rem .5rem; text-align: center; }
+.medical-sheet-number { border-right: 0; font-size: .72rem; }.medical-sheet-number strong { margin-top: .2rem; font-size: .78rem; }.medical-sheet-logo strong { font-size: 2rem; line-height: .8; letter-spacing: -.12em; }.medical-sheet-logo small { margin-top: .35rem; font-size: .48rem; font-weight: 900; }.medical-sheet-logo em { font-size: .38rem; font-style: normal; font-weight: 700; }.medical-sheet-title p { font-size: 1rem; font-weight: 800; }.medical-sheet-title h1 { margin-top: .45rem; font-size: 1.05rem; font-weight: 900; }
+.medical-sheet-section { overflow: hidden; border: 1px solid #e2e8f0; border-radius: .75rem; background: #fff; padding: 1.25rem; box-shadow: 0 1px 2px rgb(15 23 42 / .04); }.medical-sheet-section h2 { font-size: .92rem; font-weight: 700; }.medical-sheet-section-heading > p:last-child { margin-top: .2rem; color: #64748b; font-size: .75rem; }
+.medical-identity-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid #e2e8f0; }.medical-identity-grid > div { min-width: 0; min-height: 54px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: .55rem; }.medical-identity-grid > div:nth-child(4n) { border-right: 0; }.medical-identity-grid span { display: block; color: #64748b; font-size: .65rem; font-weight: 800; letter-spacing: .05em; }.medical-identity-grid strong { display: block; margin-top: .25rem; font-size: .78rem; }.medical-identity-grid .medical-master-note { grid-column: 1 / -1; min-height: auto; background: #f8fafc; }.medical-master-note span { margin-top: .15rem; font-weight: 500; letter-spacing: 0; }.medical-sheet-instruction { margin-top: .85rem; border-top: 1px dashed #94a3b8; padding: .8rem .65rem .1rem; color: #1d4ed8; font-size: .78rem; font-style: italic; }
+.medical-benefit-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: #cbd5e1; }.medical-benefit-option { display: flex; min-width: 0; align-items: center; gap: .6rem; background: #fff; padding: .75rem; cursor: pointer; }.medical-benefit-option > span { display: inline-flex; height: 1.5rem; width: 1.5rem; flex: 0 0 auto; align-items: center; justify-content: center; border: 1px solid #bfdbfe; border-radius: .3rem; background: #eff6ff; color: #1d4ed8; font-size: .65rem; font-weight: 800; }.medical-benefit-option input { height: 1rem; width: 1rem; accent-color: #0066ff; }.medical-benefit-option strong { font-size: .78rem; }
+.medical-claim-rows { display: grid; gap: .65rem; }.medical-claim-row { overflow: hidden; border: 1px solid #cbd5e1; border-radius: .65rem; }.medical-claim-row > header { display: flex; align-items: center; gap: .55rem; border-bottom: 1px solid #cbd5e1; background: #f1f5f9; padding: .45rem .6rem; }.medical-claim-row > header strong { font-size: .75rem; }.medical-claim-row > header span:not(.worksheet-row-index) { color: #047857; font-size: .68rem; font-weight: 700; }.medical-claim-row > header button { margin-left: auto; color: #dc2626; font-size: .68rem; font-weight: 700; }.medical-claim-table { display: grid; grid-template-columns: 1.25fr 1fr 1fr 1.5fr 1fr; gap: 1px; background: #e2e8f0; }.medical-claim-table > div { min-width: 0; background: #fff; padding: .55rem; }.medical-claim-table label { display: block; color: #475569; font-size: .68rem; font-weight: 800; }.medical-claim-table label b { color: #dc2626; }.medical-claim-table input, .medical-claim-table select { border-color: #bfdbfe; background: #eaf5ff; box-shadow: none; }.medical-patient strong { display: block; min-height: 2.2rem; margin-top: .25rem; border: 1px solid #e2e8f0; border-radius: .5rem; padding: .45rem .55rem; color: #475569; font-size: .75rem; }.medical-dependent { grid-column: span 2; }.medical-add-row { margin-top: .75rem; border: 1px solid #93c5fd; border-radius: .45rem; background: #fff; padding: .45rem .7rem; color: #1d4ed8; font-size: .75rem; font-weight: 700; }.medical-add-row:hover { background: #eff6ff; }.medical-total-row { display: flex; justify-content: space-between; margin-top: .75rem; border: 1px solid #bfdbfe; border-radius: .55rem; background: #eff6ff; padding: .7rem .85rem; color: #0f172a; }.medical-total-row span { font-size: .75rem; font-weight: 700; }.medical-total-row strong { color: #047857; font-size: .9rem; }
+.medical-attachment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #e2e8f0; }.medical-attachment-grid > div { min-width: 0; background: #fff; padding: .8rem; }.medical-attachment-grid h3, .medical-attachment-grid label { display: block; color: #475569; font-size: .75rem; font-weight: 800; }.medical-attachment-grid ul { margin-top: .5rem; list-style: disc; padding-left: 1rem; color: #334155; font-size: .75rem; }.medical-attachment-grid p { margin-top: .5rem; color: #64748b; font-size: .72rem; }.medical-attachment-grid input { margin-top: .5rem; width: 100%; border: 1px solid #bfdbfe; border-radius: .5rem; background: #eaf5ff; padding: .4rem; }.medical-attachment-panel { margin-bottom: 2rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: #fff; box-shadow: 0 1px 2px rgb(15 23 42 / .04); }.medical-attachment-panel h2 { font-size: .92rem; font-weight: 700; }.medical-attachment-panel > ul { margin-top: .75rem; font-size: .8rem; }.medical-attachment-panel li { display: flex; justify-content: space-between; gap: .75rem; padding: .45rem 0; }.medical-attachment-panel a { color: #1d4ed8; font-weight: 700; }.medical-attachment-panel li span { color: #64748b; }.medical-attachment-panel form { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; }.medical-attachment-panel form input { min-width: 0; flex: 1; }
+.travel-sheet-header { display: grid; grid-template-columns: 125px minmax(0, 1fr) 280px; min-height: 62px; border: 1px solid #bfdbfe; border-radius: 0.9rem; background: linear-gradient(120deg, #0066ff, #0f172a); color: #fff; box-shadow: 0 10px 24px -16px rgb(15 23 42 / 0.55); }
+.travel-sheet-logo, .travel-sheet-title, .travel-sheet-number { display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgb(255 255 255 / 0.3); padding: 0.35rem 0.5rem; text-align: center; }
+.travel-sheet-number { border-right: 0; font-size: 0.72rem; }
+.travel-sheet-number strong { margin-top: 0.2rem; font-size: 0.78rem; }
+.travel-sheet-logo-mark { color: #fff; font-size: 2rem; font-weight: 900; line-height: 0.8; letter-spacing: -0.12em; }
+.travel-sheet-logo-name { margin-top: 0.35rem; font-size: 0.48rem; font-weight: 900; }
+.travel-sheet-logo-sub { font-size: 0.38rem; font-weight: 700; }
+.travel-sheet-title p { font-size: 1rem; font-weight: 800; }
+.travel-sheet-title h2 { margin-top: 0.45rem; font-size: 1.05rem; font-weight: 900; }
+.travel-sheet-section { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 0.75rem; background: #fff; padding: 1.25rem; box-shadow: 0 1px 2px rgb(15 23 42 / 0.04); }
+.travel-sheet-profile-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid #e2e8f0; }
+.travel-sheet-field { min-width: 0; min-height: 54px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 0.55rem; background: #fff; }
+.travel-sheet-field-wide { grid-column: span 2; }
+.travel-sheet-profile-grid > .travel-sheet-field:not(.travel-sheet-purpose):not(.travel-sheet-master-note) { grid-column: auto; }
+.travel-sheet-field:nth-child(4n) { border-right: 0; }
+.travel-sheet-field label { display: block; color: #64748b; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.travel-sheet-value { min-height: 1.35rem; margin-top: 0.25rem; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; }
+.travel-sheet-master-note { grid-column: 1 / -1; min-height: auto; background: #f8fafc; }
+.travel-sheet-master-note + .travel-sheet-field { border-top-color: #e2e8f0; }
+.travel-sheet-purpose { grid-column: 1 / -1; min-height: 98px; }
+.travel-sheet-input { border-color: #bfdbfe !important; border-radius: 0.55rem !important; background: #eaf5ff !important; box-shadow: none !important; color: #0f172a !important; font-weight: 700; }
+.travel-sheet-instruction { margin-top: 0.85rem; border-top: 1px dashed #94a3b8; padding: 0.8rem 0.65rem 0.1rem; color: #1d4ed8; font-size: 0.78rem; font-style: italic; }
+.travel-sheet-section-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.55rem; padding: 0.25rem 0.25rem; color: #123b72; font-size: 0.88rem; font-weight: 900; text-transform: uppercase; }
+.travel-sheet-section-title span { border: 1px solid #93c5fd; border-radius: 0.55rem; background: #eaf5ff; padding: 0.25rem 0.7rem; color: #0f172a; }
+.travel-sheet-section-title-spaced { color: #7b1b69; }
+.travel-sheet-days { display: grid; grid-template-columns: 1.4fr 1fr 1fr 0.75fr; grid-template-rows: repeat(2, minmax(42px, auto)); width: 100%; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 0.65rem; }
+.travel-sheet-days > * { min-width: 0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 0.55rem; }
+.travel-sheet-days > *:nth-child(4n) { border-right: 0; }
+.travel-sheet-days > *:nth-last-child(-n+4) { border-bottom: 0; }
+.travel-sheet-days-label { display: flex; align-items: center; justify-content: center; text-align: center; }
+.travel-sheet-days label { display: grid; min-width: 0; gap: 0.25rem; align-content: center; }
+.travel-sheet-days input { width: 100%; min-width: 0; border: 1px solid #bfdbfe; border-radius: 0.5rem; background: #eaf5ff; padding: 0.28rem 0.35rem; font-size: 0.72rem; font-weight: 700; }
+.travel-sheet input:not([readonly]), .travel-sheet select:not([disabled]), .travel-sheet textarea:not([readonly]) { border-radius: 0.55rem; }
+.travel-sheet .worksheet-fields input:not([readonly]), .travel-sheet .worksheet-fields select:not([disabled]), .travel-sheet .worksheet-fields textarea:not([readonly]) { border-color: #bfdbfe; background: #eaf5ff; }
+.travel-sheet input[readonly], .travel-sheet textarea[readonly], .travel-sheet select[disabled], .travel-sheet .worksheet-fields input[readonly] { border-color: #e2e8f0; background: #fff; color: #475569; }
+.travel-sheet-days-total { display: flex; align-items: center; justify-content: center; background: #f8fafc; font-weight: 700; }
+.travel-sheet-days-empty { grid-column: 3 / -1; color: #6b7280; font-size: 0.7rem; font-style: italic; }
+.travel-required-mark { color: #dc2626; font-weight: 900; }
+.travel-sheet .worksheet-row { border-color: #cbd5e1; border-radius: 0.65rem; }
+.travel-sheet .worksheet-row-header { border-color: #cbd5e1; border-radius: 0.65rem 0.65rem 0 0; background: #f1f5f9; }
+.travel-sheet .worksheet-fields { gap: 0; background: #fff; }
+.travel-sheet .worksheet-fields > .worksheet-cell, .travel-sheet .worksheet-fields > div { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 0.55rem; background: #fff; }
+.travel-sheet .worksheet-fields input, .travel-sheet .worksheet-fields select { border-radius: 0.5rem; box-shadow: none; color: #0f172a; }
+.travel-sheet .worksheet-fields-travel { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.travel-sheet .worksheet-hint { border-radius: 0; background: #f3f4f6; }
+.travel-sheet .worksheet-add-row { border-color: #93c5fd; border-radius: 0.55rem; background: #eff6ff; color: #1d4ed8; }
+.travel-sheet-cost-sections { display: grid; gap: 0.9rem; }
+.travel-sheet-cost-section { overflow: hidden; border: 1px solid #cbd5e1; border-radius: 0.65rem; }
+.travel-sheet-cost-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid #bfdbfe; background: #eff6ff; padding: 0.55rem 0.7rem; color: #1d4ed8; }
+.travel-sheet-cost-heading h4 { font-size: 0.78rem; font-weight: 800; }
+.travel-sheet-cost-heading button { border: 1px solid #93c5fd; border-radius: 0.45rem; background: #fff; padding: 0.25rem 0.5rem; color: #1d4ed8; font-size: 0.7rem; font-weight: 700; }
+.travel-cost-row { margin: 0.65rem; }
+.travel-cost-row > header { padding: 0.45rem 0.6rem; }
+.travel-cost-row > header h4 { font-size: 0.75rem; font-weight: 700; }
+.travel-cost-row > header .travel-cost-estimate { color: #047857; font-size: 0.68rem; font-weight: 700; }
+.travel-cost-row > header button { margin-left: auto; color: #dc2626; font-size: 0.68rem; font-weight: 700; }
+.travel-sheet .travel-cost-row .worksheet-fields label { color: #475569; font-size: 0.68rem; font-weight: 800; letter-spacing: normal; text-transform: none; }
+.travel-sheet .travel-cost-row .worksheet-fields input { margin-top: 0.25rem; }
+.travel-sheet .travel-cost-row .worksheet-fields > input[type="hidden"] { display: none; }
+.travel-sheet-empty-row { padding: 0.8rem; color: #64748b; font-size: 0.75rem; font-style: italic; }
+.travel-sheet-note { border: 1px solid #bfdbfe; border-radius: 0.55rem; background: #eff6ff; padding: 0.7rem; color: #334155; font-size: 0.75rem; line-height: 1.5; }
+.travel-terms-grid { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 1rem; color: #0f172a; font-size: 0.82rem; line-height: 1.45; }
+.travel-terms-grid h3 { font-size: 0.82rem; font-weight: 700; }
+.travel-terms-grid ul { list-style: disc; padding-left: 1rem; }
+.travel-sheet .worksheet-summary { border: 1px solid #bfdbfe; border-radius: 0.75rem; background: #0f172a; color: #fff; }
+.travel-sheet .worksheet-summary .text-blue-100 { color: #dbeafe; }
+.travel-sheet .worksheet-summary .rounded-lg { border-color: #93c5fd; color: #111827; }
+.travel-sheet .worksheet-summary .bg-white { background: #fff; }
+.leave-sheet { max-width: 1100px; margin-inline: auto; padding: 1.25rem; color: #0f172a; font-family: var(--font-sans); font-size: 0.82rem; }
+.leave-sheet-header { display: grid; grid-template-columns: 125px minmax(0, 1fr) 280px; min-height: 62px; border: 1px solid #bfdbfe; border-radius: 0.9rem; background: linear-gradient(120deg, #0066ff, #0f172a); color: #fff; box-shadow: 0 10px 24px -16px rgb(15 23 42 / 0.55); }
+.leave-sheet-logo, .leave-sheet-title, .leave-sheet-number { display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgb(255 255 255 / 0.3); padding: 0.35rem 0.5rem; text-align: center; }
+.leave-sheet-number { border-right: 0; font-size: 0.72rem; }
+.leave-sheet-number strong { margin-top: 0.2rem; font-size: 0.78rem; }
+.leave-sheet-logo strong { font-size: 2rem; line-height: 0.8; letter-spacing: -0.12em; }
+.leave-sheet-logo small { margin-top: 0.35rem; font-size: 0.48rem; font-weight: 900; }
+.leave-sheet-logo em { font-size: 0.38rem; font-style: normal; font-weight: 700; }
+.leave-sheet-title p { font-size: 1rem; font-weight: 800; }
+.leave-sheet-title h2 { margin-top: 0.45rem; font-size: 1.05rem; font-weight: 900; }
+.leave-sheet-section { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 0.75rem; background: #fff; padding: 1.25rem; box-shadow: 0 1px 2px rgb(15 23 42 / 0.04); }
+.leave-sheet-profile-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid #e2e8f0; }
+.leave-sheet-profile-grid > div { min-width: 0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 0.55rem; }
+.leave-sheet-profile-grid > div:nth-child(4n) { border-right: 0; }
+.leave-sheet-master-note { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.15rem; background: #f8fafc; }
+.leave-sheet-master-note span { color: #64748b; font-size: 0.7rem; }
+.leave-sheet-value-cell { min-height: 54px; }
+.leave-sheet-value-cell span { display: block; color: #64748b; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em; }
+.leave-sheet-value-cell strong { display: block; margin-top: 0.25rem; font-size: 0.78rem; text-transform: uppercase; }
+.leave-sheet-input-cell { min-height: 76px; }
+.leave-sheet-input-wide { grid-column: 1 / -1; }
+.leave-sheet-input-cell label { color: #475569; font-size: 0.68rem; font-weight: 800; }
+.leave-sheet-input-cell label b { color: #dc2626; }
+.leave-sheet input, .leave-sheet select, .leave-sheet textarea { border-radius: 0.55rem; border-color: #bfdbfe; box-shadow: none; }
+.leave-sheet input:not([readonly]), .leave-sheet select:not([disabled]), .leave-sheet textarea:not([readonly]) { background: #eaf5ff; }
+.leave-sheet .worksheet-row { border-color: #cbd5e1; border-radius: 0.65rem; }
+.leave-sheet .worksheet-row-header { border-color: #cbd5e1; border-radius: 0.65rem 0.65rem 0 0; background: #f1f5f9; }
+.leave-sheet .worksheet-fields { gap: 0; background: #fff; }
+.leave-sheet .worksheet-fields > .worksheet-cell, .leave-sheet .worksheet-fields > div { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; background: #fff; }
+.leave-sheet .worksheet-fields input:not([readonly]), .leave-sheet .worksheet-fields select:not([disabled]) { background: #eaf5ff; }
+.leave-sheet .worksheet-add-row { border-color: #93c5fd; border-radius: 0.55rem; background: #eff6ff; color: #1d4ed8; }
+.leave-sheet .worksheet-summary { border: 1px solid #bfdbfe; border-radius: 0.75rem; background: #0f172a; }
+.leave-period-grid-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 0.75fr; gap: 0; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 0.65rem; background: #fff; }
+.leave-period-grid-row > div { min-width: 0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 0.55rem; }
+.leave-period-category, .leave-period-total { grid-row: span 2; }
+.leave-period-grid-row > div:nth-child(4) { border-right: 0; }
+.leave-period-grid-row label { display: block; color: #475569; font-size: 0.68rem; font-weight: 800; }
+.leave-period-grid-row label b { color: #dc2626; }
+.leave-period-label { display: flex; min-height: 3.1rem; align-items: center; justify-content: center; color: #0f172a; font-size: 0.78rem; font-weight: 800; text-align: center; }
+.leave-period-grid-row input, .leave-period-grid-row select { margin-top: 0.25rem; width: 100%; border-radius: 0.5rem; border-color: #bfdbfe; background: #eaf5ff; }
+.leave-period-total { display: flex; flex-direction: column; justify-content: center; background: #f8fafc; text-align: center; }
+.leave-period-total span { color: #64748b; font-size: 0.65rem; font-weight: 700; }
+.leave-period-total strong { margin-top: 0.3rem; color: #0f172a; font-size: 0.85rem; }
+.leave-date-review-note { margin-top: 0.6rem; color: #b45309; font-size: 0.75rem; font-weight: 800; }
+.leave-local-policy-note { margin-top: 0.75rem; border: 1px solid #fcd34d; border-radius: 0.5rem; background: #fffbeb; padding: 0.65rem 0.75rem; color: #92400e; font-size: 0.75rem; }
+.leave-period-total button { margin-top: 0.45rem; color: #dc2626; font-size: 0.68rem; font-weight: 700; }
+.leave-period-notes { grid-column: 1 / -1; border-right: 0 !important; }
+.leave-sheet-reason-row { margin-top: 0.85rem; border-top: 1px dashed #94a3b8; padding: 0.8rem 0.65rem 0.1rem; }
+.leave-sheet-reason-row label { color: #334155; font-weight: 800; }
+.leave-sheet-reason-row textarea { min-height: 3.5rem; border-color: #bfdbfe; background: #eaf5ff; }
+.leave-cost-sections { display: grid; gap: 0.9rem; }
+.leave-cost-section { overflow: hidden; border: 1px solid #cbd5e1; border-radius: 0.65rem; }
+.leave-cost-section > header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid #bfdbfe; background: #eff6ff; padding: 0.55rem 0.7rem; color: #1d4ed8; }
+.leave-cost-section > header h4 { font-size: 0.78rem; font-weight: 800; }
+.leave-cost-section > header button { border: 1px solid #93c5fd; border-radius: 0.45rem; background: #fff; padding: 0.25rem 0.5rem; color: #1d4ed8; font-size: 0.7rem; font-weight: 700; }
+.leave-cost-section > .worksheet-row { margin: 0.65rem; }
+.leave-cost-row { margin: 0.65rem; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 0.65rem; background: #fff; }
+.leave-cost-row > header { display: flex; align-items: center; gap: 0.55rem; border-bottom: 1px solid #cbd5e1; background: #f1f5f9; padding: 0.45rem 0.6rem; }
+.leave-cost-row > header strong { font-size: 0.75rem; }
+.leave-cost-row > header span:not(.worksheet-row-index) { color: #047857; font-size: 0.68rem; font-weight: 700; }
+.leave-cost-row > header button { margin-left: auto; color: #dc2626; font-size: 0.68rem; font-weight: 700; }
+.leave-cost-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.leave-cost-fields > .worksheet-cell { padding: 0.55rem; }
+.leave-cost-fields label { display: block; color: #475569; font-size: 0.68rem; font-weight: 800; }
+.leave-cost-fields label b { color: #dc2626; }
+.leave-cost-fields input { margin-top: 0.25rem; width: 100%; border-radius: 0.5rem; border-color: #bfdbfe; background: #eaf5ff; }
+.leave-cost-empty { padding: 0.8rem; color: #64748b; font-size: 0.75rem; font-style: italic; }
+.employee-lookup-section { overflow: visible; }
+.employee-lookup-section:focus-within { position: relative; z-index: 10; }
+.leave-sheet-profile-grid > .employee-lookup-cell,
+.travel-sheet-profile-grid > .employee-lookup-cell { grid-column: 1 / -1 !important; }
+.employee-lookup { position: relative; }
+.employee-lookup label { display: block; color: #475569; font-size: 0.68rem; font-weight: 800; }
+.employee-lookup input { margin-top: 0.25rem; width: 100%; border: 1px solid #bfdbfe; border-radius: 0.55rem; background: #eaf5ff; font-size: 0.875rem; }
+.employee-lookup-options { position: absolute; z-index: 20; top: calc(100% + 0.25rem); left: 0; right: 0; max-height: 16rem; overflow-y: auto; border: 1px solid #bfdbfe; border-radius: 0.55rem; background: #fff; box-shadow: 0 12px 25px -12px rgb(15 23 42 / 0.25); }
+.employee-lookup-options button { display: block; width: 100%; padding: 0.55rem 0.75rem; color: #0f172a; font-size: 0.8rem; text-align: left; }
+.employee-lookup-options button:hover, .employee-lookup-options button[data-active="true"] { background: #eff6ff; }
+.employee-lookup-options small { display: block; margin-top: 0.1rem; color: #64748b; }
+.employee-lookup-options p { padding: 0.75rem; color: #64748b; font-size: 0.8rem; }
+@media (max-width: 800px) {
+    .leave-sheet { min-width: 760px; margin: 0; }
+    .leave-sheet-header { grid-template-columns: 100px 1fr 190px; }
+    .leave-sheet-title h2 { font-size: 0.82rem; }
+}
+@media (max-width: 800px) {
+    .leave-period-grid-row { grid-template-columns: minmax(0, 1fr); }
+    .leave-period-grid-row > div { border-right: 0; }
+    .leave-period-notes { grid-column: auto; }
+}
+@media (max-width: 800px) {
+    .travel-sheet { min-width: 760px; margin: 0; }
+    .travel-sheet-header { grid-template-columns: 100px 1fr 190px; }
+    .travel-sheet-title h2 { font-size: 0.82rem; }
+    .travel-terms-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+}
 .dark .worksheet-section, .dark .worksheet-cell { border-color: #334155; background: #111827; color: #e2e8f0; }
+.dark .worksheet-fields { background: #334155; }
+.dark .worksheet-fields > .worksheet-cell,
+.dark .worksheet-fields > div { background: #111827; }
 .dark .worksheet-section-heading { border-color: #334155; }
 .dark .worksheet-section-header { border-color: #1e3a8a; background: #172554; color: #f8fafc; }
 .dark .worksheet-row { border-color: #334155; background: #111827; }
@@ -246,7 +434,39 @@
 .dark .worksheet-add-row { border-color: #1d4ed8; color: #93c5fd; }
 .dark .worksheet-add-row:hover { background: #172554; }
 .dark .worksheet-total { border-color: #1e40af; background: #0f172a; color: #93c5fd; }
+@media (max-width: 767px) {
+    .worksheet-fields-period,
+    .worksheet-fields-cost,
+    .worksheet-fields-travel,
+    .worksheet-fields-medical,
+    .worksheet-fields-settlement { grid-template-columns: minmax(0, 1fr); }
+    .worksheet-col-span-2,
+    .worksheet-col-span-3,
+    .worksheet-col-span-4,
+    .worksheet-col-span-5 { grid-column: auto; }
+    .medical-sheet { padding: 1rem; }
+    .medical-sheet-header { grid-template-columns: 88px minmax(0, 1fr); }
+    .medical-sheet-number { grid-column: 1 / -1; border-top: 1px solid rgb(255 255 255 / .3); }
+    .medical-sheet-title h1 { font-size: .82rem; }
+    .medical-identity-grid, .medical-benefit-grid, .medical-claim-table, .medical-attachment-grid { grid-template-columns: minmax(0, 1fr); }
+    .medical-identity-grid > div { border-right: 0; }
+    .medical-dependent { grid-column: auto; }
+}
+@media (min-width: 768px) {
+    .worksheet-fields .md\:col-span-2 { grid-column: span 2; }
+}
 .app-shell button.bg-gray-900, .app-shell a.bg-gray-900 { background-color: #0066ff; }
 .app-shell button.hover\:bg-gray-700:hover, .app-shell a.hover\:bg-gray-700:hover { background-color: #0052cc; }
 .app-shell .text-indigo-600 { color: #0066ff; }
 .app-shell .hover\:text-indigo-700:hover { color: #0052cc; }
+
+/* Settlement declaration/claim sheet: mirrors the BP worksheet without making the page an unbounded spreadsheet. */
+.settlement-sheet { max-width: 1100px; margin-inline: auto; padding: 1.25rem; color: #0f172a; font-family: var(--font-sans); font-size: .82rem; }
+.settlement-sheet-header { display: grid; grid-template-columns: 125px minmax(0, 1fr) 280px; min-height: 62px; overflow: hidden; border: 1px solid #bfdbfe; border-radius: .9rem; background: linear-gradient(120deg, #0066ff, #0f172a); color: #fff; box-shadow: 0 10px 24px -16px rgb(15 23 42 / .55); }
+.settlement-sheet-logo, .settlement-sheet-title, .settlement-sheet-number { display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgb(255 255 255 / .3); padding: .35rem .5rem; text-align: center; }.settlement-sheet-number { border-right: 0; font-size: .72rem; }.settlement-sheet-number strong { margin-top: .2rem; font-size: .78rem; }.settlement-sheet-logo strong { font-size: 2rem; line-height: .8; letter-spacing: -.12em; }.settlement-sheet-logo small { margin-top: .35rem; font-size: .48rem; font-weight: 900; }.settlement-sheet-logo em { font-size: .38rem; font-style: normal; font-weight: 700; }.settlement-sheet-title p { font-size: 1rem; font-weight: 800; }.settlement-sheet-title h1 { margin-top: .45rem; font-size: 1.05rem; font-weight: 900; }
+.settlement-sheet-section { overflow: hidden; border: 1px solid #e2e8f0; border-radius: .75rem; background: #fff; padding: 1.25rem; box-shadow: 0 1px 2px rgb(15 23 42 / .04); }.settlement-sheet-section h2 { font-size: .92rem; font-weight: 700; }
+.settlement-source-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 1rem; border: 1px solid #e2e8f0; }.settlement-source-grid > div { min-width: 0; min-height: 54px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: .55rem; }.settlement-source-grid > div:nth-child(4n) { border-right: 0; }.settlement-source-select { grid-column: span 2; }.settlement-source-grid label, .settlement-reference-row label { display: block; color: #475569; font-size: .68rem; font-weight: 800; }.settlement-source-grid label b, .settlement-reference-row b { color: #dc2626; }.settlement-master-cell { background: #fff; }.settlement-master-cell span { display: block; color: #64748b; font-size: .65rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }.settlement-master-cell strong { display: block; margin-top: .25rem; overflow-wrap: anywhere; font-size: .78rem; text-transform: uppercase; }
+.settlement-sheet-input { border-color: #bfdbfe !important; border-radius: .55rem !important; background: #eaf5ff !important; box-shadow: none !important; color: #0f172a !important; }.settlement-sheet select:disabled { border-color: #e2e8f0 !important; background: #fff !important; color: #475569 !important; }.settlement-reference-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .8fr); gap: 1rem; margin-top: .85rem; border-top: 1px dashed #94a3b8; padding: .8rem .65rem .1rem; }.settlement-reference-row p { color: #1d4ed8; font-size: .75rem; font-style: italic; line-height: 1.5; }
+.settlement-cost-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }.settlement-add-row { border: 1px solid #93c5fd; border-radius: .45rem; background: #fff; padding: .45rem .7rem; color: #1d4ed8; font-size: .75rem; font-weight: 700; }.settlement-add-row:hover { background: #eff6ff; }.settlement-matrix-scroll { margin-top: 1rem; overflow-x: auto; border: 1px solid #cbd5e1; border-radius: .65rem; }.settlement-cost-table { width: 100%; min-width: 1030px; border-collapse: collapse; }.settlement-cost-table th { background: #f1f5f9; color: #334155; font-size: .68rem; font-weight: 800; text-align: center; }.settlement-cost-table th, .settlement-cost-table td { min-width: 92px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: .55rem; vertical-align: top; }.settlement-cost-table th:nth-child(3), .settlement-cost-table td:nth-child(3) { min-width: 265px; }.settlement-cost-table th:last-child, .settlement-cost-table td:last-child { border-right: 0; }.settlement-cost-table tfoot th, .settlement-cost-table tfoot td { border-bottom: 0; background: #eff6ff; color: #0f172a; font-weight: 800; text-align: right; }.settlement-row-number { background: #f8fafc; font-weight: 800; text-align: center; }.settlement-category-cell { background: #fff; text-align: right; }.settlement-category-cell > span { display: block; padding-top: .5rem; color: #94a3b8; text-align: center; }.settlement-row-total { background: #f8fafc; color: #047857; font-weight: 800; text-align: right; white-space: nowrap; }.settlement-remove-row { color: #dc2626; font-size: .7rem; font-weight: 700; }.settlement-sheet-instruction { margin-top: .85rem; border-top: 1px dashed #94a3b8; padding: .8rem .65rem .1rem; color: #1d4ed8; font-size: .78rem; font-style: italic; }
+.settlement-reconciliation { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid #bfdbfe; border-radius: .75rem; background: #0f172a; padding: 1rem 1.25rem; color: #fff; }.settlement-reconciliation > div > p { color: #bfdbfe; font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }.settlement-reconciliation > div > span { display: block; margin-top: .25rem; color: #dbeafe; font-size: .75rem; }.settlement-reconciliation dl { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 1rem; text-align: right; }.settlement-reconciliation dt { color: #bfdbfe; font-size: .68rem; font-weight: 700; }.settlement-reconciliation dd { margin-top: .25rem; font-size: .85rem; font-weight: 800; }.settlement-difference-overpayment dd { color: #fde68a; }.settlement-difference-underpayment dd { color: #fecaca; }.settlement-difference-balanced dd { color: #a7f3d0; }.settlement-cancel-button { border: 1px solid #cbd5e1; border-radius: .5rem; background: #fff; padding: .625rem 1rem; color: #334155; font-size: .875rem; font-weight: 700; }.settlement-error-list { border: 1px solid #fecaca; border-radius: .65rem; background: #fef2f2; padding: .8rem 1rem; color: #991b1b; font-size: .8rem; }.settlement-error-list ul { margin-top: .35rem; list-style: disc; padding-left: 1.2rem; }
+@media (max-width: 767px) { .settlement-sheet { padding: 1rem; }.settlement-sheet-header { grid-template-columns: 88px minmax(0, 1fr); }.settlement-sheet-number { grid-column: 1 / -1; border-top: 1px solid rgb(255 255 255 / .3); }.settlement-sheet-title h1 { font-size: .82rem; }.settlement-source-grid { grid-template-columns: minmax(0, 1fr); }.settlement-source-grid > div, .settlement-source-grid > div:nth-child(4n) { border-right: 0; }.settlement-source-select { grid-column: auto; }.settlement-reference-row { grid-template-columns: minmax(0, 1fr); }.settlement-reconciliation dl { width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; }.settlement-reconciliation dd { font-size: .72rem; } }

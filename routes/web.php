@@ -10,6 +10,7 @@ use App\Http\Controllers\MedicalClaimController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TravelRequestController;
 use App\Models\ApprovalRequest;
@@ -18,6 +19,7 @@ use App\Models\Employee;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -150,6 +152,15 @@ Route::middleware('auth')->group(function () {
             ->can('viewAny', ApprovalWorkflow::class)->name('scope');
         Route::put('/{workflow}', [ApprovalWorkflowController::class, 'update'])
             ->can('update', 'workflow')->name('update');
+    });
+
+    Route::prefix('settings/roles')->name('settings.roles.')->group(function () {
+        Route::get('/', [RoleController::class, 'index'])
+            ->can('viewAny', Role::class)->name('index');
+        Route::post('/', [RoleController::class, 'store'])
+            ->can('create', Role::class)->name('store');
+        Route::put('/{role}', [RoleController::class, 'update'])
+            ->can('update', 'role')->name('update');
     });
 });
 

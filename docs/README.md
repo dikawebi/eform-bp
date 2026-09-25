@@ -2,6 +2,8 @@
 
 Dokumen ini mencatat perilaku yang benar-benar ada di repository ini. PRD v1.1 dan AI Coding Handoff v1.1 tetap menjadi sumber kebutuhan; keterangan **Gap** berarti kebutuhan tersebut belum terlihat sebagai implementasi pada source saat dokumentasi dibuat.
 
+Panduan visual form transaksi untuk pengembangan selanjutnya: [Panduan styling form](panduan-styling-form.md).
+
 ## 1. Stack dan Phase 0–7
 
 | Phase | Implementasi aktual |
@@ -55,7 +57,7 @@ CACHE_STORE=database
 MAIL_MAILER=log             # smtp di server
 ```
 
-`config/eform.php` saat ini menetapkan tipe cuti `annual_leave`, `roster_leave`, `coff`, `permission`, `sick`, `other`; kategori biaya cuti `land_transport`, `hotel`, `meal`, `other`; biaya lokal default tidak eligible (`leave_local_eligible=false`); source settlement eligible `advance_paid` atau `settlement_required`; partial settlement false. Medical menerima `receipt`, `prescription`, `doctor_letter`, wajib `receipt`, maksimum 5120 KB.
+`config/eform.php` saat ini menetapkan tipe cuti `annual_leave`, `roster_leave`, `coff`, `permission`, `sick`, `other`; kategori biaya cuti `land_transport`, `hotel`, `meal`, `other`; source settlement eligible `advance_paid` atau `settlement_required`; partial settlement false. Medical menerima `receipt`, `prescription`, `doctor_letter`, wajib `receipt`, maksimum 5120 KB.
 
 ## 3. Role dan permission
 
@@ -87,11 +89,11 @@ Approver dipilih dari snapshot supervisor/HOD/PM atau active users dengan role, 
 
 ### Cuti/Izin
 
-`leave_periods` memakai kategori `onsite`, `travel_home`, `roster_leave`, `coff`, `annual_leave`, `permission`, `travel_to_site`. Hari dihitung inklusif (`end - start + 1`), per periode dan dijumlahkan ke `total_days`. `leave_cost_items.amount = quantity × unit_price`; untuk karyawan lokal default amount menjadi nol dan `eligible_by_policy=false`, sedangkan non-lokal eligible. Semua nilai dihitung ulang server-side ketika submit.
+`leave_periods` memakai kategori `onsite`, `travel_home`, `roster_leave`, `coff`, `annual_leave`, `permission`, `travel_to_site`. Hari dihitung inklusif (`end - start + 1`) per periode; `onsite` sebelum cuti, hari terakhir kerja, dan onsite setelah cuti adalah penanda tanggal dan tidak dijumlahkan ke `total_days`. `leave_cost_items.amount = quantity × unit_price`; untuk karyawan lokal amount selalu nol dan `eligible_by_policy=false`, sedangkan non-lokal eligible. Form Cuti hanya membuka Travel, Penginapan, dan Makan untuk item baru; data kategori `other` historis tetap dipertahankan. Semua nilai dihitung ulang server-side ketika submit.
 
 ### Perjalanan Dinas
 
-Item `land_transport`, `flight`, `hotel`, `meal`, `other`; flight hanya tersedia pada dinas, bukan item biaya cuti. `amount` dan `total_advance` dihitung dari item tersimpan menggunakan BCMath. Snapshot employee dan approval ikut disimpan.
+Item Dinas memakai `land_transport`, `flight`, `hotel`, `meal`, `other`; flight hanya tersedia pada dinas, bukan item biaya cuti, dan dicatat tanpa nominal sehingga tidak menambah advance. `amount` dan `total_advance` dihitung dari item tersimpan menggunakan BCMath. Snapshot employee dan approval ikut disimpan.
 
 ### Settlement
 

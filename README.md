@@ -17,7 +17,7 @@ Sumber settlement harus berupa `leave_request` atau `travel_request` yang eligib
 
 ## Konfigurasi biaya cuti MVP
 
-`config/eform.php` adalah deployment configuration untuk MVP. `leave_cost_categories` dan `leave_local_eligible` diubah melalui perubahan konfigurasi dan deployment, bukan melalui admin UI runtime. Nilai ini tidak boleh didokumentasikan atau diperlakukan sebagai fitur konfigurasi admin yang sudah tersedia.
+`config/eform.php` adalah deployment configuration untuk MVP. `leave_cost_categories` diubah melalui perubahan konfigurasi dan deployment, bukan melalui admin UI runtime. Biaya pengajuan Cuti untuk karyawan lokal selalu bernilai nol dan tidak boleh diperlakukan sebagai fitur konfigurasi admin runtime.
 
 Runtime admin UI, versioning kebijakan, dan histori perubahan konfigurasi adalah enhancement Phase 7+ yang belum diimplementasikan. Operasional harus mencatat perubahan konfigurasi, reviewer, waktu deployment, dan dampaknya pada pengajuan baru. Risiko auditnya adalah perubahan deployment dapat mengubah hasil kalkulasi pengajuan berikutnya tanpa riwayat kebijakan tersimpan per versi; snapshot transaksi dan audit status tidak menggantikan versioning konfigurasi.
 

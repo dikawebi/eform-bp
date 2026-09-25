@@ -44,22 +44,30 @@ export default function Edit({ leave, meta, canEdit, availableActions }) {
         check_out_date: tanggalInput(it.check_out_date),
         departure_time: it.departure_time ?? '',
     }));
+    const periodeTetap = (meta?.period_categories ?? []).map((option) =>
+        periodeAwal.find((period) => period.category === option.value) ?? {
+            category: option.value,
+            start_date: '',
+            end_date: '',
+            notes: '',
+        },
+    );
 
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, transform, processing, errors } = useForm({
         employee_id: leave?.employee_id ? String(leave.employee_id) : '',
         leave_type: leave?.leave_type ?? '',
         reason: leave?.reason ?? '',
         last_working_date: tanggalInput(leave?.last_working_date),
         onsite_date: tanggalInput(leave?.onsite_date),
-        periods:
-            periodeAwal.length > 0
-                ? periodeAwal
-                : [{ category: 'annual_leave', start_date: '', end_date: '', notes: '' }],
+        periods: periodeTetap.length > 0 ? periodeTetap : periodeAwal,
         cost_items: biayaAwal,
     });
 
     const simpan = () => {
-        put(route('leaves.update', leave.id), {
+        transform((payload) => ({
+            ...payload,
+            periods: (payload.periods ?? []).filter((period) => period.start_date || period.end_date),
+        })).put(route('leaves.update', leave.id), {
             onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
         });
     };
@@ -134,6 +142,7 @@ export default function Edit({ leave, meta, canEdit, availableActions }) {
                     submitLabel="Simpan Perubahan"
                     batalHref={route('leaves.show', leave.id)}
                     onSubmit={simpan}
+                    currentStatus={status}
                 />
             </div>
         </AuthenticatedLayout>

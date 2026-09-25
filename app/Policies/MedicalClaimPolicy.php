@@ -6,17 +6,19 @@ use App\Enums\RequestStatus;
 use App\Models\Employee;
 use App\Models\MedicalClaim;
 use App\Models\User;
+use App\Services\EmployeeVisibility;
 
 class MedicalClaimPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('medical.view.own') || $user->can('medical.view.all') || $user->can('medical.view.aggregate');
+        return $user->can('medical.view.own') || $user->can('medical.view.all') || $user->can('medical.view.aggregate') || $user->can('medical.view.subordinates');
     }
 
     public function view(User $user, MedicalClaim $claim): bool
     {
-        return $this->viewOwn($user, $claim) || $this->viewReview($user, $claim) || $this->viewAggregate($user, $claim);
+        return $this->viewOwn($user, $claim) || $this->viewReview($user, $claim) || $this->viewAggregate($user, $claim)
+            || ($user->can('medical.view.subordinates') && app(EmployeeVisibility::class)->canViewEmployee($user, $claim->employee_id));
     }
 
     public function viewOwn(User $user, MedicalClaim $claim): bool

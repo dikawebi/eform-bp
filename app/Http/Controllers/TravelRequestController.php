@@ -12,6 +12,7 @@ use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\TravelRequest;
 use App\Services\AdvanceProcessing;
+use App\Services\EmployeeVisibility;
 use App\Services\Travel\CalculateTravelAdvance;
 use App\Services\Travel\SubmitTravelRequest;
 use App\Services\Travel\TravelRequestNumber;
@@ -56,19 +57,7 @@ class TravelRequestController extends Controller
 
         $travels = TravelRequest::query()
             ->with(['employee:id,employee_number,name,department'])
-            ->when(! $user->can('travel.view.all'), function ($query) use ($user) {
-                $ownEmployeeIds = Employee::query()
-                    ->where('user_id', $user->getKey())
-                    ->pluck('id')
-                    ->all();
-
-                $query->where(function ($inner) use ($user, $ownEmployeeIds) {
-                    $inner->where('created_by', $user->getKey());
-                    if ($ownEmployeeIds !== []) {
-                        $inner->orWhereIn('employee_id', $ownEmployeeIds);
-                    }
-                });
-            })
+            ->when(! app(EmployeeVisibility::class)->hasBroadAccess($user), fn ($query) => app(EmployeeVisibility::class)->scope($user, $query))
             ->when($search !== '', function ($query) use ($search) {
                 $like = "%{$search}%";
                 $query->where(function ($inner) use ($like) {
@@ -163,7 +152,7 @@ class TravelRequestController extends Controller
     {
         $this->authorize('view', $travel);
 
-        $travel->load(['employee:id,employee_number,name,department,level,job_title,roster,poh_status', 'items', 'attachments', 'approvalRequests.approver:id,name']);
+        $travel->load(['employee:id,employee_number,name,department,level,job_title,roster,poh_status', 'items', 'attachments', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
 
         $attachments = $travel->attachments->map(fn (Attachment $attachment) => [
             'id' => $attachment->id,
@@ -209,6 +198,7 @@ class TravelRequestController extends Controller
             'id' => $approval->id, 'step_order' => $approval->step_order, 'step_code' => $approval->step_code,
             'approver_role' => $approval->approver_role, 'status' => $approval->status->value,
             'approver' => $approval->approver ? ['id' => $approval->approver->id, 'name' => $approval->approver->name] : null,
+            'acted_by' => $approval->actions->sortByDesc('id')->first()?->actor ? ['id' => $approval->actions->sortByDesc('id')->first()->actor->id, 'name' => $approval->actions->sortByDesc('id')->first()->actor->name] : null,
             'due_at' => $approval->due_at?->toISOString(), 'acted_at' => $approval->acted_at?->toISOString(), 'comments' => $approval->comments,
         ])->values()->all();
 
@@ -477,13 +467,18 @@ class TravelRequestController extends Controller
         foreach ($items as $row) {
             $metadata = $row['metadata'] ?? [];
             $quantity = $row['quantity'] ?? 0;
+            // Tiket pada formulir sumber hanya mencatat detail perjalanan;
+            // nominalnya tidak menjadi komponen advance.
+            $unitPrice = ($row['category'] ?? null) === CostCategory::Flight->value
+                ? 0
+                : ($row['unit_price'] ?? 0);
             if (($row['category'] ?? null) === 'hotel' && filled($metadata['check_in_date'] ?? null) && filled($metadata['check_out_date'] ?? null)) {
                 $quantity = CarbonImmutable::parse($metadata['check_in_date'])->diffInDays(CarbonImmutable::parse($metadata['check_out_date']));
                 $metadata['nights'] = (string) $quantity;
             }
             $amount = CalculateTravelAdvance::amountForItem(
                 $quantity,
-                $row['unit_price'] ?? 0,
+                $unitPrice,
             );
 
             // amount server-side: di luar fillable → forceFill.
@@ -494,7 +489,7 @@ class TravelRequestController extends Controller
                 'destination' => $row['destination'] ?? null,
                 'description' => $row['description'],
                 'quantity' => $quantity,
-                'unit_price' => $row['unit_price'],
+                'unit_price' => $unitPrice,
             ]);
             $item->forceFill([
                 'amount' => $amount,
@@ -527,14 +522,14 @@ class TravelRequestController extends Controller
         // (admin + hrga_manager). travel.view.all TIDAK cukup.
         if ($request->user()?->can('travel.create.onbehalf')) {
             $employees = Employee::query()
-                ->select(['id', 'employee_number', 'name', 'department', 'poh_status'])
+                ->select(['id', 'employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city', 'poh_province'])
                 ->where('active', true)
                 ->orderBy('name')
                 ->limit(500)
                 ->get();
         } else {
             $employees = Employee::query()
-                ->select(['id', 'employee_number', 'name', 'department', 'poh_status'])
+                ->select(['id', 'employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city', 'poh_province'])
                 ->where('user_id', $request->user()?->getKey())
                 ->where('active', true)
                 ->get();

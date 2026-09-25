@@ -43,6 +43,20 @@ class MedicalClaimTest extends TestCase
                 ->where('canManageEmployees', true));
     }
 
+    public function test_medical_claim_create_receives_read_only_employee_identity(): void
+    {
+        [$user, $employee] = $this->actor('employee');
+
+        $this->actingAs($user)->get(route('medical-claims.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('MedicalClaims/Create')
+                ->where('meta.employee.employee_number', $employee->employee_number)
+                ->where('meta.employee.name', $employee->name)
+                ->where('meta.employee.department', $employee->department)
+                ->where('meta.employee.job_title', $employee->job_title));
+    }
+
     public function test_finance_and_auditor_do_not_receive_medical_detail_or_attachment_data(): void
     {
         [$owner, $employee] = $this->actor('employee');

@@ -16,17 +16,22 @@ class ApprovalWorkflowSeeder extends Seeder
             ['medical_default', 'Persetujuan Medical Claim', 'medical_claim'],
         ];
         foreach ($definitions as [$code, $name, $entity]) {
-            $workflow = ApprovalWorkflow::updateOrCreate(['code' => $code], ['name' => $name, 'entity_type' => $entity, 'is_active' => true]);
+            // A workflow can be configured by an administrator after installation.
+            // Foundation seeding must never reset that configuration on re-run.
+            $workflow = ApprovalWorkflow::firstOrCreate(
+                ['code' => $code],
+                ['name' => $name, 'entity_type' => $entity, 'is_active' => true],
+            );
             if (! in_array($code, ['leave_default', 'travel_default'], true)) {
                 if ($code === 'settlement_default') {
                     foreach ([[1, 'hrga', 'hrga'], [2, 'finance', 'finance']] as [$order, $step, $role]) {
-                        $workflow->steps()->updateOrCreate(['step_order' => $order], ['step_code' => $step, 'approver_role' => $role, 'approver_resolver' => 'role_users', 'is_required' => true, 'can_skip_if_no_supervisor' => false]);
+                        $workflow->steps()->firstOrCreate(['step_order' => $order], ['step_code' => $step, 'approver_role' => $role, 'approver_resolver' => 'role_users', 'is_required' => true, 'can_skip_if_no_supervisor' => false]);
                     }
                 }
 
                 if ($code === 'medical_default') {
                     foreach ([[1, 'hrga', 'hrga'], [2, 'document_validation', 'hrga_manager']] as [$order, $step, $role]) {
-                        $workflow->steps()->updateOrCreate(['step_order' => $order], ['step_code' => $step, 'approver_role' => $role, 'approver_resolver' => 'role_users', 'is_required' => true, 'can_skip_if_no_supervisor' => false]);
+                        $workflow->steps()->firstOrCreate(['step_order' => $order], ['step_code' => $step, 'approver_role' => $role, 'approver_resolver' => 'role_users', 'is_required' => true, 'can_skip_if_no_supervisor' => false]);
                     }
                 }
 
@@ -41,7 +46,7 @@ class ApprovalWorkflowSeeder extends Seeder
                 [4, 'hrga', 'hrga', 'role_users', true, false],
             ];
             foreach ($steps as [$order, $step, $role, $resolver, $required, $skip]) {
-                $workflow->steps()->updateOrCreate(['step_order' => $order], [
+                $workflow->steps()->firstOrCreate(['step_order' => $order], [
                     'step_code' => $step, 'approver_role' => $role, 'approver_resolver' => $resolver,
                     'is_required' => $required, 'can_skip_if_no_supervisor' => $skip,
                 ]);

@@ -45,6 +45,7 @@ Baca `eform-bp-prd-v1.md` dan `eform-bp-ai-coding-handoff-v1.md` sebelum menguba
 - Jangan menganggap tombol tersembunyi sebagai authorization; backend tetap menjadi sumber kebenaran.
 - Jangan mengedit transaksi yang statusnya tidak editable.
 - Ikuti pola komponen dan styling yang sudah ada jika tersedia.
+- Untuk form transaksi baru atau penyelarasan form yang sudah ada, ikuti `docs/panduan-styling-form.md` (acuan visual Cuti/Izin dan Perjalanan Dinas).
 - Hindari form Excel panjang; gunakan section, card, repeater, dan stepper yang jelas.
 - Jalankan lint/build/test frontend yang tersedia sebelum selesai.
 

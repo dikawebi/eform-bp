@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Models\Employee;
 use App\Models\MedicalClaim;
-use App\Models\MedicalDependent;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -53,8 +52,8 @@ abstract class MedicalClaimRequest extends FormRequest
                     if (filled($row['dependent_id'] ?? null) || (filled($row['patient_name'] ?? null) && trim((string) $row['patient_name']) !== (string) $employee?->name)) {
                         $validator->errors()->add("items.{$i}.patient_name", 'Identitas karyawan diambil dari master dan tidak dapat diubah.');
                     }
-                } elseif (! $employee || ! filled($row['dependent_id'] ?? null) || ! MedicalDependent::where('employee_id', $employee->id)->whereKey($row['dependent_id'] ?? 0)->where('relationship', $row['relationship'])->where('active', true)->exists()) {
-                    $validator->errors()->add("items.{$i}.dependent_id", 'Tanggungan aktif tidak ditemukan.');
+                } elseif (in_array($row['relationship'] ?? null, ['spouse', 'child'], true) && ! filled($row['patient_name'] ?? null)) {
+                    $validator->errors()->add("items.{$i}.patient_name", 'Nama pasien wajib diisi untuk istri atau anak.');
                 }
             }
             $total = '0';

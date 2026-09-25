@@ -6,8 +6,7 @@ namespace App\Services\Leave;
  * Kalkulasi advance cuti dari item biaya (PRD §2 modul A, §6.4).
  *
  * - amount per item = quantity * unit_price (dibulatkan 2 desimal).
- * - Karyawan lokal default eligible=false + amount=0 sesuai
- *   config('eform.leave_local_eligible') yang configurable admin.
+ * - Karyawan lokal selalu eligible=false + amount=0 sesuai formulir sumber.
  * - Karyawan non-lokal: eligible=true.
  *
  * Total advance = sum amount eligible, sehingga selalu traceable
@@ -25,7 +24,7 @@ class CalculateLeaveAdvance
      */
     public static function amountForItem(bool $isLocal, float|int|string $quantity, float|int|string $unitPrice): array
     {
-        $eligible = $isLocal ? (bool) config('eform.leave_local_eligible', false) : true;
+        $eligible = ! $isLocal;
 
         if (! $eligible) {
             return ['amount' => 0.0, 'eligible' => false];
@@ -41,7 +40,7 @@ class CalculateLeaveAdvance
 
     /**
      * Total advance dari kumpulan item (array/collection dengan
-     * quantity + unit_price). Untuk lokal dengan policy default,
+     * quantity + unit_price). Untuk lokal,
      * hasilnya 0 tanpa menghapus baris item (tetap terlacak).
      *
      * @param  iterable<int, array{quantity?: mixed, unit_price?: mixed}>  $items

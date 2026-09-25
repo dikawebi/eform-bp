@@ -6,6 +6,7 @@ use App\Enums\RequestStatus;
 use App\Models\Employee;
 use App\Models\TravelRequest;
 use App\Models\User;
+use App\Services\EmployeeVisibility;
 
 /**
  * Authorization perjalanan dinas (PRD §4, §5.2, §6, §11).
@@ -23,20 +24,13 @@ class TravelRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('travel.view.own') || $user->can('travel.view.all');
+        return $user->can('travel.view.own') || $user->can('travel.view.all') || $user->can('travel.view.subordinates');
     }
 
     public function view(User $user, TravelRequest $travel): bool
     {
-        if ($user->can('travel.view.all')) {
-            return true;
-        }
-
-        if (! $user->can('travel.view.own')) {
-            return false;
-        }
-
-        return $this->isOwner($user, $travel) || $user->can('travel.submit.onbehalf');
+        return ($user->can('travel.view.all') || ($user->can('travel.view.own') && $this->isOwner($user, $travel)))
+            || ($user->can('travel.view.subordinates') && app(EmployeeVisibility::class)->canViewEmployee($user, $travel->employee_id));
     }
 
     public function create(User $user): bool

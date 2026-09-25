@@ -4,28 +4,28 @@ import LeaveForm from './LeaveForm';
 
 export default function Create({ meta }) {
     const opsiPeriode = meta?.period_categories ?? [];
-    const tipeCuti = meta?.leave_types ?? [];
     const daftarKaryawan = meta?.employees ?? [];
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, transform, processing, errors } = useForm({
         employee_id: daftarKaryawan.length === 1 ? String(daftarKaryawan[0].id) : '',
-        leave_type: '',
+        leave_type: 'annual_leave',
         reason: '',
         last_working_date: '',
         onsite_date: '',
-        periods: [
-            {
-                category: opsiPeriode[0]?.value ?? 'annual_leave',
-                start_date: '',
-                end_date: '',
-                notes: '',
-            },
-        ],
+        periods: opsiPeriode.map((option) => ({
+            category: option.value,
+            start_date: '',
+            end_date: '',
+            notes: '',
+        })),
         cost_items: [],
     });
 
     const simpan = () => {
-        post(route('leaves.store'), {
+        transform((payload) => ({
+            ...payload,
+            periods: (payload.periods ?? []).filter((period) => period.start_date || period.end_date),
+        })).post(route('leaves.store'), {
             onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
         });
     };
@@ -51,8 +51,8 @@ export default function Create({ meta }) {
                     Pengajuan tersimpan sebagai <span className="font-semibold">draf</span> dan
                     belum terkirim ke approval. Setelah tersimpan, gunakan tombol{' '}
                     <span className="font-semibold">Ajukan</span> di halaman detail untuk
-                    mengirimnya. Tipe cuti yang tersedia:{' '}
-                    {tipeCuti.length > 0 ? tipeCuti.join(', ') : '—'}.
+                    mengirimnya. Rincian kategori dan tanggal cuti diisi pada
+                    Section A.
                 </div>
 
                 <LeaveForm
@@ -65,6 +65,7 @@ export default function Create({ meta }) {
                     submitLabel="Simpan Draft"
                     batalHref={route('leaves.index')}
                     onSubmit={simpan}
+                    currentStatus="draft"
                 />
             </div>
         </AuthenticatedLayout>

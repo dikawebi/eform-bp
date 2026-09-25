@@ -6,12 +6,13 @@ use App\Enums\RequestStatus;
 use App\Models\Employee;
 use App\Models\Settlement;
 use App\Models\User;
+use App\Services\EmployeeVisibility;
 
 class SettlementPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('settlement.view.own') || $user->can('settlement.view.all');
+        return $user->can('settlement.view.own') || $user->can('settlement.view.all') || $user->can('settlement.view.subordinates');
     }
 
     public function create(User $user): bool
@@ -21,7 +22,8 @@ class SettlementPolicy
 
     public function view(User $user, Settlement $settlement): bool
     {
-        return $user->can('settlement.view.all') || ($user->can('settlement.view.own') && $this->owner($user, $settlement));
+        return $user->can('settlement.view.all') || $this->owner($user, $settlement)
+            || ($user->can('settlement.view.subordinates') && app(EmployeeVisibility::class)->canViewEmployee($user, $settlement->employee_id));
     }
 
     public function update(User $user, Settlement $settlement): bool

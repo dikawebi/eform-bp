@@ -119,6 +119,22 @@ class SettlementTest extends TestCase
         }
     }
 
+    public function test_create_page_sources_include_read_only_employee_profile(): void
+    {
+        $user = User::factory()->create(['active' => true]);
+        $user->assignRole('employee');
+        $source = $this->source($user)->load('employee');
+
+        $this->actingAs($user)->get(route('settlements.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Settlements/Create')
+                ->where('sources.0.source_id', $source->id)
+                ->where('sources.0.employee.employee_number', $source->employee->employee_number)
+                ->where('sources.0.employee.name', $source->employee->name)
+                ->where('sources.0.employee.department', $source->employee->department));
+    }
+
     public function test_source_foreign_key_mismatch_is_rejected(): void
     {
         $actor = User::factory()->create();

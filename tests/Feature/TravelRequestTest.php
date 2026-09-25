@@ -114,7 +114,7 @@ class TravelRequestTest extends TestCase
         );
     }
 
-    public function test_flight_is_allowed_for_travel(): void
+    public function test_flight_is_allowed_for_travel_but_does_not_add_to_advance(): void
     {
         [$user] = $this->makeEmployeeUser();
 
@@ -136,8 +136,10 @@ class TravelRequestTest extends TestCase
         $travel = TravelRequest::query()->firstOrFail();
         $travel->load('items');
 
-        $this->assertSame(1000000.0, (float) $travel->total_advance);
+        $this->assertSame(0.0, (float) $travel->total_advance);
         $this->assertSame('flight', $travel->items->firstOrFail()->category);
+        $this->assertSame(0.0, (float) $travel->items->firstOrFail()->unit_price);
+        $this->assertSame(0.0, (float) $travel->items->firstOrFail()->amount);
         $this->assertSame(['airline' => 'GA'], $travel->items->firstOrFail()->metadata_json);
     }
 

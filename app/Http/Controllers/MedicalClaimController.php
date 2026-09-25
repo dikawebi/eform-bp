@@ -10,7 +10,7 @@ use App\Http\Requests\UploadMedicalAttachmentRequest;
 use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\MedicalClaim;
-use App\Models\MedicalDependent;
+use App\Services\EmployeeVisibility;
 use App\Services\Medical\CalculateMedicalClaim;
 use App\Services\Medical\MedicalClaimNumber;
 use App\Services\Medical\SubmitMedicalClaim;
@@ -34,8 +34,8 @@ class MedicalClaimController extends Controller
         $this->authorize('viewAny', MedicalClaim::class);
         $user = $request->user();
         $query = MedicalClaim::with('employee:id,employee_number,name,department')->latest();
-        if (! $user->can('medical.view.all') && ! $user->can('medical.view.aggregate')) {
-            $query->whereIn('employee_id', Employee::where('user_id', $user->id)->pluck('id'));
+        if (! app(EmployeeVisibility::class)->hasBroadAccess($user)) {
+            app(EmployeeVisibility::class)->scope($user, $query);
         }
         $page = $query->paginate(15)->withQueryString();
         $page->setCollection($page->getCollection()->map(function (MedicalClaim $claim) use ($user) {
@@ -61,7 +61,11 @@ class MedicalClaimController extends Controller
             ]);
         }
 
-        return Inertia::render('MedicalClaims/Create', ['meta' => ['benefit_types' => config('eform.medical.benefit_types'), 'required_documents' => config('eform.medical.required_documents'), 'dependents' => $employee->medicalDependents()->where('active', true)->get(['id', 'name', 'relationship'])]]);
+        return Inertia::render('MedicalClaims/Create', ['meta' => [
+            'benefit_types' => config('eform.medical.benefit_types'),
+            'required_documents' => config('eform.medical.required_documents'),
+            'employee' => $employee->only(['employee_number', 'name', 'department', 'job_title']),
+        ]]);
     }
 
     public function store(StoreMedicalClaimRequest $request): RedirectResponse
@@ -112,14 +116,14 @@ class MedicalClaimController extends Controller
     public function show(Request $request, MedicalClaim $medical_claim): Response
     {
         $this->authorize('view', $medical_claim);
-        $medical_claim->load(['employee:id,employee_number,name,department', 'items', 'attachments', 'approvalRequests.approver:id,name']);
+        $medical_claim->load(['employee:id,employee_number,name,department', 'items', 'attachments', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
         $user = $request->user();
         $sensitive = $user->can('viewSensitive', $medical_claim);
         $aggregate = $user->can('viewAggregate', $medical_claim) && ! $user->hasRole('auditor');
         $owner = $user->can('viewOwn', $medical_claim);
         $detail = $sensitive || $owner;
         $dto = ['id' => $medical_claim->id, 'claim_number' => $medical_claim->claim_number, 'benefit_type' => $detail ? $medical_claim->benefit_type : 'medical_claim', 'benefit_types' => $detail ? ($medical_claim->benefit_types ?: [$medical_claim->benefit_type]) : [], 'status' => $medical_claim->status->value, 'total_amount' => ($aggregate || $owner || $sensitive) ? $medical_claim->total_amount : null, 'employee' => ($detail && $medical_claim->employee) ? $medical_claim->employee->only(['employee_number', 'name', 'department']) : null, 'items' => $detail ? $medical_claim->items->map(fn ($item) => ['id' => $item->id, 'patient_name' => $item->patient_name, 'relationship' => $item->relationship, 'dependent_id' => $item->dependent_id, 'treatment_date' => $item->treatment_date?->toDateString(), 'facility_name' => $item->facility_name, 'amount' => $item->amount])->values()->all() : [], 'attachments' => $detail ? $medical_claim->attachments->map(fn (Attachment $a) => ['id' => $a->id, 'document_type' => $a->document_type, 'original_name' => $a->original_name, 'download_url' => route('attachments.download', $a)])->values()->all() : []];
-        $timeline = $medical_claim->approvalRequests->sortBy('step_order')->map(fn ($a) => array_filter(['step_code' => $a->step_code, 'status' => $a->status->value, 'actor' => $detail ? $a->approver?->name : null, 'at' => $a->acted_at?->toISOString(), 'comments' => $detail ? $a->comments : null], fn ($value) => $value !== null))->values()->all();
+        $timeline = $medical_claim->approvalRequests->sortBy('step_order')->map(fn ($a) => array_filter(['step_code' => $a->step_code, 'status' => $a->status->value, 'actor' => $detail ? $a->approver?->name : null, 'acted_by' => $detail ? $a->actions->sortByDesc('id')->first()?->actor?->name : null, 'at' => $a->acted_at?->toISOString(), 'comments' => $detail ? $a->comments : null], fn ($value) => $value !== null))->values()->all();
         $activities = $detail ? Activity::where('subject_type', $medical_claim->getMorphClass())->where('subject_id', $medical_claim->id)->latest()->limit(50)->get()->map(fn ($a) => ['id' => $a->id, 'action' => $a->description, 'actor' => $a->causer?->name, 'at' => $a->created_at?->toISOString()])->values()->all() : [];
 
         return Inertia::render('MedicalClaims/Show', ['claim' => $dto, 'timeline' => $timeline, 'activities' => $activities, 'availableActions' => ['can_edit' => $user->can('update', $medical_claim), 'can_submit' => $user->can('submit', $medical_claim), 'can_cancel' => $user->can('cancel', $medical_claim), 'can_upload' => $user->can('upload', $medical_claim), 'can_payment_process' => $user->can('payment', $medical_claim), 'can_payment_complete' => $user->can('complete', $medical_claim)], 'can_view_sensitive' => $sensitive]);
@@ -128,9 +132,7 @@ class MedicalClaimController extends Controller
     public function edit(Request $request, MedicalClaim $medical_claim): Response
     {
         $this->authorize('update', $medical_claim);
-        $medical_claim->load(['items', 'attachments']);
-
-        $employee = Employee::where('user_id', $request->user()->id)->first();
+        $medical_claim->load(['employee:id,employee_number,name,department,job_title', 'items', 'attachments']);
 
         $canSeeAmount = $request->user()->can('viewSensitive', $medical_claim) || $request->user()->can('viewOwn', $medical_claim);
         $canSeeDiagnosis = $request->user()->can('viewSensitive', $medical_claim);
@@ -158,7 +160,7 @@ class MedicalClaimController extends Controller
             $benefitTypes[] = $medical_claim->benefit_type;
         }
 
-        return Inertia::render('MedicalClaims/Edit', ['claim' => ['id' => $medical_claim->id, 'benefit_type' => $medical_claim->benefit_type, 'benefit_types' => $medical_claim->benefit_types ?: [$medical_claim->benefit_type], 'items' => $items, 'attachments' => $medical_claim->attachments->map(fn (Attachment $attachment) => ['id' => $attachment->id, 'document_type' => $attachment->document_type, 'original_name' => $attachment->original_name, 'download_url' => route('attachments.download', $attachment)])->values()->all()], 'meta' => ['benefit_types' => $benefitTypes, 'dependents' => $employee?->medicalDependents()->where('active', true)->get(['id', 'name', 'relationship']) ?? []]]);
+        return Inertia::render('MedicalClaims/Edit', ['claim' => ['id' => $medical_claim->id, 'benefit_type' => $medical_claim->benefit_type, 'benefit_types' => $medical_claim->benefit_types ?: [$medical_claim->benefit_type], 'employee' => $medical_claim->employee?->only(['employee_number', 'name', 'department', 'job_title']), 'items' => $items, 'attachments' => $medical_claim->attachments->map(fn (Attachment $attachment) => ['id' => $attachment->id, 'document_type' => $attachment->document_type, 'original_name' => $attachment->original_name, 'download_url' => route('attachments.download', $attachment)])->values()->all()], 'meta' => ['benefit_types' => $benefitTypes]]);
     }
 
     public function update(UpdateMedicalClaimRequest $request, MedicalClaim $medical_claim): RedirectResponse
@@ -267,8 +269,8 @@ class MedicalClaimController extends Controller
     {
         $claim->items()->delete();
         foreach ($items as $row) {
-            $patientName = $row['relationship'] === 'self' ? $claim->employee_name : MedicalDependent::query()->where('employee_id', $claim->employee_id)->whereKey($row['dependent_id'])->where('relationship', $row['relationship'])->where('active', true)->firstOrFail()->name;
-            $claim->items()->create(['patient_name' => $patientName, 'relationship' => $row['relationship'], 'dependent_id' => $row['relationship'] === 'self' ? null : $row['dependent_id'], 'treatment_date' => $row['treatment_date'], 'facility_name' => $row['facility_name'], 'diagnosis_code' => $row['diagnosis_code'] ?? null, 'amount' => $row['amount']]);
+            $patientName = $row['relationship'] === 'self' ? $claim->employee_name : trim((string) $row['patient_name']);
+            $claim->items()->create(['patient_name' => $patientName, 'relationship' => $row['relationship'], 'dependent_id' => null, 'treatment_date' => $row['treatment_date'], 'facility_name' => $row['facility_name'], 'diagnosis_code' => $row['diagnosis_code'] ?? null, 'amount' => $row['amount']]);
         } CalculateMedicalClaim::run($claim->load('items'));
     }
 

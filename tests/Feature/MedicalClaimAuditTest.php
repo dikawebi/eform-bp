@@ -7,7 +7,6 @@ use App\Enums\RequestStatus;
 use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\MedicalClaim;
-use App\Models\MedicalDependent;
 use App\Models\User;
 use App\Services\Medical\SubmitMedicalClaim;
 use Database\Seeders\ApprovalWorkflowSeeder;
@@ -33,16 +32,13 @@ class MedicalClaimAuditTest extends TestCase
     public function test_claim_calculates_server_total_and_accepts_self_spouse_and_child(): void
     {
         [$user, $employee] = $this->employee('employee');
-        $spouse = MedicalDependent::create(['employee_id' => $employee->id, 'relationship' => 'spouse', 'name' => 'Istri Test', 'active' => true]);
-        $child = MedicalDependent::create(['employee_id' => $employee->id, 'relationship' => 'child', 'name' => 'Anak Test', 'active' => true]);
-
         $response = $this->actingAs($user)->post(route('medical-claims.store'), [
             'benefit_types' => ['rawat_jalan', 'obat_vitamin'],
             'total_amount' => '0.01',
             'items' => [
                 $this->item('self', '100.10', null, $employee->name),
-                $this->item('spouse', '200.20', null, $spouse->name, $spouse->id),
-                $this->item('child', '300.30', null, $child->name, $child->id),
+                $this->item('spouse', '200.20', null, 'Istri Bebas'),
+                $this->item('child', '300.30', null, 'Anak Bebas'),
             ],
         ]);
 
@@ -63,8 +59,8 @@ class MedicalClaimAuditTest extends TestCase
         $payload['items'][0] = $this->item('self', '10', now()->addDay()->toDateString());
         $this->actingAs($user)->post(route('medical-claims.store'), $payload)->assertSessionHasErrors('items.0.treatment_date');
 
-        $payload['items'][0] = $this->item('spouse', '10');
-        $this->actingAs($user)->post(route('medical-claims.store'), $payload)->assertSessionHasErrors('items.0.dependent_id');
+        $payload['items'][0] = $this->item('spouse', '10', null, '');
+        $this->actingAs($user)->post(route('medical-claims.store'), $payload)->assertSessionHasErrors('items.0.patient_name');
     }
 
     public function test_owner_can_see_own_amount_and_download_own_private_medical_attachment(): void

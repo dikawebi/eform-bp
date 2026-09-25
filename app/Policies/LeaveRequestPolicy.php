@@ -6,6 +6,7 @@ use App\Enums\RequestStatus;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Models\User;
+use App\Services\EmployeeVisibility;
 
 /**
  * Authorization cuti/izin (PRD §4, §6, §11).
@@ -22,20 +23,13 @@ class LeaveRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('leave.view.own') || $user->can('leave.view.all');
+        return $user->can('leave.view.own') || $user->can('leave.view.all') || $user->can('leave.view.subordinates');
     }
 
     public function view(User $user, LeaveRequest $leave): bool
     {
-        if ($user->can('leave.view.all')) {
-            return true;
-        }
-
-        if (! $user->can('leave.view.own')) {
-            return false;
-        }
-
-        return $this->isOwner($user, $leave);
+        return ($user->can('leave.view.all') || ($user->can('leave.view.own') && $this->isOwner($user, $leave)))
+            || ($user->can('leave.view.subordinates') && app(EmployeeVisibility::class)->canViewEmployee($user, $leave->employee_id));
     }
 
     public function create(User $user): bool

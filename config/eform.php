@@ -1,6 +1,15 @@
 <?php
 
 return [
+    // Referensi perusahaan untuk label/dokumen. Tidak dipersist agar seeding
+    // foundation tidak menambah master organisasi di luar scope MVP.
+    'company' => [
+        'name' => 'PT Borneo Prima',
+        'industry' => 'pertambangan batubara',
+        'city' => 'Puruk Cahu',
+        'regency' => 'Murung Raya',
+        'province' => 'Kalimantan Tengah',
+    ],
     'employee_workbook_path' => env('EFORM_EMPLOYEE_WORKBOOK_PATH'),
     'leave_types' => [
         'annual_leave', 'roster_leave', 'coff', 'permission', 'sick', 'other',
@@ -8,7 +17,6 @@ return [
     'leave_cost_categories' => [
         'land_transport', 'hotel', 'meal', 'other',
     ],
-    'leave_local_eligible' => false,
     'settlement' => [
         'allowed_source_statuses' => ['advance_paid', 'settlement_required'],
         'allow_partial' => false,

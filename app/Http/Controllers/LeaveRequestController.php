@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\LeavePeriodCategory;
 use App\Enums\RequestStatus;
-use Carbon\CarbonImmutable;
 use App\Http\Requests\ProcessAdvanceRequest;
 use App\Http\Requests\StoreLeaveRequestRequest;
 use App\Http\Requests\UpdateLeaveRequestRequest;
@@ -13,10 +12,12 @@ use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Services\AdvanceProcessing;
+use App\Services\EmployeeVisibility;
 use App\Services\Leave\CalculateLeaveAdvance;
 use App\Services\Leave\CalculateLeaveDays;
 use App\Services\Leave\LeaveRequestNumber;
 use App\Services\Leave\SubmitLeaveRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -59,19 +60,7 @@ class LeaveRequestController extends Controller
 
         $leaves = LeaveRequest::query()
             ->with(['employee:id,employee_number,name,department'])
-            ->when(! $user->can('leave.view.all'), function ($query) use ($user) {
-                $ownEmployeeIds = Employee::query()
-                    ->where('user_id', $user->getKey())
-                    ->pluck('id')
-                    ->all();
-
-                $query->where(function ($inner) use ($user, $ownEmployeeIds) {
-                    $inner->where('created_by', $user->getKey());
-                    if ($ownEmployeeIds !== []) {
-                        $inner->orWhereIn('employee_id', $ownEmployeeIds);
-                    }
-                });
-            })
+            ->when(! app(EmployeeVisibility::class)->hasBroadAccess($user), fn ($query) => app(EmployeeVisibility::class)->scope($user, $query))
             ->when($search !== '', function ($query) use ($search) {
                 $like = "%{$search}%";
                 $query->where(function ($inner) use ($like) {
@@ -169,7 +158,7 @@ class LeaveRequestController extends Controller
     {
         $this->authorize('view', $leave);
 
-        $leave->load(['employee:id,employee_number,name,department,level,job_title,roster,poh_status,poh_city,poh_province', 'periods', 'costItems', 'attachments', 'approvalRequests.approver:id,name']);
+        $leave->load(['employee:id,employee_number,name,department,level,job_title,roster,poh_status,poh_city,poh_province', 'periods', 'costItems', 'attachments', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
 
         $activities = Activity::query()
             ->where('subject_type', $leave->getMorphClass())
@@ -222,6 +211,7 @@ class LeaveRequestController extends Controller
             'id' => $approval->id, 'step_order' => $approval->step_order, 'step_code' => $approval->step_code,
             'approver_role' => $approval->approver_role, 'status' => $approval->status->value,
             'approver' => $approval->approver ? ['id' => $approval->approver->id, 'name' => $approval->approver->name] : null,
+            'acted_by' => $approval->actions->sortByDesc('id')->first()?->actor ? ['id' => $approval->actions->sortByDesc('id')->first()->actor->id, 'name' => $approval->actions->sortByDesc('id')->first()->actor->name] : null,
             'due_at' => $approval->due_at?->toISOString(), 'acted_at' => $approval->acted_at?->toISOString(), 'comments' => $approval->comments,
         ])->values()->all();
 
@@ -252,7 +242,7 @@ class LeaveRequestController extends Controller
     {
         $this->authorize('update', $leave);
 
-        $leave->load(['employee:id,employee_number,name,department,poh_status', 'periods', 'costItems']);
+        $leave->load(['employee:id,employee_number,name,department,level,job_title,roster,poh_status,poh_city,poh_province', 'periods', 'costItems']);
 
         return Inertia::render('Leaves/Edit', [
             'leave' => [
@@ -499,7 +489,11 @@ class LeaveRequestController extends Controller
             ]);
             $period->forceFill(['day_count' => $dayCount])->save();
 
-            $totalDays += $dayCount;
+            // Onsite sebelum cuti dicatat sebagai penanda tanggal, bukan hari
+            // cuti yang dikonsumsi pada total formulir.
+            if (($row['category'] ?? null) !== LeavePeriodCategory::Onsite->value) {
+                $totalDays += $dayCount;
+            }
         }
 
         $leave->forceFill(['total_days' => $totalDays])->save();
@@ -578,14 +572,14 @@ class LeaveRequestController extends Controller
         // (admin + hrga_manager). leave.view.all TIDAK cukup.
         if ($request->user()?->can('leave.create.onbehalf')) {
             $employees = Employee::query()
-                ->select(['id', 'employee_number', 'name', 'department', 'poh_status'])
+                ->select(['id', 'employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city', 'poh_province'])
                 ->where('active', true)
                 ->orderBy('name')
                 ->limit(500)
                 ->get();
         } else {
             $employees = Employee::query()
-                ->select(['id', 'employee_number', 'name', 'department', 'poh_status'])
+                ->select(['id', 'employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city', 'poh_province'])
                 ->where('user_id', $request->user()?->getKey())
                 ->where('active', true)
                 ->get();
@@ -595,7 +589,6 @@ class LeaveRequestController extends Controller
             'leave_types' => config('eform.leave_types', []),
             'period_categories' => $periodOptions,
             'cost_categories' => $costOptions,
-            'leave_local_eligible' => (bool) config('eform.leave_local_eligible', false),
             'employees' => $employees,
         ];
     }

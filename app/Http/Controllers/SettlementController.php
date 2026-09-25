@@ -11,10 +11,11 @@ use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Models\Settlement;
 use App\Models\TravelRequest;
+use App\Services\EmployeeVisibility;
 use App\Services\Settlement\CompleteSettlement;
 use App\Services\Settlement\CreateSettlement;
-use App\Services\Settlement\SubmitSettlement;
 use App\Services\Settlement\ResolveSettlementSource;
+use App\Services\Settlement\SubmitSettlement;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,11 +41,8 @@ class SettlementController extends Controller
         $search = trim((string) ($filters['search'] ?? ''));
         $user = $request->user();
         $query = Settlement::query()->with('employee:id,employee_number,name')->latest();
-        if (! $user->can('settlement.view.all')) {
-            $ids = Employee::where('user_id', $user->id)->pluck('id');
-            $query->where(function ($q) use ($user, $ids) {
-                $q->where('created_by', $user->id)->orWhereIn('employee_id', $ids);
-            });
+        if (! app(EmployeeVisibility::class)->hasBroadAccess($user)) {
+            app(EmployeeVisibility::class)->scope($user, $query);
         }
         $query->when($search !== '', function ($builder) use ($search): void {
             $like = '%'.$search.'%';
@@ -79,20 +77,20 @@ class SettlementController extends Controller
         $employeeIds = Employee::where('user_id', $request->user()->id)->pluck('id');
         $canCreateOnBehalf = $request->user()->can('settlement.create.onbehalf');
         $sources = collect([
-            LeaveRequest::query()->whereIn('status', config('eform.settlement.allowed_source_statuses'))->where('total_advance', '>', 0)->whereDoesntHave('settlements', fn ($q) => $q->whereNotNull('source_key'))->where(function ($q) use ($request, $employeeIds) {
+            LeaveRequest::query()->with('employee:id,employee_number,name,department,level,job_title,roster,poh_status,poh_city')->whereIn('status', config('eform.settlement.allowed_source_statuses'))->where('total_advance', '>', 0)->whereDoesntHave('settlements', fn ($q) => $q->whereNotNull('source_key'))->where(function ($q) use ($request, $employeeIds) {
                 $q->where('created_by', $request->user()->id)->orWhereIn('employee_id', $employeeIds);
-            })->get()->map(fn ($s) => ['source_type' => 'leave_request', 'source_id' => $s->id, 'number' => $s->request_number, 'advance' => $s->total_advance]),
-            TravelRequest::query()->whereIn('status', config('eform.settlement.allowed_source_statuses'))->where('total_advance', '>', 0)->whereDoesntHave('settlements', fn ($q) => $q->whereNotNull('source_key'))->where(function ($q) use ($request, $employeeIds) {
+            })->get()->map(fn ($s) => ['source_type' => 'leave_request', 'source_id' => $s->id, 'number' => $s->request_number, 'advance' => $s->total_advance, 'employee' => $s->employee?->only(['employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city'])]),
+            TravelRequest::query()->with('employee:id,employee_number,name,department,level,job_title,roster,poh_status,poh_city')->whereIn('status', config('eform.settlement.allowed_source_statuses'))->where('total_advance', '>', 0)->whereDoesntHave('settlements', fn ($q) => $q->whereNotNull('source_key'))->where(function ($q) use ($request, $employeeIds) {
                 $q->where('created_by', $request->user()->id)->orWhereIn('employee_id', $employeeIds);
-            })->get()->map(fn ($s) => ['source_type' => 'travel_request', 'source_id' => $s->id, 'number' => $s->request_number, 'advance' => $s->total_advance]),
-            Employee::query()->select(['id', 'employee_number', 'name', 'department'])
+            })->get()->map(fn ($s) => ['source_type' => 'travel_request', 'source_id' => $s->id, 'number' => $s->request_number, 'advance' => $s->total_advance, 'employee' => $s->employee?->only(['employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city'])]),
+            Employee::query()->select(['id', 'employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city'])
                 ->where('active', true)
                 ->when(! $canCreateOnBehalf, fn ($query) => $query->whereIn('id', $employeeIds))
                 ->orderBy('name')->get()->flatMap(fn (Employee $employee) => collect(['new_join', 'other'])->map(fn (string $type) => [
                     'source_type' => $type,
                     'source_id' => $employee->id,
                     'number' => $employee->employee_number.' — '.$employee->name,
-                    'employee_name' => $employee->name,
+                    'employee' => $employee->only(['employee_number', 'name', 'department', 'level', 'job_title', 'roster', 'poh_status', 'poh_city']),
                     'advance' => '0.00',
                     'source_reference_required' => true,
                 ])),
@@ -113,7 +111,7 @@ class SettlementController extends Controller
     public function show(Request $request, Settlement $settlement): Response
     {
         $this->authorize('view', $settlement);
-        $settlement->load(['items', 'employee', 'leaveRequest', 'travelRequest', 'attachments']);
+        $settlement->load(['items', 'employee', 'leaveRequest', 'travelRequest', 'attachments', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
         $source = $settlement->source();
         $manualSource = ResolveSettlementSource::isManual($settlement->source_type);
         $sourceEmployee = $source instanceof Employee ? $source : $source?->employee;
@@ -135,6 +133,7 @@ class SettlementController extends Controller
             'difference' => ['advance' => $settlement->advance_amount, 'actual' => $settlement->actual_amount, 'difference' => $settlement->difference_amount, 'type' => $settlement->difference_type?->value],
             'availableActions' => ['can_edit' => $request->user()->can('update', $settlement), 'can_submit' => $request->user()->can('submit', $settlement), 'can_cancel' => $request->user()->can('cancel', $settlement), 'can_complete' => $request->user()->can('complete', $settlement), 'can_upload' => $request->user()->can('upload', $settlement)],
             'timeline' => $activities->map(fn (Activity $activity) => ['actor' => $activity->causer ? ['id' => $activity->causer->id, 'name' => $activity->causer->name] : null, 'at' => $activity->created_at?->toISOString(), 'action' => $activity->description, 'comments' => data_get($activity->properties, 'comments')])->values(),
+            'approval_timeline' => $settlement->approvalRequests->sortBy('step_order')->map(fn ($approval) => ['id' => $approval->id, 'step_order' => $approval->step_order, 'step_code' => $approval->step_code, 'status' => $approval->status->value, 'approver' => $approval->approver ? ['id' => $approval->approver->id, 'name' => $approval->approver->name] : null, 'acted_by' => $approval->actions->sortByDesc('id')->first()?->actor?->name, 'comments' => $approval->comments])->values(),
             'attachments' => $settlement->attachments->map(fn (Attachment $attachment) => ['id' => $attachment->id, 'document_type' => $attachment->document_type, 'original_name' => $attachment->original_name, 'mime_type' => $attachment->mime_type, 'file_size' => $attachment->file_size, 'download_url' => route('attachments.download', $attachment)])->values(),
         ]);
     }
@@ -144,12 +143,19 @@ class SettlementController extends Controller
         $this->authorize('update', $settlement);
 
         $settlement->load('items');
+        $source = $settlement->source();
+        $manualSource = ResolveSettlementSource::isManual($settlement->source_type);
+        $sourceNumber = $manualSource
+            ? $settlement->source_reference
+            : $source?->request_number;
 
         return Inertia::render('Settlements/Edit', ['settlement' => [
             'id' => $settlement->id, 'settlement_number' => $settlement->settlement_number,
             'source_type' => $settlement->source_type, 'source_id' => $settlement->source_id,
             'source_reference' => $settlement->source_reference,
             'advance_amount' => $settlement->advance_amount,
+            'source_number' => $sourceNumber,
+            'employee' => $this->employeeDisplay($settlement->employee_snapshot_json ?: ($settlement->employee?->toArray() ?? [])),
             'items' => $settlement->items->map(fn ($item) => ['id' => $item->id, 'transaction_date' => $item->transaction_date, 'description' => $item->description, 'category' => $item->category, 'amount' => $item->amount, 'receipt_no' => $item->receipt_no])->values(),
         ], 'categories' => ['transport', 'hotel', 'meal', 'other']]);
     }

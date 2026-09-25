@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Data\Approval\ApprovalViewData;
+use App\Enums\ApprovalStepStatus;
 use App\Http\Requests\ApprovalActionRequest;
 use App\Models\ApprovalRequest;
 use App\Models\User;
@@ -54,6 +55,18 @@ class ApprovalController extends Controller
     public function action(ApprovalActionRequest $request, ApprovalRequest $approval, string $action): RedirectResponse
     {
         abort_unless(in_array($action, ['approve', 'return', 'reject', 'delegate'], true), 404);
+
+        // A stale approval page can remain open after another action or a
+        // previous click has completed this step. Keep authorization strict,
+        // but return a useful message instead of a generic 403 to its assignee.
+        if ((int) $approval->approver_user_id === (int) $request->user()->getKey()
+            && $approval->status !== ApprovalStepStatus::Pending
+            && $request->user()->can('approval.act')) {
+            return back()->withErrors([
+                'approval' => 'Tahap approval ini sudah diproses dan tidak dapat diulang. Buka inbox approval untuk melihat tahap berikutnya.',
+            ]);
+        }
+
         $this->authorize('act', $approval);
         $data = $request->validated();
         match ($action) {

@@ -110,6 +110,22 @@ class LeaveRequestTest extends TestCase
         $this->assertSame(6, (int) $leave->total_days);
     }
 
+    public function test_onsite_before_leave_is_saved_but_excluded_from_total_days(): void
+    {
+        [$user] = $this->makeEmployeeUser();
+
+        $this->actingAs($user)->post(route('leaves.store'), $this->leavePayload([
+            'periods' => [
+                ['category' => 'onsite', 'start_date' => '2026-09-20', 'end_date' => '2026-09-20'],
+                ['category' => 'annual_leave', 'start_date' => '2026-09-21', 'end_date' => '2026-09-23'],
+            ],
+        ]))->assertRedirect();
+
+        $leave = LeaveRequest::query()->firstOrFail();
+        $this->assertSame(3, (int) $leave->total_days);
+        $this->assertSame(1, (int) $leave->periods()->where('category', 'onsite')->firstOrFail()->day_count);
+    }
+
     // ---------- Aturan lokal/non-lokal ----------
 
     public function test_local_employee_costs_are_ineligible_with_zero_advance(): void
