@@ -70,7 +70,10 @@ class DashboardController extends Controller
             }
         }
         if ($request->user()->can('medical.payment.complete')) {
-            $medicalCompletionCount = MedicalClaim::query()->where('status', RequestStatus::PaymentProcessing)->count();
+            $medicalCompletionCount = MedicalClaim::query()
+                ->where('status', RequestStatus::PaymentProcessing)
+                ->where(fn ($claim) => $claim->whereNull('payment_processed_by')->orWhere('payment_processed_by', '!=', $request->user()->getKey()))
+                ->count();
             if ($medicalCompletionCount > 0) {
                 $pendingActions[] = ['key' => 'medical-completion', 'label' => 'Selesaikan Medical Claim', 'description' => 'Medical Claim yang menunggu konfirmasi pembayaran.', 'count' => $medicalCompletionCount, 'href' => '/medical-claims', 'tone' => 'emerald'];
             }
