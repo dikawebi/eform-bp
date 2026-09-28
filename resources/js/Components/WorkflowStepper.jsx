@@ -24,6 +24,7 @@ export default function WorkflowStepper({ currentStatus = "draft", steps = [], t
     const currentIndex = normalizedSteps.findIndex((step) => normalizeStatus(step.key ?? step.status) === status);
     const branch = BRANCH_STATUSES[status];
     const activeIndex = currentIndex >= 0 ? currentIndex : branch ? Math.max(0, normalizedSteps.findIndex((step) => normalizeStatus(step.key ?? step.status) === "in_review")) : 0;
+    const terminal = status === "completed";
 
     return (
         <section className="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label={title}>
@@ -37,7 +38,7 @@ export default function WorkflowStepper({ currentStatus = "draft", steps = [], t
             <div className="mt-5 overflow-x-auto pb-1">
                 <ol className="flex min-w-max items-start" aria-current={branch ? "step" : undefined}>
                     {normalizedSteps.map((step, index) => {
-                        const done = !branch && currentIndex >= 0 && index < currentIndex;
+                         const done = !branch && currentIndex >= 0 && (index < currentIndex || (terminal && index === currentIndex));
                         const active = index === activeIndex;
                         return (
                             <li key={step.key ?? index} className="flex items-start">
