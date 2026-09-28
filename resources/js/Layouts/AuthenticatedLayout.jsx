@@ -232,14 +232,14 @@ function isMenuActive(menu, currentUrl) {
     return cleanUrl === cleanHref || cleanUrl.startsWith(`${cleanHref}/`);
 }
 
-function SidebarContent({ menus, currentUrl, onNavigate }) {
+function SidebarContent({ menus, currentUrl, onNavigate, pendingApprovalCount = null }) {
     const groups = ['Ruang Kerja', 'Kendali'];
     const adminMenus = menus.filter((menu) => menu.group === 'Administrasi');
     const settingMenus = menus.filter((menu) => menu.group === 'Pengaturan');
 
     const renderMenu = (menu) => {
         const active = isMenuActive(menu, currentUrl);
-        return <li key={menu.key}><Link href={menu.href} onClick={onNavigate} className={active ? 'app-sidebar-link app-sidebar-link-active' : 'app-sidebar-link'}><span className="app-sidebar-icon"><MenuIcon menuKey={menu.key} /></span>{menu.label}</Link></li>;
+        return <li key={menu.key}><Link href={menu.href} onClick={onNavigate} className={active ? 'app-sidebar-link app-sidebar-link-active' : 'app-sidebar-link'}><span className="app-sidebar-icon"><MenuIcon menuKey={menu.key} /></span><span className="min-w-0 flex-1">{menu.label}</span>{menu.key === 'approvals' && pendingApprovalCount !== null && <span className="ml-auto rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold leading-4 text-white">{Number(pendingApprovalCount) > 99 ? '99+' : pendingApprovalCount}</span>}</Link></li>;
     };
 
     return (
@@ -388,6 +388,7 @@ export default function AuthenticatedLayout({
         }
         return true;
     });
+    const pendingApprovalCount = props.pendingApprovalCount ?? null;
 
     const pageTitle = title || null;
     const showHeader =
@@ -397,7 +398,7 @@ export default function AuthenticatedLayout({
             <div className="app-shell min-h-screen bg-slate-50 text-slate-900 transition-colors">
             {/* Sidebar desktop */}
             <aside className="app-sidebar-frame hidden border-r lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col">
-                <SidebarContent menus={visibleMenus} currentUrl={url} />
+                <SidebarContent menus={visibleMenus} currentUrl={url} pendingApprovalCount={pendingApprovalCount} />
             </aside>
 
             {/* Sidebar mobile */}
@@ -434,6 +435,7 @@ export default function AuthenticatedLayout({
                         <SidebarContent
                             menus={visibleMenus}
                             currentUrl={url}
+                            pendingApprovalCount={pendingApprovalCount}
                             onNavigate={() => setSidebarOpen(false)}
                         />
                     </div>

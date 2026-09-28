@@ -38,7 +38,9 @@ class DashboardApprovalTest extends TestCase
 
         $this->actingAs($approver)
             ->get(route('dashboard'))
-            ->assertInertia(fn ($page) => $page->where('pendingApproval', 1));
+            ->assertInertia(fn ($page) => $page
+                ->where('pendingApproval', 1)
+                ->where('pendingApprovalCount', 1));
     }
 
     public function test_non_approver_dashboard_does_not_expose_pending_approval_card(): void
@@ -48,6 +50,6 @@ class DashboardApprovalTest extends TestCase
 
         $this->actingAs($employee)
             ->get(route('dashboard'))
-            ->assertInertia(fn ($page) => $page->where('pendingApproval', null));
+            ->assertInertia(fn ($page) => $page->where('pendingApproval', null)->where('pendingApprovalCount', null));
     }
 }
