@@ -25,7 +25,7 @@ function ErrorSummary({ errors }) {
     </div>;
 }
 
-export default function Form({ claim, meta, edit = false, readOnly = false, approvalTimeline = [], embedded = false }) {
+export default function Form({ claim, meta, edit = false, readOnly = false, approvalTimeline = [], activities = [], embedded = false }) {
     const employee = claim?.employee ?? meta?.employee ?? null;
     const { data, setData, post, put, processing, errors } = useForm({
         benefit_types: claim?.benefit_types ?? (claim?.benefit_type ? [claim.benefit_type] : [meta?.benefit_types?.[0]].filter(Boolean)),
@@ -36,6 +36,8 @@ export default function Form({ claim, meta, edit = false, readOnly = false, appr
     const [confirm, setConfirm] = useState(false);
     const total = useMemo(() => data.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0), [data.items]);
     const requirements = meta?.required_documents ?? ["receipt"];
+    const paymentPic = activities.find((item) => item.action === "medical.payment_processing")?.actor ?? null;
+    const completePic = activities.find((item) => item.action === "medical.completed")?.actor ?? null;
     const update = (index, key, value) => setData("items", data.items.map((item, row) => row === index ? { ...item, [key]: value } : item));
     const changeRelationship = (index, relationship) => setData("items", data.items.map((item, row) => row === index ? { ...item, relationship, patient_name: relationship === "self" ? "" : item.patient_name } : item));
     const toggleBenefit = (type) => setData("benefit_types", data.benefit_types.includes(type) ? data.benefit_types.filter((item) => item !== type) : [...data.benefit_types, type]);
@@ -48,7 +50,7 @@ export default function Form({ claim, meta, edit = false, readOnly = false, appr
         <Head title={edit ? "Ubah Medical Claim" : "Buat Medical Claim"} />
         <form onSubmit={readOnly ? (event) => event.preventDefault() : requestSave} className="worksheet-form medical-sheet space-y-6">
             <fieldset disabled={readOnly} className="block min-w-0 space-y-6 border-0 p-0">
-            <WorkflowStepper currentStatus={claim?.status ?? "draft"} title="Alur Medical Claim" steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Review HRGA", pic: approvalTimeline.find((item) => item.step_code === "hrga")?.approver?.name }, { key: "document_validation", label: "Validasi Dokumen", pic: approvalTimeline.find((item) => item.step_code === "document_validation")?.approver?.name }, { key: "approved", label: "Disetujui" }, { key: "payment_processing", label: "Proses Pembayaran" }, { key: "completed", label: "Selesai" }]} />
+             <WorkflowStepper currentStatus={claim?.status ?? "draft"} title="Alur Medical Claim" steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Review HRGA", pic: approvalTimeline.find((item) => item.step_code === "hrga")?.approver?.name }, { key: "document_validation", label: "Validasi Dokumen", pic: approvalTimeline.find((item) => item.step_code === "document_validation")?.approver?.name }, { key: "approved", label: "Disetujui" }, { key: "payment_processing", label: "Proses Pembayaran", pic: paymentPic }, { key: "completed", label: "Selesai", pic: completePic }]} />
             <header className="medical-sheet-header">
                 <div className="medical-sheet-logo"><strong>BP</strong><small>PT. BORNEO PRIMA</small><em>COAL MINING &amp; TRADING</em></div>
                 <div className="medical-sheet-title"><p>PT. BORNEO PRIMA</p><h1>FORMULIR MEDICAL CLAIM</h1></div>
