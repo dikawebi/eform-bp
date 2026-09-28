@@ -76,6 +76,8 @@ class ApprovalController extends Controller
             'delegate' => DelegateApprovalRequest::run($approval, $request->user(), User::findOrFail($data['delegate_user_id']), $data['comments'] ?? null),
         };
 
-        return back()->with('success', 'Tindakan approval berhasil diproses.');
+        return redirect()
+            ->route('approvals.index')
+            ->with('success', 'Tindakan approval berhasil diproses.');
     }
 }
