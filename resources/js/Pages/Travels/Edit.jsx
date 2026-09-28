@@ -16,7 +16,8 @@ export default function Edit({ travel, meta, canEdit, availableActions }) {
         transform((payload) => {
             const routeItem = payload.items.find((item) => item.category === 'land_transport');
             return { ...payload, origin: payload.origin || routeItem?.origin || 'Belum ditentukan', destination: payload.destination || routeItem?.destination || 'Belum ditentukan' };
-        }).put(route('travels.update', travel.id), { onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }) });
+        });
+        put(route('travels.update', travel.id), { onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }) });
     };
     const shell = (children) => <AuthenticatedLayout title="Ubah Perjalanan Dinas" breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Perjalanan Dinas', href: '/travels' }, { label: travel?.request_number ?? 'Ubah' }]} header={<h2 className="text-xl font-semibold text-gray-800">Ubah {travel?.request_number}</h2>}><Head title="Ubah Perjalanan Dinas" /><div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">{children}</div></AuthenticatedLayout>;
     if (!allowed) return shell(<EmptyState title="Pengajuan tidak dapat diubah" description={`Status saat ini “${labelStatus(status)}”. Pengajuan yang telah disetujui tidak boleh diedit langsung. Otorisasi tetap diperiksa server.`}><Link href={route('travels.show', travel.id)} className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white">Kembali ke Detail</Link></EmptyState>);

@@ -25,7 +25,8 @@ export default function Create({ meta }) {
         transform((payload) => ({
             ...payload,
             periods: (payload.periods ?? []).filter((period) => period.start_date || period.end_date),
-        })).post(route('leaves.store'), {
+        }));
+        post(route('leaves.store'), {
             onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
         });
     };

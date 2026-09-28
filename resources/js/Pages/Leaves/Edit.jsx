@@ -67,7 +67,8 @@ export default function Edit({ leave, meta, canEdit, availableActions }) {
         transform((payload) => ({
             ...payload,
             periods: (payload.periods ?? []).filter((period) => period.start_date || period.end_date),
-        })).put(route('leaves.update', leave.id), {
+        }));
+        put(route('leaves.update', leave.id), {
             onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
         });
     };
