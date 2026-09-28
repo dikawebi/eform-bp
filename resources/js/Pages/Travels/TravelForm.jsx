@@ -3,7 +3,7 @@ import EmployeeLookup from "@/Components/EmployeeLookup";
 import Modal from "@/Components/Modal";
 import WorkflowStepper from "@/Components/WorkflowStepper";
 import { Link } from "@inertiajs/react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { formatRupiah } from "./helpers";
 
 const input =
@@ -425,6 +425,7 @@ export default function TravelForm({
     approvalTimeline = [],
 }) {
     const [confirm, setConfirm] = useState(false);
+    const formRef = useRef(null);
     const options = meta?.cost_categories ?? [
         { value: "land_transport", label: "Transport Darat" },
         { value: "flight", label: "Tiket Pesawat" },
@@ -487,13 +488,20 @@ export default function TravelForm({
             "items",
             (data.items ?? []).filter((_, itemIndex) => itemIndex !== index),
         );
+    const openConfirmation = () => {
+        if (formRef.current && !formRef.current.checkValidity()) {
+            formRef.current.reportValidity();
+            return;
+        }
+        setConfirm(true);
+    };
     const submit = (event) => {
         event.preventDefault();
-        setConfirm(true);
+        openConfirmation();
     };
 
     return (
-        <form noValidate onSubmit={readOnly ? (event) => event.preventDefault() : submit} className="worksheet-form travel-sheet space-y-6">
+        <form ref={formRef} onSubmit={readOnly ? (event) => event.preventDefault() : submit} className="worksheet-form travel-sheet space-y-6">
             <fieldset disabled={readOnly} className="block min-w-0 space-y-6 border-0 p-0">
             <WorkflowStepper
                 currentStatus={currentStatus}
@@ -664,7 +672,7 @@ export default function TravelForm({
             </fieldset>
 
             <div className="flex flex-wrap gap-3">
-                <button type="button" disabled={processing || readOnly} onClick={() => setConfirm(true)} className="rounded-md bg-gray-900 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-60">
+                <button type="button" disabled={processing || readOnly} onClick={openConfirmation} className="rounded-md bg-gray-900 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-60">
                     {processing ? "Menyimpan…" : submitLabel}
                 </button>
                 <Link href={batalHref} className="rounded-md border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Batal</Link>
