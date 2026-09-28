@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\ApprovalRequest;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -48,6 +49,14 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
             'import_result' => fn () => $request->session()->get('import_result'),
+            'pendingApprovalCount' => fn () => $user?->can('approval.inbox.view')
+                ? ApprovalRequest::query()
+                    ->currentChain()
+                    ->pending()
+                    ->actionable()
+                    ->where('approver_user_id', $user->getKey())
+                    ->count()
+                : null,
             'unreadNotifications' => fn () => $user?->unreadNotifications()->count() ?? 0,
             'notifications' => fn () => $user?->notifications()->latest()->limit(8)->get()->map(fn ($notification) => [
                 'id' => $notification->id,

@@ -47,4 +47,19 @@ class ApprovalRequest extends Model
     {
         return $query->where('status', ApprovalStepStatus::Pending);
     }
+
+    public function scopeActionable($query)
+    {
+        $table = $this->getTable();
+
+        return $query->whereNotExists(function ($subquery) use ($table): void {
+            $subquery->selectRaw('1')
+                ->from("{$table} as previous")
+                ->whereColumn('previous.approvable_type', "{$table}.approvable_type")
+                ->whereColumn('previous.approvable_id', "{$table}.approvable_id")
+                ->whereColumn('previous.chain_generation', "{$table}.chain_generation")
+                ->whereColumn('previous.step_order', '<', "{$table}.step_order")
+                ->where('previous.status', ApprovalStepStatus::Pending);
+        });
+    }
 }

@@ -25,7 +25,7 @@ class ApprovalController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', ApprovalRequest::class);
-        $approvals = ApprovalRequest::query()->with(['approvable', 'approver', 'actions.actor'])->currentChain()->pending()->where('approver_user_id', $request->user()->getKey())->orderBy('step_order')->paginate(20);
+        $approvals = ApprovalRequest::query()->with(['approvable', 'approver', 'actions.actor'])->currentChain()->pending()->actionable()->where('approver_user_id', $request->user()->getKey())->orderBy('step_order')->paginate(20);
         $approvals->setCollection($approvals->getCollection()->map(fn (ApprovalRequest $approval) => ApprovalViewData::make($approval, $request->user())));
 
         return Inertia::render('Approvals/Index', ['approvals' => $approvals]);

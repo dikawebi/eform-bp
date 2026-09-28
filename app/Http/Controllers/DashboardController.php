@@ -16,6 +16,7 @@ class DashboardController extends Controller
             ? ApprovalRequest::query()
                 ->currentChain()
                 ->pending()
+                ->actionable()
                 ->where('approver_user_id', $request->user()->getKey())
                 ->count()
             : null;
