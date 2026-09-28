@@ -12,6 +12,7 @@ use App\Models\LeaveRequest;
 use App\Models\Settlement;
 use App\Models\TravelRequest;
 use App\Services\EmployeeVisibility;
+use App\Services\Approval\ApprovalActionAvailability;
 use App\Services\Settlement\CompleteSettlement;
 use App\Services\Settlement\CreateSettlement;
 use App\Services\Settlement\ResolveSettlementSource;
@@ -96,7 +97,7 @@ class SettlementController extends Controller
                 ])),
         ])->flatten(1)->values();
 
-        return Inertia::render('Settlements/Create', ['sources' => $sources, 'categories' => ['transport', 'hotel', 'meal', 'other']]);
+        return Inertia::render('Settlements/Create', ['sources' => $sources, 'categories' => ['transport', 'hotel', 'meal', 'other'], 'initialSource' => $request->only(['source_type', 'source_id'])]);
     }
 
     public function store(StoreSettlementRequest $request): RedirectResponse
@@ -132,6 +133,7 @@ class SettlementController extends Controller
             'source' => $source ? ['id' => $source->id, 'request_number' => $manualSource ? $settlement->source_reference : $source->request_number, 'source_reference' => $settlement->source_reference, 'status' => $manualSource ? null : $source->status->value, 'purpose' => $source->purpose ?? null, 'reason' => $source->reason ?? null, 'start_date' => $source->start_date?->toDateString(), 'end_date' => $source->end_date?->toDateString(), 'employee' => $sourceEmployee?->only(['employee_number', 'name', 'department'])] : null,
             'difference' => ['advance' => $settlement->advance_amount, 'actual' => $settlement->actual_amount, 'difference' => $settlement->difference_amount, 'type' => $settlement->difference_type?->value],
             'availableActions' => ['can_edit' => $request->user()->can('update', $settlement), 'can_submit' => $request->user()->can('submit', $settlement), 'can_cancel' => $request->user()->can('cancel', $settlement), 'can_complete' => $request->user()->can('complete', $settlement), 'can_upload' => $request->user()->can('upload', $settlement)],
+            'approvalActions' => ApprovalActionAvailability::for($settlement, $request->user()),
             'timeline' => $activities->map(fn (Activity $activity) => ['actor' => $activity->causer ? ['id' => $activity->causer->id, 'name' => $activity->causer->name] : null, 'at' => $activity->created_at?->toISOString(), 'action' => $activity->description, 'comments' => data_get($activity->properties, 'comments')])->values(),
             'approval_timeline' => $settlement->approvalRequests->sortBy('step_order')->map(fn ($approval) => ['id' => $approval->id, 'step_order' => $approval->step_order, 'step_code' => $approval->step_code, 'status' => $approval->status->value, 'approver' => $approval->approver ? ['id' => $approval->approver->id, 'name' => $approval->approver->name] : null, 'acted_by' => $approval->actions->sortByDesc('id')->first()?->actor?->name, 'comments' => $approval->comments])->values(),
             'attachments' => $settlement->attachments->map(fn (Attachment $attachment) => ['id' => $attachment->id, 'document_type' => $attachment->document_type, 'original_name' => $attachment->original_name, 'mime_type' => $attachment->mime_type, 'file_size' => $attachment->file_size, 'download_url' => route('attachments.download', $attachment)])->values(),

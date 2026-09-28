@@ -39,10 +39,10 @@ function ErrorList({ errors }) {
     );
 }
 
-export default function Create({ sources = [], categories = [], settlement = null, readOnly = false, embedded = false, approvalTimeline = [] }) {
+export default function Create({ sources = [], categories = [], settlement = null, initialSource = {}, readOnly = false, embedded = false, approvalTimeline = [] }) {
     const { data, setData, post, put, processing, errors } = useForm({
-        source_type: settlement?.source_type || "",
-        source_id: settlement?.source_id || "",
+        source_type: settlement?.source_type || initialSource?.source_type || "",
+        source_id: settlement?.source_id || initialSource?.source_id || "",
         source_reference: settlement?.source_reference || "",
         items: settlement?.items?.map((item) => ({
             ...item,

@@ -1,4 +1,5 @@
 import StatusBadge from '@/Components/StatusBadge';
+import ApprovalActions from '@/Components/ApprovalActions';
 import MedicalClaimForm from './Form';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
@@ -12,7 +13,7 @@ const benefitLabel = { obat_vitamin: 'Obat / Vitamin', rawat_jalan: 'Rawat Jalan
 const activityLabels = { created: 'Dibuat', submitted: 'Diajukan', updated: 'Diperbarui', attachment_uploaded: 'Lampiran diunggah', cancelled: 'Dibatalkan', completed: 'Diselesaikan', payment_processing: 'Diproses untuk pembayaran' };
 const activityLabel = (value = '') => activityLabels[String(value).split('.').pop()] ?? value;
 
-export default function Show({ claim, timeline = [], activities = [], availableActions = {} }) {
+export default function Show({ claim, timeline = [], activities = [], availableActions = {}, approvalActions = null }) {
     const input = useRef();
     const [documentType, setDocumentType] = useState('receipt');
     const [uploading, setUploading] = useState(false);
@@ -35,6 +36,7 @@ export default function Show({ claim, timeline = [], activities = [], availableA
     return <AuthenticatedLayout title={claim.claim_number} header={<div className="flex items-center justify-between"><h2 className="font-mono text-xl font-semibold">{claim.claim_number}</h2><StatusBadge status={claim.status} /></div>}>
         <Head title={claim.claim_number} />
          <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+             <ApprovalActions approval={approvalActions} />
             <div className="flex flex-wrap gap-2">
                 {availableActions.can_edit && <Link href={route('medical-claims.edit', claim.id)} className="rounded border px-3 py-2 text-sm">Ubah</Link>}
                 {availableActions.can_submit && <button onClick={() => action('submit')} className="rounded bg-gray-900 px-3 py-2 text-sm text-white">Ajukan</button>}

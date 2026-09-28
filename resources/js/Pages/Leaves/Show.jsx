@@ -1,4 +1,5 @@
 import EmptyState from '@/Components/EmptyState';
+import ApprovalActions from '@/Components/ApprovalActions';
 import Modal from '@/Components/Modal';
 import StatusBadge from '@/Components/StatusBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -10,7 +11,7 @@ import { formatRupiah, formatTanggalWaktu, isStatusCancellable, isStatusEditable
 const approvalLabels = { supervisor: 'Pemeriksaan Supervisor', hod: 'Persetujuan HOD', pm: 'Persetujuan Project Manager', hrga: 'Proses HRGA' };
 const activityLabel = (value) => ({ 'leave.created': 'Draf pengajuan dibuat', 'leave.updated': 'Pengajuan diperbarui', 'leave.submitted': 'Pengajuan dikirim', 'leave.cancelled': 'Pengajuan dibatalkan' }[value] ?? value ?? 'Aktivitas');
 
-export default function Show({ leave, requires_settlement, activities = [], canEdit, availableActions, timeline = [] }) {
+export default function Show({ leave, requires_settlement, canCreateSettlement = false, activities = [], canEdit, availableActions, approvalActions = null, timeline = [] }) {
     const [confirm, setConfirm] = useState(null);
     const [busy, setBusy] = useState(false);
     const fileInput = useRef(null);
@@ -25,6 +26,8 @@ export default function Show({ leave, requires_settlement, activities = [], canE
     return <AuthenticatedLayout title={`Cuti ${leave?.request_number ?? ''}`} breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Cuti/Izin', href: '/leaves' }, { label: leave?.request_number ?? 'Detail' }]} header={<div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">{leave?.request_number}</h2><div className="flex items-center gap-2"><StatusBadge status={status} />{editable && <Link href={route('leaves.edit', leave.id)} className="rounded-md border px-4 py-2 text-sm">Ubah</Link>}{submitAllowed && <button type="button" onClick={() => setConfirm('submit')} className="rounded-md bg-gray-900 px-4 py-2 text-sm text-white">Ajukan</button>}{cancelAllowed && <button type="button" onClick={() => setConfirm('cancel')} className="rounded-md border border-rose-300 px-4 py-2 text-sm text-rose-700">Batalkan</button>}</div></div>}>
         <Head title={leave?.request_number ?? 'Detail Cuti'} />
          <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+            <ApprovalActions approval={approvalActions} />
+            {canCreateSettlement && <Link href={`${route('settlements.create')}?source_type=leave_request&source_id=${leave.id}`} className="inline-flex rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700">Perlu Settlement</Link>}
             {(status === 'returned' || status === 'rejected') && <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Pengajuan {status === 'returned' ? 'dikembalikan untuk diperbaiki.' : 'ditolak.'} Alasan tercatat pada timeline approval dan audit trail.</div>}
             <LeaveForm data={data} setData={() => {}} errors={{}} processing={false} meta={{ employees: leave?.employee ? [leave.employee] : [], period_categories: [], cost_categories: [] }} karyawanFallback={leave?.employee} currentStatus={status} approvalTimeline={timeline} readOnly submitLabel="Form hanya-baca" batalHref={route('leaves.show', leave.id)} onSubmit={() => {}} />
             {(leave?.attachments?.length > 0 || actions.can_upload) && <section className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-gray-100"><h3 className="font-semibold">Lampiran</h3><ul className="mt-3 space-y-1 text-sm">{(leave.attachments ?? []).map((file) => <li key={file.id}><a className="text-indigo-600 hover:underline" href={file.download_url}>{file.original_name}</a></li>)}</ul>{actions.can_upload && <form onSubmit={upload} className="mt-4 flex flex-wrap items-end gap-3 border-t pt-4"><input ref={fileInput} required type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" /><button className="rounded bg-gray-900 px-3 py-2 text-sm text-white">Unggah</button></form>}</section>}

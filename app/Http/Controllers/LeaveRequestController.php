@@ -12,11 +12,13 @@ use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Services\AdvanceProcessing;
+use App\Services\Approval\ApprovalActionAvailability;
 use App\Services\EmployeeVisibility;
 use App\Services\Leave\CalculateLeaveAdvance;
 use App\Services\Leave\CalculateLeaveDays;
 use App\Services\Leave\LeaveRequestNumber;
 use App\Services\Leave\SubmitLeaveRequest;
+use App\Services\Settlement\SettlementSourceAvailability;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -235,6 +237,8 @@ class LeaveRequestController extends Controller
                 'can_process_advance' => (bool) $request->user()->can('processAdvance', $leave),
                 'can_upload' => (bool) $request->user()->can('upload', $leave),
             ],
+            'approvalActions' => ApprovalActionAvailability::for($leave, $request->user()),
+            'canCreateSettlement' => SettlementSourceAvailability::for($leave, $request->user()),
         ]);
     }
 

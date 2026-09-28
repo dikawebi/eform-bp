@@ -16,6 +16,7 @@ use App\Services\EmployeeVisibility;
 use App\Services\Travel\CalculateTravelAdvance;
 use App\Services\Approval\ApprovalActionAvailability;
 use App\Services\Travel\SubmitTravelRequest;
+use App\Services\Settlement\SettlementSourceAvailability;
 use App\Services\Travel\TravelRequestNumber;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
@@ -219,6 +220,7 @@ class TravelRequestController extends Controller
                 'can_process_advance' => (bool) $request->user()->can('processAdvance', $travel),
             ],
             'approvalActions' => ApprovalActionAvailability::for($travel, $request->user()),
+            'canCreateSettlement' => SettlementSourceAvailability::for($travel, $request->user()),
             'timeline' => $timeline,
         ]);
     }

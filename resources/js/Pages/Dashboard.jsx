@@ -16,7 +16,7 @@ function DashboardIcon({ type }) {
     return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[type]}</svg>;
 }
 
-export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingApproval = null, loading = false, error = null }) {
+export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingApproval = null, pendingActions = [], loading = false, error = null }) {
     const total = summary.total_pengajuan ?? Object.values(summary).reduce((sum, item) => sum + Object.values(item ?? {}).reduce((a, b) => a + Number(b), 0), 0);
     const statusCounts = Object.values(statusBreakdown).flatMap((items) => Object.entries(items ?? {}));
     const inProcess = summary.dalam_proses ?? statusCounts.filter(([status]) => ['submitted', 'in_review', 'processing', 'payment_processing'].includes(status)).reduce((sum, [, count]) => sum + Number(count), 0);
@@ -68,6 +68,8 @@ export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingA
                             </Link>
                         )}
                     </section>
+
+                    {pendingActions.length > 0 && <section className="ui-card p-5 sm:p-6"><div className="mb-5 flex items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-600">Pending action</p><h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Tindakan yang perlu dikerjakan</h2></div><span className="text-xs text-slate-500">Sesuai role dan status transaksi</span></div><div className="grid grid-cols-1 gap-3 md:grid-cols-3">{pendingActions.map((item) => <Link key={item.key} href={item.href} className={`group rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm ${item.tone === 'rose' ? 'border-rose-200 hover:bg-rose-50' : item.tone === 'emerald' ? 'border-emerald-200 hover:bg-emerald-50' : 'border-amber-200 hover:bg-amber-50'}`}><div className="flex items-start justify-between gap-3"><div><h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0066FF] dark:text-slate-100">{item.label}</h3><p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{item.description}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${item.tone === 'rose' ? 'bg-rose-100 text-rose-700' : item.tone === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.count}</span></div><p className="mt-4 text-xs font-semibold text-slate-500 group-hover:text-[#0066FF]">Buka tindakan →</p></Link>)}</div></section>}
 
                     <section className="ui-card p-5 sm:p-6">
                         <div className="mb-5 flex items-end justify-between gap-4">

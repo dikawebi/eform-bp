@@ -11,6 +11,7 @@ use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\MedicalClaim;
 use App\Services\EmployeeVisibility;
+use App\Services\Approval\ApprovalActionAvailability;
 use App\Services\Medical\CalculateMedicalClaim;
 use App\Services\Medical\MedicalClaimNumber;
 use App\Services\Medical\SubmitMedicalClaim;
@@ -126,7 +127,7 @@ class MedicalClaimController extends Controller
         $timeline = $medical_claim->approvalRequests->sortBy('step_order')->map(fn ($a) => array_filter(['step_code' => $a->step_code, 'status' => $a->status->value, 'actor' => $detail ? $a->approver?->name : null, 'acted_by' => $detail ? $a->actions->sortByDesc('id')->first()?->actor?->name : null, 'at' => $a->acted_at?->toISOString(), 'comments' => $detail ? $a->comments : null], fn ($value) => $value !== null))->values()->all();
         $activities = $detail ? Activity::where('subject_type', $medical_claim->getMorphClass())->where('subject_id', $medical_claim->id)->latest()->limit(50)->get()->map(fn ($a) => ['id' => $a->id, 'action' => $a->description, 'actor' => $a->causer?->name, 'at' => $a->created_at?->toISOString()])->values()->all() : [];
 
-        return Inertia::render('MedicalClaims/Show', ['claim' => $dto, 'timeline' => $timeline, 'activities' => $activities, 'availableActions' => ['can_edit' => $user->can('update', $medical_claim), 'can_submit' => $user->can('submit', $medical_claim), 'can_cancel' => $user->can('cancel', $medical_claim), 'can_upload' => $user->can('upload', $medical_claim), 'can_payment_process' => $user->can('payment', $medical_claim), 'can_payment_complete' => $user->can('complete', $medical_claim)], 'can_view_sensitive' => $sensitive]);
+        return Inertia::render('MedicalClaims/Show', ['claim' => $dto, 'timeline' => $timeline, 'activities' => $activities, 'availableActions' => ['can_edit' => $user->can('update', $medical_claim), 'can_submit' => $user->can('submit', $medical_claim), 'can_cancel' => $user->can('cancel', $medical_claim), 'can_upload' => $user->can('upload', $medical_claim), 'can_payment_process' => $user->can('payment', $medical_claim), 'can_payment_complete' => $user->can('complete', $medical_claim)], 'approvalActions' => ApprovalActionAvailability::for($medical_claim, $user), 'can_view_sensitive' => $sensitive]);
     }
 
     public function edit(Request $request, MedicalClaim $medical_claim): Response

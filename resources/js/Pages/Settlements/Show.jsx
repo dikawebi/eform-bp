@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ApprovalActions from '@/Components/ApprovalActions';
 import Modal from '@/Components/Modal';
 import StatusBadge from '@/Components/StatusBadge';
 import SummaryCard from '@/Components/SummaryCard';
@@ -14,7 +15,7 @@ const differenceColors = { overpayment: 'border-amber-200 bg-amber-50 text-amber
 const approvalLabels = { hrga: 'Pemeriksaan HRGA', finance: 'Pemeriksaan Finance' };
 const activityLabels = { 'settlement.created': 'Draf settlement dibuat', 'settlement.updated': 'Data settlement diperbarui', 'settlement.submitted': 'Settlement diajukan untuk approval', 'settlement.cancelled': 'Settlement dibatalkan' };
 
-export default function Show({ settlement, source, difference, availableActions = {}, timeline = [], approval_timeline = [], attachments = [] }) {
+export default function Show({ settlement, source, difference, availableActions = {}, approvalActions = null, timeline = [], approval_timeline = [], attachments = [] }) {
     const [confirmAction, setConfirmAction] = useState(null);
     const actions = availableActions ?? {};
     const post = (name) => router.post(route(`settlements.${name}`, settlement.id), {}, { preserveScroll: true, onSuccess: () => setConfirmAction(null) });
@@ -27,6 +28,7 @@ export default function Show({ settlement, source, difference, availableActions 
     return <AuthenticatedLayout title={settlement.settlement_number} breadcrumbs={['Settlement', settlement.settlement_number]}>
         <Head title={settlement.settlement_number} />
          <div className="mx-auto max-w-7xl space-y-6 px-4 py-7 sm:px-6 lg:px-8">
+            <ApprovalActions approval={approvalActions} />
             <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-600">Settlement / Detail</p><h1 className="mt-1 font-mono text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">{settlement.settlement_number}</h1><div className="mt-2 flex items-center gap-2"><StatusBadge status={settlement.status} /><span className="text-xs text-slate-500">{sourceLabels[settlement.source_type] ?? settlement.source_type}</span></div></div><div className="flex flex-wrap gap-2">
                  {actions.can_edit && <Link href={route('settlements.edit', settlement.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Ubah draft</Link>}
                  {actions.can_submit && <button onClick={() => setConfirmAction('submit')} className="ui-button-primary rounded-lg px-4 py-2 text-sm">Ajukan review</button>}
