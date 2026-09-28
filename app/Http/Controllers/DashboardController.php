@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalRequest;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
+use App\Models\MedicalClaim;
 use App\Models\Settlement;
 use App\Models\TravelRequest;
 use App\Enums\RequestStatus;
@@ -56,6 +57,22 @@ class DashboardController extends Controller
             $paymentCount = Settlement::query()->where('status', RequestStatus::PaymentProcessing)->count();
             if ($paymentCount > 0) {
                 $pendingActions[] = ['key' => 'payment', 'label' => 'Selesaikan Pembayaran', 'description' => 'Settlement menunggu penyelesaian pembayaran.', 'count' => $paymentCount, 'href' => '/settlements?status=payment_processing', 'tone' => 'emerald'];
+            }
+        }
+        if ($request->user()->can('medical.payment.process')) {
+            $medicalPaymentCount = MedicalClaim::query()
+                ->where('status', RequestStatus::Approved)
+                ->whereDoesntHave('approvalRequests', fn ($approval) => $approval->where('status', 'pending'))
+                ->whereHas('approvalRequests', fn ($approval) => $approval->where('status', 'approved'))
+                ->count();
+            if ($medicalPaymentCount > 0) {
+                $pendingActions[] = ['key' => 'medical-payment', 'label' => 'Proses Pembayaran Medical Claim', 'description' => 'Medical Claim yang menunggu diproses oleh Finance.', 'count' => $medicalPaymentCount, 'href' => '/medical-claims', 'tone' => 'emerald'];
+            }
+        }
+        if ($request->user()->can('medical.payment.complete')) {
+            $medicalCompletionCount = MedicalClaim::query()->where('status', RequestStatus::PaymentProcessing)->count();
+            if ($medicalCompletionCount > 0) {
+                $pendingActions[] = ['key' => 'medical-completion', 'label' => 'Selesaikan Medical Claim', 'description' => 'Medical Claim yang menunggu konfirmasi pembayaran.', 'count' => $medicalCompletionCount, 'href' => '/medical-claims', 'tone' => 'emerald'];
             }
         }
 
