@@ -5,7 +5,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 const approvalLabels = { hrga: 'Pemeriksaan HRGA', document_validation: 'Validasi dokumen' };
 const approvalStatuses = { pending: 'Menunggu tindakan', approved: 'Disetujui', rejected: 'Ditolak', returned: 'Dikembalikan' };
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 const money = (v) => v == null ? 'Terbatas' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v);
@@ -14,6 +14,8 @@ const activityLabels = { created: 'Dibuat', submitted: 'Diajukan', updated: 'Dip
 const activityLabel = (value = '') => activityLabels[String(value).split('.').pop()] ?? value;
 
 export default function Show({ claim, timeline = [], activities = [], availableActions = {}, approvalActions = null }) {
+    const { props } = usePage();
+    const errors = props.errors ?? {};
     const input = useRef();
     const [documentType, setDocumentType] = useState('receipt');
     const [uploading, setUploading] = useState(false);
@@ -37,7 +39,8 @@ export default function Show({ claim, timeline = [], activities = [], availableA
         <Head title={claim.claim_number} />
          <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
              <ApprovalActions approval={approvalActions} />
-            <div className="flex flex-wrap gap-2">
+             {Object.keys(errors).length > 0 && <div role="alert" className="rounded border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-semibold">Pengajuan belum dapat diproses.</p><ul className="mt-2 list-disc space-y-1 pl-5">{Object.entries(errors).map(([key, message]) => <li key={key}>{String(message)}</li>)}</ul></div>}
+             <div className="flex flex-wrap gap-2">
                 {availableActions.can_edit && <Link href={route('medical-claims.edit', claim.id)} className="rounded border px-3 py-2 text-sm">Ubah</Link>}
                 {availableActions.can_submit && <button onClick={() => action('submit')} className="rounded bg-gray-900 px-3 py-2 text-sm text-white">Ajukan</button>}
                  {availableActions.can_payment_process && <button onClick={() => action('payment')} className="rounded bg-blue-700 px-3 py-2 text-sm text-white">Proses Pembayaran</button>}
