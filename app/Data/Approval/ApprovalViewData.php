@@ -71,8 +71,30 @@ final class ApprovalViewData
         }
 
         $claim = $approval->approvable;
+        $claim->loadMissing('employee:id,user_id,employee_number,name,department', 'items', 'attachments');
         if ($viewer->can('medical.view.sensitive') && ($viewer->can('medical.review') || self::owner($claim, $viewer))) {
-            $data['approvable'] = ['id' => $claim->id, 'type' => 'medical_claim', 'claim_number' => $claim->claim_number, 'benefit_types' => $claim->benefit_types ?: [$claim->benefit_type], 'status' => $claim->status->value, 'employee' => $claim->employee?->only(['employee_number', 'name', 'department']), 'total_amount' => $claim->total_amount];
+            $data['approvable'] = [
+                'id' => $claim->id,
+                'type' => 'medical_claim',
+                'claim_number' => $claim->claim_number,
+                'benefit_types' => $claim->benefit_types ?: [$claim->benefit_type],
+                'status' => $claim->status->value,
+                'employee' => $claim->employee?->only(['employee_number', 'name', 'department']),
+                'total_amount' => $claim->total_amount,
+                'items' => $claim->items->map(fn ($item) => [
+                    'patient_name' => $item->patient_name,
+                    'relationship' => $item->relationship,
+                    'treatment_date' => $item->treatment_date?->toDateString(),
+                    'facility_name' => $item->facility_name,
+                    'amount' => $item->amount,
+                ])->values()->all(),
+                'attachments' => $claim->attachments->map(fn ($attachment) => [
+                    'id' => $attachment->id,
+                    'document_type' => $attachment->document_type,
+                    'original_name' => $attachment->original_name,
+                    'download_url' => route('attachments.download', $attachment),
+                ])->values()->all(),
+            ];
         } elseif ($viewer->can('medical.payment.process') || $viewer->can('medical.payment.complete') || $viewer->can('medical.view.aggregate')) {
             $data['approvable'] = ['id' => $claim->id, 'type' => 'medical_claim', 'claim_number' => $claim->claim_number, 'status' => $claim->status->value];
         } else {
