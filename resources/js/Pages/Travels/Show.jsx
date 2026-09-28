@@ -1,4 +1,5 @@
 import StatusBadge from '@/Components/StatusBadge';
+import ApprovalActions from '@/Components/ApprovalActions';
 import SummaryCard from '@/Components/SummaryCard';
 import WorkflowStepper from '@/Components/WorkflowStepper';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -10,7 +11,7 @@ import { formatRupiah, formatTanggal, statusValue } from './helpers';
 const approvalLabels = { supervisor: 'Pemeriksaan Supervisor', hod: 'Persetujuan HOD', pm: 'Persetujuan Project Manager', hrga: 'Proses HRGA' };
 const activityLabels = { 'travel.created': 'Draf perjalanan dibuat', 'travel.updated': 'Data perjalanan diperbarui', 'travel.submitted': 'Perjalanan diajukan untuk approval', 'travel.cancelled': 'Pengajuan perjalanan dibatalkan', 'travel.advance_paid': 'Advance perjalanan diproses' };
 
-export default function Show({ travel, requires_settlement, activities, availableActions, timeline = [] }) {
+export default function Show({ travel, requires_settlement, activities, availableActions, approvalActions = null, timeline = [] }) {
     const [confirm, setConfirm] = useState(null);
     const [uploading, setUploading] = useState(false);
     const fileInput = useRef(null);
@@ -43,7 +44,8 @@ export default function Show({ travel, requires_settlement, activities, availabl
     };
     return <AuthenticatedLayout title={travel.request_number} header={<div className="flex items-center justify-between"><h2 className="font-mono text-xl font-semibold">{travel.request_number}</h2><StatusBadge status={status} /></div>}>
         <Head title={travel.request_number} />
-         <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+             <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+             <ApprovalActions approval={approvalActions} />
              <div className="flex gap-2">{actions.can_edit === true && <Link href={route('travels.edit', travel.id)} className="rounded border px-4 py-2 text-sm">Ubah</Link>}{actions.can_submit === true && <button onClick={() => setConfirm('submit')} className="rounded bg-gray-900 px-4 py-2 text-sm text-white">Ajukan</button>}{actions.can_cancel === true && <button onClick={() => setConfirm('cancel')} className="rounded border border-rose-300 px-4 py-2 text-sm text-rose-700">Batalkan</button>}{actions.can_process_advance === true && <button onClick={() => router.post(route('travels.advance', travel.id), {}, { preserveScroll: true })} className="rounded bg-emerald-700 px-4 py-2 text-sm text-white">Proses Advance</button>}</div>
              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3"><SummaryCard judul="Total Advance" nilai={formatRupiah(travel.total_advance)} /><SummaryCard judul="Tujuan" nilai={travel.destination} sub={`${formatTanggal(travel.start_date)} s.d. ${formatTanggal(travel.end_date)}`} /><SummaryCard judul="Perlu Settlement" nilai={requires_settlement ? 'Ya' : 'Tidak'} /></div>
              <TravelForm data={readOnlyData} setData={() => {}} errors={{}} processing={false} meta={{ employees: [], cost_categories: [] }} travelEmployee={travel?.employee} approvalTimeline={timeline} submitLabel="Form hanya-baca" batalHref={route('travels.show', travel.id)} onSubmit={() => {}} currentStatus={status} readOnly />

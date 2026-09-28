@@ -14,6 +14,7 @@ use App\Models\TravelRequest;
 use App\Services\AdvanceProcessing;
 use App\Services\EmployeeVisibility;
 use App\Services\Travel\CalculateTravelAdvance;
+use App\Services\Approval\ApprovalActionAvailability;
 use App\Services\Travel\SubmitTravelRequest;
 use App\Services\Travel\TravelRequestNumber;
 use Carbon\CarbonImmutable;
@@ -217,6 +218,7 @@ class TravelRequestController extends Controller
                 'can_upload' => (bool) $request->user()->can('upload', $travel),
                 'can_process_advance' => (bool) $request->user()->can('processAdvance', $travel),
             ],
+            'approvalActions' => ApprovalActionAvailability::for($travel, $request->user()),
             'timeline' => $timeline,
         ]);
     }
