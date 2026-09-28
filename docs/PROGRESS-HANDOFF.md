@@ -1,6 +1,6 @@
 # eForm BP Development Handoff
 
-Tanggal catatan: 25 September 2026
+Tanggal catatan: 28 September 2026
 
 Dokumen ini adalah snapshot progress untuk melanjutkan development dari device lain.
 
@@ -9,7 +9,7 @@ Dokumen ini adalah snapshot progress untuk melanjutkan development dari device l
 Implementasi sudah mencakup:
 
 - Modul Cuti/Izin, Perjalanan Dinas, Settlement, dan Medical Claim.
-- Workflow stepper reusable dengan status dan PIC approval.
+- Workflow stepper reusable dengan status dan PIC approval/proses.
 - Form transaksi dan detail read-only.
 - Role/permission management untuk admin.
 - Pembatasan visibilitas transaksi berdasarkan ownership dan struktur bawahan.
@@ -18,8 +18,8 @@ Implementasi sudah mencakup:
 
 Blocker aktif:
 
-- Pada form Perjalanan Dinas, modal konfirmasi sudah muncul, tetapi tombol `Ya, simpan draf` masih tidak terlihat menjalankan aksi atau menutup modal di browser.
-- Backend endpoint penyimpanan draft sudah terbukti lulus feature test.
+- Tidak ada blocker aktif yang diketahui.
+- Warning build Vite tentang `/images/login-side.jpg` masih ada, tetapi tidak menghambat workflow.
 
 ## Akun Demo
 
@@ -69,7 +69,17 @@ Seeder terkait: `database/seeders/AndikaHeruUserSeeder.php`
 - Spacing form utama diseragamkan menggunakan `space-y-6`.
 - Role admin UI tersedia di `resources/js/Pages/Settings/Roles/`.
 
-## Blocker Perjalanan Dinas
+### PIC dan pending action
+
+- PIC approval ditampilkan dari approval timeline.
+- PIC proses advance Cuti/Perjalanan diambil dari actor audit `advance.*`.
+- PIC proses pembayaran dan penyelesaian Medical Claim diambil dari actor audit `medical.payment_processing` dan `medical.completed`.
+- Tahap `Selesai` pada status `completed` ditampilkan sebagai checklist.
+- Dashboard menampilkan pending action sesuai permission dan ownership untuk approval, advance, settlement, serta pembayaran Medical Claim.
+- User yang memproses pembayaran Medical Claim tidak dapat menandai claim yang sama sebagai selesai. Action tersebut harus dilakukan user lain yang memiliki `medical.payment.complete` atau Administrator.
+- Detail approval Medical Claim menampilkan rincian pasien, tanggal berobat, fasilitas, nominal item, dan lampiran sesuai hak akses medis.
+
+## Catatan Perjalanan Dinas
 
 File terkait:
 
@@ -81,7 +91,7 @@ File terkait:
 - `app/Http/Controllers/TravelRequestController.php`
 - `routes/web.php`
 
-### Perubahan terakhir yang sudah dibuat
+### Perubahan yang sudah dibuat
 
 - `TravelForm.jsx` menggunakan `noValidate` agar validasi dikembalikan ke server.
 - Tombol utama memakai `type="button"` dan membuka modal secara eksplisit.
@@ -91,14 +101,14 @@ File terkait:
 - Tombol dan modal dipindahkan keluar dari `<fieldset>` agar tidak ikut disabled.
 - `Modal.jsx` diberi `z-index` eksplisit dan `pointer-events-auto` pada panel.
 
-### Alur yang diharapkan
+### Alur yang sudah diverifikasi
 
 1. `TravelForm` membuka modal.
 2. Tombol `Ya, simpan draf` memanggil `save` dari `Create.jsx` atau `Edit.jsx`.
-3. `save` menjalankan `transform(...).post(...)` atau `put(...)`.
+3. `save` mengirim request Inertia tanpa chaining `transform(...).post(...)` yang tidak valid.
 4. Server menyimpan status `Draft` dan redirect ke detail transaksi.
 
-### Diagnosis berikutnya
+### Diagnosis jika regresi muncul
 
 Jika blocker masih terjadi setelah hard refresh:
 
@@ -109,22 +119,19 @@ Jika blocker masih terjadi setelah hard refresh:
 5. Jika ada request, catat HTTP status dan response validation/error.
 6. Pastikan browser memakai asset terbaru. `public/hot` saat ini menunjuk ke `http://[::1]:5173`, sehingga browser menggunakan Vite dev server.
 
-Kemungkinan penyebab yang belum terkonfirmasi:
-
-- Asset Vite/browser masih stale.
-- Tombol masih disabled karena state `processing`.
-- Event click tertahan oleh runtime error atau Headless UI.
-- Request terkirim tetapi response error tidak terlihat oleh user.
+Periksa asset Vite/browser dan request Inertia melalui DevTools.
 
 ## Verifikasi Terakhir
 
-
-
 ```text
-/images/login-side.jpg referenced in /images/login-side.jpg didn't resolve at build time
+MedicalClaimAuditTest: 11 passed (66 assertions)
+DashboardApprovalTest + MedicalClaimAuditTest: 13 passed (90 assertions)
+SettlementTest + MedicalClaimAuditTest: 34 passed (163 assertions)
+npm run build: berhasil
+git diff --check: berhasil
 ```
 
-Warning tersebut bukan blocker workflow.
+Build masih menampilkan warning `/images/login-side.jpg` yang belum resolve saat build time. Warning tersebut bukan blocker workflow.
 
 ## Perintah Umum
 
