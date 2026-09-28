@@ -423,6 +423,7 @@ export default function TravelForm({
     currentStatus = "draft",
     readOnly = false,
     approvalTimeline = [],
+    advancePic = null,
 }) {
     const [confirm, setConfirm] = useState(false);
     const formRef = useRef(null);
@@ -506,7 +507,7 @@ export default function TravelForm({
             <WorkflowStepper
                 currentStatus={currentStatus}
                 title="Alur Perjalanan Dinas"
-                steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Dalam Review", pic: approvalTimeline.find((item) => item.step_code === "supervisor")?.approver?.name }, { key: "approved", label: "Disetujui", pic: approvalTimeline.find((item) => item.step_code === "hod")?.approver?.name }, { key: "processing", label: "Diproses HRGA", pic: approvalTimeline.find((item) => item.step_code === "hrga")?.approver?.name }, { key: "advance_paid", label: "Advance Dibayar" }, { key: "settlement_required", label: "Perlu Settlement" }, { key: "completed", label: "Selesai" }]}
+                steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Dalam Review", pic: approvalTimeline.find((item) => item.step_code === "supervisor")?.approver?.name }, { key: "approved", label: "Disetujui", pic: approvalTimeline.find((item) => item.step_code === "hod")?.approver?.name }, { key: "processing", label: "Diproses HRGA", pic: approvalTimeline.find((item) => item.step_code === "hrga")?.approver?.name }, { key: "advance_paid", label: "Advance Dibayar", pic: advancePic }, { key: "settlement_required", label: "Perlu Settlement", pic: advancePic }, { key: "completed", label: "Selesai" }]}
             />
             <header className="travel-sheet-header">
                 <div className="travel-sheet-logo" aria-label="Borneo Prima">

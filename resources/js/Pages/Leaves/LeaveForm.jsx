@@ -433,6 +433,7 @@ export default function LeaveForm({
     currentStatus = "draft",
     readOnly = false,
     approvalTimeline = [],
+    advancePic = null,
 }) {
     const [konfirmasi, setKonfirmasi] = useState(false);
 
@@ -523,7 +524,7 @@ export default function LeaveForm({
             <WorkflowStepper
                 currentStatus={currentStatus}
                 title="Alur Cuti / Izin"
-                steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Dalam Review", pic: approvalTimeline.find((item) => item.step_code === "supervisor")?.approver?.name }, { key: "approved", label: "Disetujui", pic: approvalTimeline.find((item) => item.step_code === "hod")?.approver?.name }, { key: "processing", label: "Diproses HRGA", pic: approvalTimeline.find((item) => item.step_code === "hrga")?.approver?.name }, { key: "advance_paid", label: "Advance Dibayar" }, { key: "settlement_required", label: "Perlu Settlement" }, { key: "completed", label: "Selesai" }]}
+                steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Dalam Review", pic: approvalTimeline.find((item) => item.step_code === "supervisor")?.approver?.name }, { key: "approved", label: "Disetujui", pic: approvalTimeline.find((item) => item.step_code === "hod")?.approver?.name }, { key: "processing", label: "Diproses HRGA", pic: approvalTimeline.find((item) => item.step_code === "hrga")?.approver?.name }, { key: "advance_paid", label: "Advance Dibayar", pic: advancePic }, { key: "settlement_required", label: "Perlu Settlement", pic: advancePic }, { key: "completed", label: "Selesai" }]}
             />
             <header className="leave-sheet-header">
                 <div className="leave-sheet-logo"><strong>BP</strong><small>PT. BORNEO PRIMA</small><em>COAL MINING &amp; TRADING</em></div>

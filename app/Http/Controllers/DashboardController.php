@@ -39,6 +39,19 @@ class DashboardController extends Controller
                 $pendingActions[] = ['key' => 'settlement', 'label' => 'Perlu Settlement', 'description' => 'Advance yang dapat dibuatkan settlement.', 'count' => $settlementSources, 'href' => '/settlements/create', 'tone' => 'amber'];
             }
         }
+        $advanceStatuses = [RequestStatus::Approved, RequestStatus::Processing];
+        $pendingLeaveAdvance = $request->user()->can('advance.process.leave')
+            ? LeaveRequest::query()->whereIn('status', $advanceStatuses)->count()
+            : 0;
+        $pendingTravelAdvance = $request->user()->can('advance.process.travel')
+            ? TravelRequest::query()->whereIn('status', $advanceStatuses)->count()
+            : 0;
+        if ($pendingLeaveAdvance > 0) {
+            $pendingActions[] = ['key' => 'leave-advance', 'label' => 'Proses Advance Cuti', 'description' => 'Cuti yang menunggu pemrosesan advance oleh Anda.', 'count' => $pendingLeaveAdvance, 'href' => '/leaves', 'tone' => 'blue'];
+        }
+        if ($pendingTravelAdvance > 0) {
+            $pendingActions[] = ['key' => 'travel-advance', 'label' => 'Proses Advance Dinas', 'description' => 'Perjalanan dinas yang menunggu pemrosesan advance oleh Anda.', 'count' => $pendingTravelAdvance, 'href' => '/travels', 'tone' => 'blue'];
+        }
         if ($request->user()->can('settlement.complete') && $request->user()->can('settlement.review.finance')) {
             $paymentCount = Settlement::query()->where('status', RequestStatus::PaymentProcessing)->count();
             if ($paymentCount > 0) {
