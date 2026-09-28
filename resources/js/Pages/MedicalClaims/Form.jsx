@@ -36,6 +36,10 @@ export default function Form({ claim, meta, edit = false, readOnly = false, appr
     const [confirm, setConfirm] = useState(false);
     const total = useMemo(() => data.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0), [data.items]);
     const requirements = meta?.required_documents ?? ["receipt"];
+    const approvalPic = (stepCode) => {
+        const step = approvalTimeline.find((item) => item.step_code === stepCode);
+        return step?.approver?.name ?? step?.actor ?? null;
+    };
     const paymentPic = activities.find((item) => item.action === "medical.payment_processing")?.actor ?? null;
     const completePic = activities.find((item) => item.action === "medical.completed")?.actor ?? null;
     const update = (index, key, value) => setData("items", data.items.map((item, row) => row === index ? { ...item, [key]: value } : item));
@@ -50,7 +54,7 @@ export default function Form({ claim, meta, edit = false, readOnly = false, appr
         <Head title={edit ? "Ubah Medical Claim" : "Buat Medical Claim"} />
         <form onSubmit={readOnly ? (event) => event.preventDefault() : requestSave} className="worksheet-form medical-sheet space-y-6">
             <fieldset disabled={readOnly} className="block min-w-0 space-y-6 border-0 p-0">
-             <WorkflowStepper currentStatus={claim?.status ?? "draft"} title="Alur Medical Claim" steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Review HRGA", pic: approvalTimeline.find((item) => item.step_code === "hrga")?.approver?.name }, { key: "document_validation", label: "Validasi Dokumen", pic: approvalTimeline.find((item) => item.step_code === "document_validation")?.approver?.name }, { key: "approved", label: "Disetujui" }, { key: "payment_processing", label: "Proses Pembayaran", pic: paymentPic }, { key: "completed", label: "Selesai", pic: completePic }]} />
+             <WorkflowStepper currentStatus={claim?.status ?? "draft"} title="Alur Medical Claim" steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Review HRGA", pic: approvalPic("hrga") }, { key: "document_validation", label: "Validasi Dokumen", pic: approvalPic("document_validation") }, { key: "approved", label: "Disetujui" }, { key: "payment_processing", label: "Proses Pembayaran", pic: paymentPic }, { key: "completed", label: "Selesai", pic: completePic }]} />
             <header className="medical-sheet-header">
                 <div className="medical-sheet-logo"><strong>BP</strong><small>PT. BORNEO PRIMA</small><em>COAL MINING &amp; TRADING</em></div>
                 <div className="medical-sheet-title"><p>PT. BORNEO PRIMA</p><h1>FORMULIR MEDICAL CLAIM</h1></div>
