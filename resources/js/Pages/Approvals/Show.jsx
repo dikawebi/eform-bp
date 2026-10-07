@@ -4,9 +4,9 @@ import StatusBadge from '@/Components/StatusBadge';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
-const labels = { hrga: 'HRGA', finance: 'Finance', supervisor: 'Supervisor', hod: 'HOD', project_manager: 'Project Manager', document_validation: 'Validasi Dokumen', document: 'Validasi Dokumen', approve: 'Disetujui', return: 'Dikembalikan', reject: 'Ditolak', delegate: 'Didelegasikan', annual_leave: 'Cuti Tahunan', roster_leave: 'Cuti Roster/OS', permission: 'Izin', coff: 'C-Off', travel_home: 'Perjalanan ke Rumah/Lokasi', travel_to_site: 'Perjalanan ke Site' };
+const labels = { hrga: 'HRGA', finance: 'Finance', supervisor: 'Supervisor', hod: 'HOD', project_manager: 'Project Manager', pm_gm: 'PM / GM Site', it: 'IT Service Desk', erp_review: 'Reviewer ERP', coo_ceo: 'COO / CEO', document_validation: 'Validasi Dokumen', document: 'Validasi Dokumen', approve: 'Disetujui', return: 'Dikembalikan', reject: 'Ditolak', delegate: 'Didelegasikan', annual_leave: 'Cuti Tahunan', roster_leave: 'Cuti Roster/OS', permission: 'Izin', coff: 'C-Off', travel_home: 'Perjalanan ke Rumah/Lokasi', travel_to_site: 'Perjalanan ke Site', new_item: 'Barang baru', replacement: 'Penggantian', laptop: 'Laptop', desktop: 'Desktop', workstation_cad: 'Workstation / CAD', upgrade: 'Upgrade perangkat', new_account: 'Akun baru', modify_role: 'Perubahan role', reset_auth: 'Reset akses' };
 const actionLabels = { approve: 'Setujui', return: 'Kembalikan', reject: 'Tolak', delegate: 'Delegasikan' };
-const kindLabels = { leave: 'Cuti / Izin', travel: 'Perjalanan Dinas', settlement: 'Settlement', medical_claim: 'Medical Claim' };
+const kindLabels = { leave: 'Cuti / Izin', travel: 'Perjalanan Dinas', settlement: 'Settlement', medical_claim: 'Medical Claim', it_request: 'IT Request', erp_request: 'ERP Request' };
 const formatRupiah = (value) => `Rp ${Number(value ?? 0).toLocaleString('id-ID')}`;
 const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : '—';
 
@@ -52,6 +52,11 @@ export default function Show({ approval, availableActions = {} }) {
                         <SummaryField label="Realisasi" value={document.actual_amount} currency />
                         <SummaryField label="Selisih" value={document.difference_amount} currency />
                         <SummaryField label="Sumber settlement" value={document.source_reference || (document.source_type ? `${kindLabels[document.source_type] ?? document.source_type}` : null)} />
+                        <SummaryField label="Jenis permintaan" value={labels[document.request_type] ?? document.request_type} />
+                        <SummaryField label="Perangkat" value={labels[document.device_type] ?? document.device_type} />
+                        <SummaryField label="Prioritas" value={document.priority} />
+                        <SummaryField label="Tanggal dibutuhkan" value={formatDate(document.needed_date)} />
+                        <SummaryField label="Tipe ERP" value={labels[document.action_type] ?? document.action_type} />
                     </dl>
                     {document.purpose && <div className="mt-4"><p className="text-xs font-semibold text-slate-500">Keperluan perjalanan</p><p className="mt-1 text-sm leading-6">{document.purpose}</p></div>}
                      {document.reason && <div className="mt-4"><p className="text-xs font-semibold text-slate-500">Alasan pengajuan</p><p className="mt-1 text-sm leading-6">{document.reason}</p></div>}

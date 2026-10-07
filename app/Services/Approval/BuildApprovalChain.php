@@ -8,9 +8,12 @@ use App\Models\ApprovalRequest;
 use App\Models\ApprovalWorkflow;
 use App\Models\ApprovalWorkflowStep;
 use App\Models\Employee;
+use App\Models\ErpRequest;
+use App\Models\ItRequest;
 use App\Models\LeaveRequest;
 use App\Models\MedicalClaim;
 use App\Models\Settlement;
+use App\Models\SitePmGmAssignment;
 use App\Models\User;
 use Database\Seeders\ApprovalWorkflowSeeder;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +29,7 @@ class BuildApprovalChain
             // The parent lock is the serialization point for submit/re-submit.
             $approvable = $approvable::query()->whereKey($approvable->getKey())->lockForUpdate()->firstOrFail();
             $snapshot ??= (array) $approvable->employee_snapshot_json;
-            $code = $approvable instanceof LeaveRequest ? 'leave_default' : ($approvable instanceof Settlement ? 'settlement_default' : ($approvable instanceof MedicalClaim ? 'medical_default' : 'travel_default'));
+            $code = $approvable instanceof LeaveRequest ? 'leave_default' : ($approvable instanceof Settlement ? 'settlement_default' : ($approvable instanceof MedicalClaim ? 'medical_default' : ($approvable instanceof ItRequest ? 'it_default' : ($approvable instanceof ErpRequest ? 'erp_default' : 'travel_default'))));
             $workflow = ApprovalWorkflow::query()->where('code', $code)->where('is_active', true)->with('steps')->first();
             if ($workflow === null) {
                 app(ApprovalWorkflowSeeder::class)->run();
@@ -57,6 +60,13 @@ class BuildApprovalChain
                 if ($step->step_code === 'pm' && (bool) data_get($approvable, 'is_project_trip', false)
                     && self::snapshotUserByPaths($snapshot, ['approval_snapshot.pm.user_id', 'approval_snapshot.project_manager.user_id', 'project_manager.user_id', 'project_manager_id']) === null) {
                     throw ValidationException::withMessages(['project_manager' => 'Perjalanan project wajib memiliki PM yang sudah disimpan di snapshot sebelum approval chain dibuat.']);
+                }
+
+                if ($step->step_code === 'coo_ceo' && ! (bool) data_get($approvable, 'special_specification', false)) {
+                    self::create($approvable, $workflow, $step, null, ApprovalStepStatus::Skipped, $generation, $actor);
+                    self::audit($approvable, 'approval.step_skipped', ['step_code' => $step->step_code, 'generation' => $generation, 'reason' => 'no_special_specification'], $actor);
+
+                    continue;
                 }
 
                 $userId = self::resolveUserId($step, $snapshot, $approvable, $selected);
@@ -106,7 +116,7 @@ class BuildApprovalChain
 
     private static function resolveUserId(ApprovalWorkflowStep $step, array $snapshot, Model $parent, array $selected = []): ?int
     {
-        if (! in_array($step->approver_resolver, ['supervisor_id', 'hod_id', 'assigned_pm', 'role_users'], true)
+        if (! in_array($step->approver_resolver, ['supervisor_id', 'hod_id', 'assigned_pm', 'site_pm_gm', 'role_users'], true)
             || trim((string) $step->approver_role) === '') {
             throw ValidationException::withMessages(['approval' => "Resolver approval untuk langkah {$step->step_code} tidak valid."]);
         }
@@ -118,6 +128,11 @@ class BuildApprovalChain
                 'approval_snapshot.project_manager.user_id',
                 'project_manager.user_id',
                 'project_manager_id',
+            ]),
+            'site_pm_gm' => self::snapshotUserByPaths($snapshot, [
+                'approval_snapshot.pm_gm.user_id',
+                'approval_snapshot.site_pm_gm.user_id',
+                'pm_gm_user_id',
             ]),
             'role_users' => User::query()->where('active', true)->role($step->approver_role)->permission('approval.act')->whereHas('employee', fn ($e) => $e->where('active', true))->whereNotIn('id', $selected)->orderBy('name')->orderBy('id')->get()->first(fn (User $user) => ! ApprovalActorConflicts::conflicts($parent, $user))?->id,
             default => null,

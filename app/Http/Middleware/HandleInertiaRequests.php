@@ -85,6 +85,8 @@ class HandleInertiaRequests extends Middleware
             ['label' => 'Perjalanan Dinas', 'url' => '/travels', 'permission' => 'travel.view.own'],
             ['label' => 'Settlement', 'url' => '/settlements', 'permission' => 'settlement.create.own'],
             ['label' => 'Medical Claim', 'url' => '/medical-claims', 'permission' => 'medical.view.own'],
+            ['label' => 'IT Request', 'url' => '/it-requests', 'permission' => 'it_request.create.own'],
+            ['label' => 'ERP Request', 'url' => '/erp-requests', 'permission' => 'erp_request.create.own'],
             ['label' => 'Approval', 'url' => '/approvals', 'permission' => 'approval.inbox.view'],
             ['label' => 'Laporan', 'url' => '/reports', 'permission' => 'report.view'],
             ['key' => 'master', 'label' => 'Karyawan', 'url' => '/master/employees', 'group' => 'Administrasi', 'permission' => ['employee.view.any', 'employee.manage']],

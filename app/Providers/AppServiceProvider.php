@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
-use App\Models\ApprovalRequest;
+use App\Models\ErpRequest;
+use App\Models\ItRequest;
+use App\Policies\ErpRequestPolicy;
+use App\Policies\ItRequestPolicy;
 use App\Models\ApprovalWorkflow;
 use App\Models\Attachment;
 use App\Models\Employee;
@@ -56,6 +59,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(TravelRequest::class, TravelRequestPolicy::class);
         Gate::policy(MedicalClaim::class, MedicalClaimPolicy::class);
         Gate::policy(Settlement::class, SettlementPolicy::class);
+        Gate::policy(ItRequest::class, ItRequestPolicy::class);
+        Gate::policy(ErpRequest::class, ErpRequestPolicy::class);
         Gate::policy(Attachment::class, AttachmentPolicy::class);
         Gate::policy(ApprovalRequest::class, ApprovalRequestPolicy::class);
         Gate::policy(ApprovalWorkflow::class, ApprovalWorkflowPolicy::class);
@@ -64,6 +69,8 @@ class AppServiceProvider extends ServiceProvider
             'leave_request' => LeaveRequest::class,
             'travel_request' => TravelRequest::class,
             'settlement' => Settlement::class,
+            'it_request' => ItRequest::class,
+            'erp_request' => ErpRequest::class,
             // Reserved for Phase 6 without resolving a model that is not implemented yet.
             'medical_claim' => 'App\\Models\\MedicalClaim',
             'approval_request' => ApprovalRequest::class,

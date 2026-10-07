@@ -24,6 +24,9 @@ class RolesPermissionsSeeder extends Seeder
         'finance',
         'admin',
         'auditor',
+        'it',
+        'erp_reviewer',
+        'coo_ceo',
     ];
 
     /**
@@ -69,6 +72,20 @@ class RolesPermissionsSeeder extends Seeder
         'medical.payment.complete',
         'medical.view.sensitive',
         'medical.view.aggregate',
+
+        'it_request.create.own',
+        'it_request.create.onbehalf',
+        'it_request.view.own',
+        'it_request.view.all',
+        'it_request.view.subordinates',
+        'it_request.review',
+
+        'erp_request.create.own',
+        'erp_request.create.onbehalf',
+        'erp_request.view.own',
+        'erp_request.view.all',
+        'erp_request.view.subordinates',
+        'erp_request.review',
 
         'approval.inbox.view',
         'approval.audit.view',
@@ -155,6 +172,10 @@ class RolesPermissionsSeeder extends Seeder
             'settlement.view.own',
             'medical.create.own',
             'medical.view.own',
+            'it_request.create.own',
+            'it_request.view.own',
+            'erp_request.create.own',
+            'erp_request.view.own',
             'attachment.download.own',
             'attachment.upload.own',
         ]);
@@ -169,6 +190,8 @@ class RolesPermissionsSeeder extends Seeder
             'travel.view.subordinates',
             'settlement.view.subordinates',
             'medical.view.subordinates',
+            'it_request.view.subordinates',
+            'erp_request.view.subordinates',
             'approval.inbox.view',
             'approval.act',
             'attachment.download.own',
@@ -185,6 +208,8 @@ class RolesPermissionsSeeder extends Seeder
             'travel.view.subordinates',
             'settlement.view.subordinates',
             'medical.view.subordinates',
+            'it_request.view.subordinates',
+            'erp_request.view.subordinates',
             'approval.inbox.view',
             'approval.act',
             'attachment.download.own',
@@ -197,6 +222,40 @@ class RolesPermissionsSeeder extends Seeder
             'employee.view.any',
             'leave.view.all',
             'travel.view.all',
+            'it_request.view.all',
+            'erp_request.view.all',
+            'approval.inbox.view',
+            'approval.act',
+            'attachment.download.assigned',
+            'attachment.upload.assigned',
+        ]);
+
+        $give('it', [
+            'dashboard.view',
+            'employee.view.any',
+            'it_request.view.all',
+            'it_request.review',
+            'erp_request.view.all',
+            'erp_request.review',
+            'approval.inbox.view',
+            'approval.act',
+            'attachment.download.assigned',
+            'attachment.upload.assigned',
+        ]);
+
+        $give('erp_reviewer', [
+            'dashboard.view',
+            'erp_request.view.all',
+            'erp_request.review',
+            'approval.inbox.view',
+            'approval.act',
+            'attachment.download.assigned',
+            'attachment.upload.assigned',
+        ]);
+
+        $give('coo_ceo', [
+            'dashboard.view',
+            'it_request.view.all',
             'approval.inbox.view',
             'approval.act',
             'attachment.download.assigned',
@@ -238,6 +297,10 @@ class RolesPermissionsSeeder extends Seeder
             'leave.create.onbehalf',
             'leave.view.own',
             'leave.view.all',
+            'it_request.create.onbehalf',
+            'it_request.view.all',
+            'erp_request.create.onbehalf',
+            'erp_request.view.all',
             'travel.create.onbehalf',
             'travel.submit.onbehalf',
             'travel.project.flag',
@@ -289,6 +352,8 @@ class RolesPermissionsSeeder extends Seeder
             'travel.view.all',
             'settlement.view.all',
             'medical.view.aggregate',
+            'it_request.view.all',
+            'erp_request.view.all',
             'attachment.download.assigned',
             'attachment.upload.assigned',
             'report.export',

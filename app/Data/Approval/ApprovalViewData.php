@@ -3,6 +3,8 @@
 namespace App\Data\Approval;
 
 use App\Models\ApprovalRequest;
+use App\Models\ErpRequest;
+use App\Models\ItRequest;
 use App\Models\LeaveRequest;
 use App\Models\MedicalClaim;
 use App\Models\Settlement;
@@ -62,6 +64,25 @@ final class ApprovalViewData
                     'difference_amount' => $parent->difference_amount, 'difference_type' => $parent->difference_type?->value,
                     'employee' => $parent->employee?->only(['employee_number', 'name', 'department']),
                     'url' => route('settlements.show', $parent),
+                ];
+            } elseif ($parent instanceof ItRequest) {
+                $parent->loadMissing('employee:id,employee_number,name,department');
+                $summary = [
+                    'id' => $parent->id, 'type' => 'it_request', 'request_number' => $parent->request_number,
+                    'status' => $parent->status->value, 'request_type' => $parent->request_type,
+                    'device_type' => $parent->device_type, 'priority' => $parent->priority,
+                    'needed_date' => $parent->needed_date?->toDateString(),
+                    'special_specification' => (bool) $parent->special_specification,
+                    'employee' => $parent->employee?->only(['employee_number', 'name', 'department']),
+                    'url' => route('it-requests.show', $parent),
+                ];
+            } elseif ($parent instanceof ErpRequest) {
+                $parent->loadMissing('employee:id,employee_number,name,department');
+                $summary = [
+                    'id' => $parent->id, 'type' => 'erp_request', 'request_number' => $parent->request_number,
+                    'status' => $parent->status->value, 'action_type' => $parent->action_type,
+                    'employee' => $parent->employee?->only(['employee_number', 'name', 'department']),
+                    'url' => route('erp-requests.show', $parent),
                 ];
             } else {
                 $summary = ['id' => $parent?->id, 'type' => $approval->approvable_type];

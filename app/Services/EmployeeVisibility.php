@@ -68,12 +68,14 @@ class EmployeeVisibility
     {
         return $user->can('leave.view.all') || $user->can('travel.view.all')
             || $user->can('settlement.view.all') || $user->can('medical.view.all')
-            || $user->can('medical.view.aggregate');
+            || $user->can('medical.view.aggregate')
+            || $user->can('it_request.view.all') || $user->can('erp_request.view.all');
     }
 
     private function hasSubordinateAccess(User $user): bool
     {
         return $user->can('leave.view.subordinates') || $user->can('travel.view.subordinates')
-            || $user->can('settlement.view.subordinates') || $user->can('medical.view.subordinates');
+            || $user->can('settlement.view.subordinates') || $user->can('medical.view.subordinates')
+            || $user->can('it_request.view.subordinates') || $user->can('erp_request.view.subordinates');
     }
 }

@@ -22,6 +22,8 @@ class ApprovalWorkflowController extends Controller
             'travel' => 'travel_request',
             'settlement' => 'settlement',
             'medical-claim' => 'medical_claim',
+            'it-request' => 'it_request',
+            'erp-request' => 'erp_request',
         ];
         abort_if($scope !== null && ! array_key_exists($scope, $entityTypes), 404);
 
@@ -32,6 +34,10 @@ class ApprovalWorkflowController extends Controller
                 ['value' => 'supervisor', 'label' => 'Supervisor / SPT'],
                 ['value' => 'hod', 'label' => 'HOD'],
                 ['value' => 'pm', 'label' => 'Project Manager'],
+                ['value' => 'pm_gm', 'label' => 'PM / GM Site'],
+                ['value' => 'it', 'label' => 'IT Service Desk'],
+                ['value' => 'erp_review', 'label' => 'Reviewer ERP'],
+                ['value' => 'coo_ceo', 'label' => 'COO / CEO'],
                 ['value' => 'hrga', 'label' => 'HRGA'],
                 ['value' => 'document_validation', 'label' => 'Validasi Dokumen'],
                 ['value' => 'finance', 'label' => 'Finance'],
@@ -40,6 +46,9 @@ class ApprovalWorkflowController extends Controller
                 ['value' => 'supervisor', 'label' => 'Supervisor / SPT'],
                 ['value' => 'hod', 'label' => 'HOD'],
                 ['value' => 'project_manager', 'label' => 'Project Manager'],
+                ['value' => 'it', 'label' => 'IT Service Desk'],
+                ['value' => 'erp_reviewer', 'label' => 'Reviewer ERP'],
+                ['value' => 'coo_ceo', 'label' => 'COO / CEO'],
                 ['value' => 'hrga', 'label' => 'HRGA'],
                 ['value' => 'hrga_manager', 'label' => 'HRGA Manager'],
                 ['value' => 'finance', 'label' => 'Finance'],

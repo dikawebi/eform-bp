@@ -4,6 +4,8 @@ namespace App\Policies;
 
 use App\Enums\RequestStatus;
 use App\Models\Attachment;
+use App\Models\ErpRequest;
+use App\Models\ItRequest;
 use App\Models\LeaveRequest;
 use App\Models\MedicalClaim;
 use App\Models\Settlement;
@@ -22,6 +24,7 @@ class AttachmentPolicy
         // settlement document permission.
         if (! in_array($attachment->attachable_type, [
             Relation::getMorphAlias(LeaveRequest::class), Relation::getMorphAlias(TravelRequest::class), Relation::getMorphAlias(Settlement::class), Relation::getMorphAlias(MedicalClaim::class),
+            Relation::getMorphAlias(ItRequest::class), Relation::getMorphAlias(ErpRequest::class),
         ], true)) {
             return false;
         }
@@ -38,7 +41,8 @@ class AttachmentPolicy
                     || ($user->can('medical.view.sensitive') && ($user->can('attachment.download.medical') || $user->can('medical.review'))));
         }
         if (! $travel instanceof TravelRequest && ! $travel instanceof Settlement) {
-            return $travel instanceof LeaveRequest && $this->canAccessLeave($user, $travel);
+            return ($travel instanceof LeaveRequest && $this->canAccessLeave($user, $travel))
+                || (($travel instanceof ItRequest || $travel instanceof ErpRequest) && $this->canAccessGeneric($user, $travel));
         }
 
         if ($travel instanceof Settlement) {
@@ -88,6 +92,13 @@ class AttachmentPolicy
         return $user->can('attachment.download.all')
             || ($user->can('attachment.download.own') && $this->isOwner($user, $leave))
             || ($user->can('attachment.download.assigned') && $this->isAssigned($user, $leave));
+    }
+
+    protected function canAccessGeneric(User $user, ItRequest|ErpRequest $request): bool
+    {
+        return $user->can('attachment.download.all')
+            || ($user->can('attachment.download.own') && $this->isOwner($user, $request))
+            || ($user->can('attachment.download.assigned') && $this->isAssigned($user, $request));
     }
 
     protected function isOwner(User $user, object $travel): bool

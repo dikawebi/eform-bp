@@ -11,6 +11,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\ErpRequestController;
+use App\Http\Controllers\ItRequestController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TravelRequestController;
 use App\Models\ApprovalRequest;
@@ -125,6 +127,30 @@ Route::middleware('auth')->group(function () {
         Route::post('/{medical_claim}/attachments', [MedicalClaimController::class, 'uploadAttachment'])->name('attachments.store');
     });
 
+    Route::prefix('it-requests')->name('it-requests.')->group(function () {
+        Route::get('/', [ItRequestController::class, 'index'])->name('index');
+        Route::get('/create', [ItRequestController::class, 'create'])->name('create');
+        Route::post('/', [ItRequestController::class, 'store'])->name('store');
+        Route::get('/{it_request}', [ItRequestController::class, 'show'])->name('show');
+        Route::get('/{it_request}/edit', [ItRequestController::class, 'edit'])->name('edit');
+        Route::match(['put', 'patch'], '/{it_request}', [ItRequestController::class, 'update'])->name('update');
+        Route::post('/{it_request}/submit', [ItRequestController::class, 'submit'])->name('submit');
+        Route::post('/{it_request}/cancel', [ItRequestController::class, 'cancel'])->name('cancel');
+        Route::post('/{it_request}/attachments', [ItRequestController::class, 'uploadAttachment'])->name('attachments.store');
+    });
+
+    Route::prefix('erp-requests')->name('erp-requests.')->group(function () {
+        Route::get('/', [ErpRequestController::class, 'index'])->name('index');
+        Route::get('/create', [ErpRequestController::class, 'create'])->name('create');
+        Route::post('/', [ErpRequestController::class, 'store'])->name('store');
+        Route::get('/{erp_request}', [ErpRequestController::class, 'show'])->name('show');
+        Route::get('/{erp_request}/edit', [ErpRequestController::class, 'edit'])->name('edit');
+        Route::match(['put', 'patch'], '/{erp_request}', [ErpRequestController::class, 'update'])->name('update');
+        Route::post('/{erp_request}/submit', [ErpRequestController::class, 'submit'])->name('submit');
+        Route::post('/{erp_request}/cancel', [ErpRequestController::class, 'cancel'])->name('cancel');
+        Route::post('/{erp_request}/attachments', [ErpRequestController::class, 'uploadAttachment'])->name('attachments.store');
+    });
+
     Route::prefix('settlements')->name('settlements.')->group(function () {
         Route::get('/', [SettlementController::class, 'index'])->name('index');
         Route::get('/create', [SettlementController::class, 'create'])->name('create');
@@ -148,7 +174,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ApprovalWorkflowController::class, 'index'])
             ->can('viewAny', ApprovalWorkflow::class)->name('index');
         Route::get('/{scope}', [ApprovalWorkflowController::class, 'index'])
-            ->whereIn('scope', ['leave', 'travel', 'settlement', 'medical-claim'])
+            ->whereIn('scope', ['leave', 'travel', 'settlement', 'medical-claim', 'it-request', 'erp-request'])
             ->can('viewAny', ApprovalWorkflow::class)->name('scope');
         Route::put('/{workflow}', [ApprovalWorkflowController::class, 'update'])
             ->can('update', 'workflow')->name('update');

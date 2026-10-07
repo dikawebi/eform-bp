@@ -40,7 +40,7 @@ class FoundationSeederTest extends TestCase
         $this->assertTrue($supervisorUser->fresh()->hasRole('supervisor'));
         $this->assertTrue($hodUser->fresh()->hasRole('hod'));
         $this->assertFalse($unlinkedUser->fresh()->hasAnyRole(['employee', 'supervisor', 'hod']));
-        $this->assertSame(4, ApprovalWorkflow::count());
+        $this->assertSame(6, ApprovalWorkflow::count());
         $this->assertSame('PT Borneo Prima', config('eform.company.name'));
     }
 
