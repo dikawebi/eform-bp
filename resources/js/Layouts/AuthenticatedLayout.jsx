@@ -80,6 +80,18 @@ function MenuIcon({ menuKey }) {
                 <path d="M12 8v8M8 12h8" />
             </>
         ),
+        'it-requests': (
+            <>
+                <rect x="3" y="4" width="18" height="12" rx="2" />
+                <path d="M9 20h6M12 16v4" />
+            </>
+        ),
+        'erp-requests': (
+            <>
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
+            </>
+        ),
         approvals: (
             <>
                 <circle cx="12" cy="12" r="9" />

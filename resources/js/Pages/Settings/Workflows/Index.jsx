@@ -102,6 +102,8 @@ const workflowScopes = [
     { key: 'travel', label: 'Perjalanan Dinas' },
     { key: 'settlement', label: 'Settlement' },
     { key: 'medical-claim', label: 'Medical Claim' },
+    { key: 'it-request', label: 'IT Request' },
+    { key: 'erp-request', label: 'ERP Request' },
 ];
 
 export default function Index({ workflows = [], stepCodes = [], approverRoles = [], scope = null }) {

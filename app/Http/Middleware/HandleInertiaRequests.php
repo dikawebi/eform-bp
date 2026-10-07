@@ -94,6 +94,8 @@ class HandleInertiaRequests extends Middleware
             ['key' => 'settings-travel', 'label' => 'Workflow Perjalanan Dinas', 'url' => '/settings/workflows/travel', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-settlement', 'label' => 'Workflow Settlement', 'url' => '/settings/workflows/settlement', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-medical', 'label' => 'Workflow Medical Claim', 'url' => '/settings/workflows/medical-claim', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
+            ['key' => 'settings-it-request', 'label' => 'Workflow IT Request', 'url' => '/settings/workflows/it-request', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
+            ['key' => 'settings-erp-request', 'label' => 'Workflow ERP Request', 'url' => '/settings/workflows/erp-request', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-roles', 'label' => 'Role dan Permission', 'url' => '/settings/roles', 'group' => 'Pengaturan', 'permission' => 'role.manage'],
         ];
 
