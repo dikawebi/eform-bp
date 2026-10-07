@@ -32,6 +32,10 @@ function keyFromUrl(url) {
             return 'settlements';
         case '/medical-claims':
             return 'medical-claims';
+        case '/it-requests':
+            return 'it-requests';
+        case '/erp-requests':
+            return 'erp-requests';
         case '/approvals':
             return 'approvals';
         case '/reports':
@@ -171,7 +175,7 @@ function normalizeMenus(serverMenus) {
 }
 
 function menuGroup(key) {
-    if (['dashboard', 'leaves', 'travels', 'settlements', 'medical-claims'].includes(key)) {
+    if (['dashboard', 'leaves', 'travels', 'settlements', 'medical-claims', 'it-requests', 'erp-requests'].includes(key)) {
         return 'Ruang Kerja';
     }
     if (['approvals', 'reports'].includes(key)) {
