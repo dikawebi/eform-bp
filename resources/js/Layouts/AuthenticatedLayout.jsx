@@ -118,6 +118,15 @@ function MenuIcon({ menuKey }) {
         ),
     };
 
+    // Submenu pengaturan workflow memakai ikon modulnya masing-masing
+    // agar mudah dibedakan; menu pengaturan lain tetap memakai gear.
+    paths['settings-leave'] = paths.leaves;
+    paths['settings-travel'] = paths.travels;
+    paths['settings-settlement'] = paths.settlements;
+    paths['settings-medical'] = paths['medical-claims'];
+    paths['settings-it-request'] = paths['it-requests'];
+    paths['settings-erp-request'] = paths['erp-requests'];
+
     return (
         <svg
             className="h-5 w-5 shrink-0"
