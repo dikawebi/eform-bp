@@ -45,8 +45,8 @@ abstract class ItRequestRequest extends FormRequest
             'accessories' => ['nullable', 'array', 'max:30'],
             'accessories.*' => ['string', 'max:100'],
             'accessory_other_note' => ['nullable', 'string', 'max:500'],
-            'needed_date' => ['required', 'date_format:Y-m-d'],
-            'priority' => ['required', 'string', Rule::in($priorities)],
+            'needed_date' => ['nullable', 'date_format:Y-m-d'],
+            'priority' => ['nullable', 'string', Rule::in($priorities)],
         ];
     }
 

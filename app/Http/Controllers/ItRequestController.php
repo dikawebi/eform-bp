@@ -94,8 +94,8 @@ class ItRequestController extends Controller
                 'software_optional_json' => $data['software_optional'] ?? [],
                 'accessories_json' => $data['accessories'] ?? [],
                 'accessory_other_note' => $data['accessory_other_note'] ?? null,
-                'needed_date' => $data['needed_date'],
-                'priority' => $data['priority'],
+                'needed_date' => $data['needed_date'] ?? null,
+                'priority' => $data['priority'] ?? 'normal',
                 'status' => RequestStatus::Draft,
                 'created_by' => $user->id,
                 'updated_by' => $user->id,
@@ -176,8 +176,8 @@ class ItRequestController extends Controller
                 'software_optional_json' => $data['software_optional'] ?? [],
                 'accessories_json' => $data['accessories'] ?? [],
                 'accessory_other_note' => $data['accessory_other_note'] ?? null,
-                'needed_date' => $data['needed_date'],
-                'priority' => $data['priority'],
+                'needed_date' => $data['needed_date'] ?? null,
+                'priority' => $data['priority'] ?? 'normal',
                 'updated_by' => $request->user()->id,
             ])->save();
             activity()->performedOn($it)->causedBy($request->user())->log('it.updated');
