@@ -231,6 +231,7 @@
 .dark .app-shell .bg-emerald-50 { background-color: rgb(6 78 59 / 0.35) !important; }
 .dark .app-shell .bg-emerald-100 { background-color: rgb(6 78 59 / 0.5) !important; }
 .dark .app-shell .bg-amber-50 { background-color: rgb(120 53 15 / 0.35) !important; }
+.dark .app-shell .bg-amber-50\/60 { background-color: rgb(120 53 15 / 0.25) !important; }
 .dark .app-shell .bg-amber-100 { background-color: rgb(120 53 15 / 0.5) !important; }
 .dark .app-shell .bg-orange-50 { background-color: rgb(124 45 18 / 0.35) !important; }
 .dark .app-shell .bg-orange-100 { background-color: rgb(124 45 18 / 0.5) !important; }

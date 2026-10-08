@@ -88,6 +88,13 @@ class LeaveRequestController extends Controller
     {
         $this->authorize('create', LeaveRequest::class);
 
+        $linked = Employee::query()->where('user_id', $request->user()->id)->where('active', true)->exists();
+        if (! $linked && ! $request->user()->can('leave.create.onbehalf')) {
+            return Inertia::render('Leaves/Unlinked', [
+                'canManageEmployees' => $request->user()->can('employee.manage'),
+            ]);
+        }
+
         return Inertia::render('Leaves/Create', [
             'meta' => $this->formMeta($request),
         ]);

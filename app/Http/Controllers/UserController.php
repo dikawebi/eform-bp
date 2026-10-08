@@ -6,8 +6,10 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\InAppNotifier;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -55,6 +57,30 @@ class UserController extends Controller
         });
 
         return redirect()->route('settings.users.index')->with('success', "Akun {$user->email} berhasil dibuat.");
+    }
+
+    /**
+     * Akun yang belum tertaut NIK meminta admin/HRGA menautkannya.
+     * Dibatasi untuk akun yang benar-benar belum tertaut agar tidak spam.
+     */
+    public function requestLink(Request $request, InAppNotifier $notifier): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->active, 403);
+        $linked = Employee::query()->where('user_id', $user->id)->where('active', true)->exists();
+        abort_if($linked, 422, 'Akun Anda sudah terhubung ke NIK karyawan.');
+
+        User::query()->where('active', true)->role(['admin', 'hrga', 'hrga_manager'])
+            ->whereKeyNot($user->getKey())->orderBy('id')->cursor()
+            ->each(fn (User $recipient) => $notifier->notifyUser(
+                $recipient->getKey(),
+                'user.link.requested',
+                'Permintaan penautan akun ke NIK',
+                "Akun {$user->name} ({$user->email}) meminta penautan ke NIK karyawan. Proses melalui Pengaturan > Pengguna.",
+                route('settings.users.index'),
+            ));
+
+        return back()->with('success', 'Permintaan penautan terkirim ke admin dan HRGA.');
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse

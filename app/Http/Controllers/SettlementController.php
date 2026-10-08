@@ -75,6 +75,14 @@ class SettlementController extends Controller
     public function create(Request $request): Response
     {
         $this->authorize('create', Settlement::class);
+
+        $linked = Employee::query()->where('user_id', $request->user()->id)->where('active', true)->exists();
+        if (! $linked && ! $request->user()->can('settlement.create.onbehalf')) {
+            return Inertia::render('Settlements/Unlinked', [
+                'canManageEmployees' => $request->user()->can('employee.manage'),
+            ]);
+        }
+
         $employeeIds = Employee::where('user_id', $request->user()->id)->pluck('id');
         $canCreateOnBehalf = $request->user()->can('settlement.create.onbehalf');
         $sources = collect([

@@ -56,6 +56,7 @@ class RolesPermissionsSeeder extends Seeder
         'travel.submit.onbehalf',
 
         'settlement.create.own',
+        'settlement.create.onbehalf',
         'settlement.view.own',
         'settlement.view.all',
         'settlement.view.subordinates',
@@ -300,6 +301,7 @@ class RolesPermissionsSeeder extends Seeder
             'leave.create.onbehalf',
             'leave.view.own',
             'leave.view.all',
+            'settlement.create.onbehalf',
             'it_request.create.onbehalf',
             'it_request.view.all',
             'it.master.manage',

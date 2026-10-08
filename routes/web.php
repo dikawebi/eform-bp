@@ -206,6 +206,9 @@ Route::middleware('auth')->group(function () {
             ->can('update', 'role')->name('update');
     });
 
+    Route::post('/user/request-link', [UserController::class, 'requestLink'])
+        ->middleware('throttle:6,1')->name('user.request-link');
+
     Route::prefix('settings/users')->name('settings.users.')->group(function () {
         Route::get('/', [UserController::class, 'index'])
             ->can('viewAny', User::class)->name('index');

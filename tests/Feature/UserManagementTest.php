@@ -132,6 +132,39 @@ class UserManagementTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_dashboard_exposes_link_nik_pending_action(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $this->employeeUser('employee');
+        User::factory()->create(['active' => true])->assignRole('employee');
+
+        $this->actingAs($admin)->get(route('dashboard'))->assertInertia(
+            fn ($page) => $page->where('pendingActions', fn ($actions) => collect($actions)->contains(fn ($action) => ($action['key'] ?? null) === 'link-nik' && ($action['count'] ?? 0) >= 1))
+        );
+    }
+
+    public function test_unlinked_user_can_request_linking(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $user = User::factory()->create(['active' => true]);
+        $user->assignRole('employee');
+
+        $this->actingAs($user)->post(route('user.request-link'))->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_type' => 'user',
+            'notifiable_id' => $admin->id,
+            'type' => \App\Notifications\WorkflowNotification::class,
+        ]);
+    }
+
+    public function test_linked_user_cannot_request_linking(): void
+    {
+        [$user] = $this->employeeUser('employee');
+
+        $this->actingAs($user)->post(route('user.request-link'))->assertStatus(422);
+    }
+
     public function test_employee_link_is_exclusive_to_one_account(): void
     {
         $admin = $this->userWithRole('admin');

@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 
 export default function Unlinked({ canManageEmployees = false }) {
     return <AuthenticatedLayout title="Profil karyawan belum terhubung" breadcrumbs={['Ruang Kerja', 'IT Request', 'Profil karyawan']}>
@@ -12,7 +12,7 @@ export default function Unlinked({ canManageEmployees = false }) {
                 </header>
                 <div className="space-y-4 p-6">
                     <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">IT Request menggunakan NIK dan data karyawan dari master untuk menentukan pengaju. Profil karyawan aktif belum dikaitkan dengan akun login ini, jadi formulir belum dapat dimulai.</p>
-                    <div className="flex flex-wrap gap-3">{canManageEmployees ? <Link href="/master/employees" className="ui-button-primary rounded-lg px-4 py-2.5 text-sm">Buka Master Karyawan</Link> : <p className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">Silakan minta Administrator atau HRGA menautkan akun Anda ke profil karyawan.</p>}<Link href="/it-requests" className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Kembali ke daftar request</Link></div>
+                    <div className="flex flex-wrap gap-3">{canManageEmployees ? <Link href="/master/employees" className="ui-button-primary rounded-lg px-4 py-2.5 text-sm">Buka Master Karyawan</Link> : <><p className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">Silakan minta Administrator atau HRGA menautkan akun Anda ke profil karyawan.</p><button type="button" onClick={() => { if (window.confirm('Kirim permintaan penautan akun ke admin dan HRGA?')) router.post(route('user.request-link'), {}, { preserveScroll: true }); }} className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">Minta penautan akun</button></>}<Link href="/it-requests" className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Kembali ke daftar request</Link></div>
                 </div>
             </section>
         </div>

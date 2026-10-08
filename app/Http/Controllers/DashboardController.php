@@ -8,6 +8,7 @@ use App\Models\LeaveRequest;
 use App\Models\MedicalClaim;
 use App\Models\Settlement;
 use App\Models\TravelRequest;
+use App\Models\User;
 use App\Enums\RequestStatus;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -67,6 +68,14 @@ class DashboardController extends Controller
                 ->count();
             if ($medicalPaymentCount > 0) {
                 $pendingActions[] = ['key' => 'medical-payment', 'label' => 'Proses Pembayaran Medical Claim', 'description' => 'Medical Claim yang menunggu diproses oleh Finance.', 'count' => $medicalPaymentCount, 'href' => '/medical-claims', 'tone' => 'emerald'];
+            }
+        }
+        if ($request->user()->can('user.manage')) {
+            $unlinkedCount = User::query()->where('active', true)
+                ->whereDoesntHave('employee', fn ($employee) => $employee->where('active', true))
+                ->count();
+            if ($unlinkedCount > 0) {
+                $pendingActions[] = ['key' => 'link-nik', 'label' => 'Tautkan Akun ke NIK', 'description' => 'Akun aktif yang belum terhubung ke NIK karyawan.', 'count' => $unlinkedCount, 'href' => '/settings/users', 'tone' => 'amber'];
             }
         }
         if ($request->user()->can('medical.payment.complete')) {

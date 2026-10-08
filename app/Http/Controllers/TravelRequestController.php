@@ -86,6 +86,13 @@ class TravelRequestController extends Controller
     {
         $this->authorize('create', TravelRequest::class);
 
+        $linked = Employee::query()->where('user_id', $request->user()->id)->where('active', true)->exists();
+        if (! $linked && ! $request->user()->can('travel.create.onbehalf')) {
+            return Inertia::render('Travels/Unlinked', [
+                'canManageEmployees' => $request->user()->can('employee.manage'),
+            ]);
+        }
+
         return Inertia::render('Travels/Create', [
             'meta' => $this->formMeta($request),
         ]);

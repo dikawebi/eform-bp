@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 
 export default function Unlinked({ canManageEmployees = false }) {
     return <AuthenticatedLayout title="Profil karyawan belum terhubung" breadcrumbs={['Ruang Kerja', 'Medical Claim', 'Profil karyawan']}>
@@ -13,7 +13,7 @@ export default function Unlinked({ canManageEmployees = false }) {
                 <div className="space-y-4 p-6">
                     <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">Medical Claim menggunakan NIK dan data karyawan dari master untuk menentukan pemilik klaim. Profil karyawan aktif belum dikaitkan dengan akun login ini, jadi formulir belum dapat dimulai.</p>
                     <div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-900"><p className="font-bold">Yang perlu dilakukan</p><ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-600 dark:text-slate-300"><li>Cari NIK Anda di Master Data Karyawan.</li><li>Edit profil tersebut dan tautkan ke akun login Anda.</li><li>Buka kembali menu Medical Claim setelah tautan tersimpan.</li></ol></div>
-                    <div className="flex flex-wrap gap-3">{canManageEmployees ? <Link href="/master/employees" className="ui-button-primary rounded-lg px-4 py-2.5 text-sm">Buka Master Karyawan</Link> : <p className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">Silakan minta Administrator atau HRGA menautkan akun Anda ke profil karyawan.</p>}<Link href="/medical-claims" className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Kembali ke daftar klaim</Link></div>
+                    <div className="flex flex-wrap gap-3">{canManageEmployees ? <Link href="/master/employees" className="ui-button-primary rounded-lg px-4 py-2.5 text-sm">Buka Master Karyawan</Link> : <><p className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">Silakan minta Administrator atau HRGA menautkan akun Anda ke profil karyawan.</p><button type="button" onClick={() => { if (window.confirm('Kirim permintaan penautan akun ke admin dan HRGA?')) router.post(route('user.request-link'), {}, { preserveScroll: true }); }} className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">Minta penautan akun</button></>}<Link href="/medical-claims" className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Kembali ke daftar klaim</Link></div>
                 </div>
             </section>
         </div>
