@@ -8,10 +8,10 @@ import WorkflowStepper from "@/Components/WorkflowStepper";
 
 const input = "mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500";
 const label = "block text-xs font-semibold text-slate-600";
+const accessoryLabels = { monitor_20: "Monitor 20 inci", external_hdd: "External hard drive", digital_camera: "Digital camera", printer_bw_laser: "Printer B/W laser", printer_colour_laser: "Printer colour laser", printer_a4_inkjet: "Printer A4 inkjet", printer_plotter: "Printer plotter", gps_unit: "GPS unit", rig_mobile_radio: "Rig/mobile radio", handheld_radio: "Handheld radio", ups_stabilizer: "UPS/stabilizer", wireless_keyboard_mouse: "Wireless keyboard/mouse", notebook_battery: "Notebook battery", notebook_power_adapter: "Notebook power adapter", other: "Lainnya" };
 const fallbackDevices = [{ value: "laptop", label: "Laptop" }, { value: "desktop", label: "Desktop" }, { value: "workstation_cad", label: "Workstation / CAD" }, { value: "upgrade", label: "Upgrade perangkat" }];
 const fallbackAccessories = ["monitor_20", "external_hdd", "digital_camera", "printer_bw_laser", "printer_colour_laser", "printer_a4_inkjet", "printer_plotter", "gps_unit", "rig_mobile_radio", "handheld_radio", "ups_stabilizer", "wireless_keyboard_mouse", "notebook_battery", "notebook_power_adapter", "other"].map((value) => ({ value, label: accessoryLabels[value] ?? value, requires_note: value === "other" }));
 const reasonLabels = { not_suitable: "Tidak sesuai kebutuhan", damaged: "Rusak", other: "Lainnya" };
-const accessoryLabels = { monitor_20: "Monitor 20 inci", external_hdd: "External hard drive", digital_camera: "Digital camera", printer_bw_laser: "Printer B/W laser", printer_colour_laser: "Printer colour laser", printer_a4_inkjet: "Printer A4 inkjet", printer_plotter: "Printer plotter", gps_unit: "GPS unit", rig_mobile_radio: "Rig/mobile radio", handheld_radio: "Handheld radio", ups_stabilizer: "UPS/stabilizer", wireless_keyboard_mouse: "Wireless keyboard/mouse", notebook_battery: "Notebook battery", notebook_power_adapter: "Notebook power adapter", other: "Lainnya" };
 
 function ErrorSummary({ errors }) {
     const messages = Object.entries(errors ?? {});
