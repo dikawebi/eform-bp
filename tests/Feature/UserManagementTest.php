@@ -47,6 +47,31 @@ class UserManagementTest extends TestCase
         $this->assertTrue($user->hasRole('employee'));
     }
 
+    public function test_registration_notifies_admin_and_hrga_to_link_nik(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $hrga = $this->userWithRole('hrga');
+        $employee = $this->employeeUser('employee')[0];
+
+        $this->post(route('register'), [
+            'name' => 'Pendaftar Baru',
+            'email' => 'pendaftar@borneoprima.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertRedirect();
+
+        foreach ([$admin, $hrga] as $recipient) {
+            $this->assertDatabaseHas('notifications', [
+                'notifiable_type' => 'user',
+                'notifiable_id' => $recipient->id,
+                'type' => \App\Notifications\WorkflowNotification::class,
+            ]);
+        }
+        $notification = $admin->notifications()->latest('id')->firstOrFail();
+        $this->assertStringContainsString('pendaftar@borneoprima.com', $notification->data['message'] ?? '');
+        $this->assertSame(0, $employee->notifications()->count());
+    }
+
     public function test_admin_can_create_user_with_roles_and_nik_link(): void
     {
         $admin = $this->userWithRole('admin');
