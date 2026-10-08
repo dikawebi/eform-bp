@@ -20,6 +20,7 @@ class FoundationSeeder extends Seeder
         $this->call([
             RolesPermissionsSeeder::class,
             ApprovalWorkflowSeeder::class,
+            ItItemOptionSeeder::class,
         ]);
 
         $this->assignEmployeeLinkedRoles();

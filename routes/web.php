@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\ApprovalWorkflowController;
+use App\Http\Controllers\ItItemOptionController;
 use App\Http\Controllers\AuditTimelineController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
@@ -80,6 +81,20 @@ Route::middleware('auth')->group(function () {
         Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
             ->can('update', 'employee')
             ->name('employees.destroy');
+
+        // Master opsi perangkat & accessories IT Request.
+        Route::get('/it-items', [ItItemOptionController::class, 'index'])
+            ->can('it.master.manage')
+            ->name('it-items.index');
+        Route::post('/it-items', [ItItemOptionController::class, 'store'])
+            ->can('it.master.manage')
+            ->name('it-items.store');
+        Route::match(['put', 'patch'], '/it-items/{it_item}', [ItItemOptionController::class, 'update'])
+            ->can('it.master.manage')
+            ->name('it-items.update');
+        Route::delete('/it-items/{it_item}', [ItItemOptionController::class, 'destroy'])
+            ->can('it.master.manage')
+            ->name('it-items.destroy');
     });
 
     // Phase 2 — Cuti/Izin (PRD §2 modul A, §5.1, §6). Auth diperiksa di

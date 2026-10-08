@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ItItemOption;
 use App\Models\ItRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,8 +18,20 @@ abstract class ItRequestRequest extends FormRequest
 
     public function rules(): array
     {
-        $devices = (array) config('eform.it_request.devices', []);
-        $accessories = (array) config('eform.it_request.accessories', []);
+        $devices = ItItemOption::query()->where('kind', 'device')->where('is_active', true)->pluck('code')->all();
+        $accessories = ItItemOption::query()->where('kind', 'accessory')->where('is_active', true)->pluck('code')->all();
+        // Kode lama yang sudah nonaktif tetap valid untuk draf yang sudah tersimpan.
+        $existing = $this->route('it_request');
+        if ($existing instanceof ItRequest) {
+            if ($existing->device_type) {
+                $devices[] = $existing->device_type;
+            }
+            foreach ((array) $existing->accessories_json as $code) {
+                $accessories[] = $code;
+            }
+            $devices = array_values(array_unique($devices));
+            $accessories = array_values(array_unique($accessories));
+        }
         $priorities = (array) config('eform.it_request.priorities', ['normal', 'high', 'critical']);
 
         return [
@@ -83,8 +96,9 @@ abstract class ItRequestRequest extends FormRequest
             }
 
             $accessories = (array) ($data['accessories'] ?? []);
-            if (in_array('other', array_map('strtolower', $accessories), true) && empty(trim((string) ($data['accessory_other_note'] ?? '')))) {
-                $validator->errors()->add('accessory_other_note', 'Keterangan accessories lainnya wajib diisi.');
+            $noteRequired = ItItemOption::query()->where('kind', 'accessory')->whereIn('code', $accessories)->where('requires_note', true)->exists();
+            if ($noteRequired && empty(trim((string) ($data['accessory_other_note'] ?? '')))) {
+                $validator->errors()->add('accessory_other_note', 'Keterangan tambahan wajib diisi untuk opsi yang dipilih.');
             }
         });
     }

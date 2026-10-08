@@ -11,6 +11,7 @@ use App\Models\ItRequest;
 use App\Models\SitePmGmAssignment;
 use App\Models\User;
 use Database\Seeders\ApprovalWorkflowSeeder;
+use Database\Seeders\ItItemOptionSeeder;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -25,7 +26,7 @@ class ItErpRequestTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed([RolesPermissionsSeeder::class, ApprovalWorkflowSeeder::class]);
+        $this->seed([RolesPermissionsSeeder::class, ApprovalWorkflowSeeder::class, ItItemOptionSeeder::class]);
     }
 
     public function test_it_request_validates_replacement_and_special_specification_rules(): void
@@ -141,6 +142,45 @@ class ItErpRequestTest extends TestCase
 
         [$stranger] = $this->employee('employee');
         $this->actingAs($stranger)->get(route('attachments.download', $attachment))->assertForbidden();
+    }
+
+    public function test_it_device_is_optional_and_unknown_codes_rejected(): void
+    {
+        [$user, $employee] = $this->employee('employee');
+
+        $payload = $this->itPayload($employee);
+        unset($payload['device_type']);
+        $this->actingAs($user)->post(route('it-requests.store'), $payload)->assertRedirect();
+        $this->assertNull(ItRequest::query()->latest('id')->firstOrFail()->device_type);
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'device_type' => 'photon_torpedo'])
+            ->assertSessionHasErrors('device_type');
+    }
+
+    public function test_it_master_options_managed_via_ui_and_deactivation_keeps_history(): void
+    {
+        $admin = User::factory()->create(['active' => true]);
+        $admin->assignRole('admin');
+        [$user] = $this->employee('employee');
+
+        $this->actingAs($admin)->post(route('master.it-items.store'), [
+            'code' => 'vr_headset', 'label' => 'VR Headset', 'kind' => 'accessory',
+        ])->assertRedirect();
+        $this->assertDatabaseHas('it_item_options', ['code' => 'vr_headset', 'is_active' => true]);
+
+        $option = \App\Models\ItItemOption::where('code', 'laptop')->firstOrFail();
+        $this->actingAs($admin)->delete(route('master.it-items.destroy', $option))->assertRedirect();
+        $this->assertFalse($option->fresh()->is_active);
+
+        // Opsi nonaktif hilang dari meta form, tetapi draf lama yang memakainya tetap valid.
+        $this->actingAs($user)->get(route('it-requests.create'))->assertOk();
+        $deviceCodes = collect(\App\Http\Controllers\ItRequestController::itemOptions('device'))->pluck('value')->all();
+        $accessoryCodes = collect(\App\Http\Controllers\ItRequestController::itemOptions('accessory'))->pluck('value')->all();
+        $this->assertNotContains('laptop', $deviceCodes);
+        $this->assertContains('vr_headset', $accessoryCodes);
+
+        $this->actingAs($user)->post(route('master.it-items.store'), ['code' => 'x', 'label' => 'X', 'kind' => 'device'])
+            ->assertForbidden();
     }
 
     public function test_employee_without_onbehalf_cannot_file_for_another_employee(): void

@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateItRequestRequest;
 use App\Http\Requests\UploadItAttachmentRequest;
 use App\Models\Attachment;
 use App\Models\Employee;
+use App\Models\ItItemOption;
 use App\Models\ItRequest;
 use App\Services\Approval\ApprovalActionAvailability;
 use App\Services\EmployeeVisibility;
@@ -127,6 +128,7 @@ class ItRequestController extends Controller
 
         return Inertia::render('ITRequests/Show', [
             'request' => $dto,
+            'meta' => ['device_options' => self::itemOptions('device'), 'accessory_options' => self::itemOptions('accessory'), 'option_labels' => ItItemOption::query()->pluck('label', 'code')->all()],
             'timeline' => $timeline,
             'activities' => $activities,
             'availableActions' => [
@@ -302,9 +304,22 @@ class ItRequestController extends Controller
             'priorities' => config('eform.it_request.priorities', []),
             'software_standard' => config('eform.it_request.software_standard', []),
             'replacement_reasons' => config('eform.it_request.replacement_reasons', []),
-            'accessories' => config('eform.it_request.accessories', []),
+            'device_options' => $this->itemOptions('device'),
+            'accessory_options' => $this->itemOptions('accessory'),
             'allowed_documents' => config('eform.it_request.allowed_documents', []),
             'employees' => $employees,
         ];
+    }
+
+    /**
+     * Opsi master perangkat untuk form & pelabelan ulang (fallback ke kode bila nonaktif).
+     *
+     * @return list<array{value:string,label:string,requires_note:bool}>
+     */
+    public static function itemOptions(string $kind): array
+    {
+        return ItItemOption::query()->where('kind', $kind)->active()->ordered()->get()
+            ->map(fn (ItItemOption $option) => ['value' => $option->code, 'label' => $option->label, 'requires_note' => (bool) $option->requires_note])
+            ->values()->all();
     }
 }

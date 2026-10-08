@@ -126,6 +126,7 @@ function MenuIcon({ menuKey }) {
     paths['settings-medical'] = paths['medical-claims'];
     paths['settings-it-request'] = paths['it-requests'];
     paths['settings-erp-request'] = paths['erp-requests'];
+    paths['master-it-items'] = paths['it-requests'];
 
     return (
         <svg

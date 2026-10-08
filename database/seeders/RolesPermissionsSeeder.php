@@ -75,6 +75,7 @@ class RolesPermissionsSeeder extends Seeder
 
         'it_request.create.own',
         'it_request.create.onbehalf',
+        'it.master.manage',
         'it_request.view.own',
         'it_request.view.all',
         'it_request.view.subordinates',
@@ -235,6 +236,7 @@ class RolesPermissionsSeeder extends Seeder
             'employee.view.any',
             'it_request.view.all',
             'it_request.review',
+            'it.master.manage',
             'erp_request.view.all',
             'erp_request.review',
             'approval.inbox.view',
@@ -299,6 +301,7 @@ class RolesPermissionsSeeder extends Seeder
             'leave.view.all',
             'it_request.create.onbehalf',
             'it_request.view.all',
+            'it.master.manage',
             'erp_request.create.onbehalf',
             'erp_request.view.all',
             'travel.create.onbehalf',

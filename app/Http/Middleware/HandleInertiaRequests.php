@@ -90,6 +90,7 @@ class HandleInertiaRequests extends Middleware
             ['label' => 'Approval', 'url' => '/approvals', 'permission' => 'approval.inbox.view'],
             ['label' => 'Laporan', 'url' => '/reports', 'permission' => 'report.view'],
             ['key' => 'master', 'label' => 'Karyawan', 'url' => '/master/employees', 'group' => 'Administrasi', 'permission' => ['employee.view.any', 'employee.manage']],
+            ['key' => 'master-it-items', 'label' => 'Perangkat & Accessories IT', 'url' => '/master/it-items', 'group' => 'Administrasi', 'permission' => 'it.master.manage'],
             ['key' => 'settings-leave', 'label' => 'Workflow Cuti/Izin', 'url' => '/settings/workflows/leave', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-travel', 'label' => 'Workflow Perjalanan Dinas', 'url' => '/settings/workflows/travel', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-settlement', 'label' => 'Workflow Settlement', 'url' => '/settings/workflows/settlement', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
