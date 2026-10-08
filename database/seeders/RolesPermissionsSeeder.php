@@ -103,6 +103,7 @@ class RolesPermissionsSeeder extends Seeder
 
         'workflow.manage',
         'role.manage',
+        'user.manage',
         'report.export',
         'report.view',
         'advance.process.leave',

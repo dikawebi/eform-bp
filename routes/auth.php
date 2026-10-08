@@ -12,11 +12,12 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    // Registrasi publik DINONAKTIFKAN (app internal eForm BP, PRD §11).
-    // User dibuat oleh admin / seeder. Jangan aktifkan kembali tanpa approval.
-    // Route::get('register', [RegisteredUserController::class, 'create'])
-    //     ->name('register');
-    // Route::post('register', [RegisteredUserController::class, 'store']);
+    // Registrasi mandiri AKTIF khusus email korporat @borneoprima.com.
+    // Domain dibatasi di RegisteredUserController@store; role awal employee.
+    Route::get('register', [RegisteredUserController::class, 'create'])
+        ->name('register');
+
+    Route::post('register', [RegisteredUserController::class, 'store']);
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');

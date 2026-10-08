@@ -16,9 +16,11 @@ use App\Http\Controllers\ErpRequestController;
 use App\Http\Controllers\ItRequestController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TravelRequestController;
+use App\Http\Controllers\UserController;
 use App\Models\ApprovalRequest;
 use App\Models\ApprovalWorkflow;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -202,6 +204,15 @@ Route::middleware('auth')->group(function () {
             ->can('create', Role::class)->name('store');
         Route::put('/{role}', [RoleController::class, 'update'])
             ->can('update', 'role')->name('update');
+    });
+
+    Route::prefix('settings/users')->name('settings.users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])
+            ->can('viewAny', User::class)->name('index');
+        Route::post('/', [UserController::class, 'store'])
+            ->can('create', User::class)->name('store');
+        Route::match(['put', 'patch'], '/{user}', [UserController::class, 'update'])
+            ->can('update', 'user')->name('update');
     });
 });
 

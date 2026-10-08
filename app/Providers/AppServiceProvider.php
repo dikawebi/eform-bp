@@ -23,6 +23,7 @@ use App\Policies\MedicalClaimPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SettlementPolicy;
 use App\Policies\TravelRequestPolicy;
+use App\Policies\UserPolicy;
 use App\Support\MedicalConfigValidator;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\File;
@@ -65,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ApprovalRequest::class, ApprovalRequestPolicy::class);
         Gate::policy(ApprovalWorkflow::class, ApprovalWorkflowPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
         Relation::morphMap([
             'leave_request' => LeaveRequest::class,
             'travel_request' => TravelRequest::class,

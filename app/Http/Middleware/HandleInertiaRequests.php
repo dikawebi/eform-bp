@@ -98,6 +98,7 @@ class HandleInertiaRequests extends Middleware
             ['key' => 'settings-it-request', 'label' => 'Workflow IT Request', 'url' => '/settings/workflows/it-request', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-erp-request', 'label' => 'Workflow ERP Request', 'url' => '/settings/workflows/erp-request', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-roles', 'label' => 'Role dan Permission', 'url' => '/settings/roles', 'group' => 'Pengaturan', 'permission' => 'role.manage'],
+            ['key' => 'settings-users', 'label' => 'Pengguna', 'url' => '/settings/users', 'group' => 'Pengaturan', 'permission' => 'user.manage'],
         ];
 
         if (! $user) {

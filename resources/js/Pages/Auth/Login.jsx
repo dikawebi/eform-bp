@@ -3,7 +3,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 function FieldIcon({ type }) {
@@ -123,6 +123,9 @@ export default function Login({ status }) {
                         </svg>
                         {processing ? 'Memproses...' : 'Masuk ke Dashboard'}
                     </button>
+                    <p className="mt-4 text-center text-sm text-slate-500">
+                        Belum punya akun? <Link href={route('register')} className="font-semibold text-blue-700 hover:underline">Daftar dengan email @borneoprima.com</Link>
+                    </p>
                 </div>
             </form>
         </GuestLayout>
