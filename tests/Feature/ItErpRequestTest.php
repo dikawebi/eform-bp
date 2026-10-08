@@ -168,8 +168,11 @@ class ItErpRequestTest extends TestCase
         ])->assertRedirect();
         $this->assertDatabaseHas('it_item_options', ['code' => 'vr_headset', 'is_active' => true]);
 
+        // Nonaktifkan via update: hilang dari form tetapi riwayat tetap terbaca.
         $option = \App\Models\ItItemOption::where('code', 'laptop')->firstOrFail();
-        $this->actingAs($admin)->delete(route('master.it-items.destroy', $option))->assertRedirect();
+        $this->actingAs($admin)->put(route('master.it-items.update', $option), [
+            'label' => 'Laptop', 'requires_note' => false, 'sort_order' => 0, 'is_active' => false,
+        ])->assertRedirect();
         $this->assertFalse($option->fresh()->is_active);
 
         // Opsi nonaktif hilang dari meta form, tetapi draf lama yang memakainya tetap valid.
@@ -181,6 +184,23 @@ class ItErpRequestTest extends TestCase
 
         $this->actingAs($user)->post(route('master.it-items.store'), ['code' => 'x', 'label' => 'X', 'kind' => 'device'])
             ->assertForbidden();
+    }
+
+    public function test_master_option_delete_is_blocked_when_used(): void
+    {
+        $admin = User::factory()->create(['active' => true]);
+        $admin->assignRole('admin');
+        [$user, $employee] = $this->employee('employee');
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'device_type' => 'laptop', 'accessories' => ['acc_1']])->assertRedirect();
+        $option = \App\Models\ItItemOption::where('code', 'laptop')->firstOrFail();
+
+        $this->actingAs($admin)->delete(route('master.it-items.destroy', $option))->assertSessionHasErrors('code');
+        $this->assertDatabaseHas('it_item_options', ['code' => 'laptop']);
+
+        $unused = \App\Models\ItItemOption::where('code', 'desktop')->firstOrFail();
+        $this->actingAs($admin)->delete(route('master.it-items.destroy', $unused))->assertRedirect();
+        $this->assertDatabaseMissing('it_item_options', ['code' => 'desktop']);
     }
 
     public function test_employee_without_onbehalf_cannot_file_for_another_employee(): void

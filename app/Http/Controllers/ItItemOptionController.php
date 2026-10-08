@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ItItemOption;
+use App\Models\ItRequest;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -76,10 +78,28 @@ class ItItemOptionController extends Controller
     public function destroy(Request $request, ItItemOption $it_item): RedirectResponse
     {
         $this->guard($request);
-        // Nonaktifkan saja agar riwayat transaksi yang menyimpan kode tetap terbaca.
-        $it_item->forceFill(['is_active' => false])->save();
-        activity()->causedBy($request->user())->withProperties(['code' => $it_item->code])->log('it.master.deactivated');
 
-        return back()->with('success', 'Opsi perangkat dinonaktifkan.');
+        if ($this->isUsed($it_item)) {
+            throw ValidationException::withMessages([
+                'code' => "Opsi \"{$it_item->label}\" sudah dipakai pada transaksi dan tidak dapat dihapus. Nonaktifkan saja agar tidak muncul di form baru.",
+            ]);
+        }
+
+        $code = $it_item->code;
+        $it_item->delete();
+        activity()->causedBy($request->user())->withProperties(['code' => $code])->log('it.master.deleted');
+
+        return back()->with('success', 'Opsi perangkat dihapus permanen.');
+    }
+
+    /**
+     * Kode tersimpan sebagai snapshot pada transaksi (device_type / accessories_json).
+     */
+    protected function isUsed(ItItemOption $option): bool
+    {
+        return ItRequest::query()
+            ->where('device_type', $option->code)
+            ->orWhereJsonContains('accessories_json', $option->code)
+            ->exists();
     }
 }
