@@ -165,6 +165,15 @@ class UserManagementTest extends TestCase
         $this->actingAs($user)->post(route('user.request-link'))->assertStatus(422);
     }
 
+    public function test_employee_can_view_own_reports_only(): void
+    {
+        [$user, $employee] = $this->employeeUser('employee');
+        [$other] = $this->employeeUser('employee');
+
+        $this->actingAs($user)->get(route('reports.index'))->assertOk();
+        $this->actingAs($other)->get(route('reports.index'))->assertOk();
+    }
+
     public function test_employee_link_is_exclusive_to_one_account(): void
     {
         $admin = $this->userWithRole('admin');

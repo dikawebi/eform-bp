@@ -93,6 +93,7 @@ class DashboardController extends Controller
             'statusBreakdown' => $summary,
             'pendingApproval' => $pendingApproval,
             'pendingActions' => $pendingActions,
+            'canViewReports' => $request->user()->can('report.view'),
         ]);
     }
 }

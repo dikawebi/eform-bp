@@ -179,6 +179,7 @@ class RolesPermissionsSeeder extends Seeder
             'it_request.view.own',
             'erp_request.create.own',
             'erp_request.view.own',
+            'report.view',
             'attachment.download.own',
             'attachment.upload.own',
         ]);

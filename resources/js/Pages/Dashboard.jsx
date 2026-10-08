@@ -16,7 +16,7 @@ function DashboardIcon({ type }) {
     return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[type]}</svg>;
 }
 
-export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingApproval = null, pendingActions = [], loading = false, error = null }) {
+export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingApproval = null, pendingActions = [], canViewReports = false, loading = false, error = null }) {
     const total = summary.total_pengajuan ?? Object.values(summary).reduce((sum, item) => sum + Object.values(item ?? {}).reduce((a, b) => a + Number(b), 0), 0);
     const statusCounts = Object.values(statusBreakdown).flatMap((items) => Object.entries(items ?? {}));
     const inProcess = summary.dalam_proses ?? statusCounts.filter(([status]) => ['submitted', 'in_review', 'processing', 'payment_processing'].includes(status)).reduce((sum, [, count]) => sum + Number(count), 0);
@@ -56,9 +56,9 @@ export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingA
                     </section>
 
                     <section className={`grid grid-cols-1 gap-4 ${pendingApproval !== null ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
-                        <SummaryCard title="Total pengajuan" value={total} subtitle="Seluruh modul" className="border-l-4 border-l-[#0066FF]" />
-                        <SummaryCard title="Dalam proses" value={inProcess} subtitle="Menunggu langkah berikutnya" className="border-l-4 border-l-amber-400" />
-                        <SummaryCard title="Selesai" value={completed} subtitle="Pengajuan telah ditutup" className="border-l-4 border-l-emerald-500" />
+                        <SummaryCard title="Total pengajuan" value={total} subtitle="Seluruh modul" className="border-l-4 border-l-[#0066FF]" href={canViewReports ? '/reports' : null} />
+                        <SummaryCard title="Dalam proses" value={inProcess} subtitle="Menunggu langkah berikutnya" className="border-l-4 border-l-amber-400" href={canViewReports ? '/reports' : null} />
+                        <SummaryCard title="Selesai" value={completed} subtitle="Pengajuan telah ditutup" className="border-l-4 border-l-emerald-500" href={canViewReports ? '/reports?status=completed' : null} />
                         {pendingApproval !== null && (
                             <Link href="/approvals" className="ui-card group relative overflow-hidden border-l-4 border-l-rose-500 p-5 transition hover:-translate-y-0.5 hover:border-rose-400 hover:shadow-md">
                                 <span className="absolute right-4 top-4 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 dark:bg-rose-950/50 dark:text-rose-300">Pending approval</span>
