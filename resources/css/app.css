@@ -206,8 +206,83 @@
 .dark .app-shell .border-gray-200, .dark .app-shell .border-gray-100, .dark .app-shell .border-slate-200 { border-color: #334155 !important; }
 .dark .app-shell .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
 .dark .app-shell .ring-gray-100, .dark .app-shell .ring-gray-200 { --tw-ring-color: #334155 !important; }
-.dark .app-shell input, .dark .app-shell select, .dark .app-shell textarea { border-color: #334155; background-color: #0f172a; color: #e2e8f0; }
+.dark .app-shell input, .dark .app-shell select, .dark .app-shell textarea { border-color: #475569; background-color: #1e293b; color: #e2e8f0; }
 .dark .app-shell input::placeholder, .dark .app-shell textarea::placeholder { color: #64748b; }
+
+/* Slate text scale (pages use slate instead of gray for body text). */
+.dark .app-shell .text-slate-900, .dark .app-shell .text-slate-800 { color: #f8fafc !important; }
+.dark .app-shell .text-slate-700, .dark .app-shell .text-slate-600 { color: #cbd5e1 !important; }
+.dark .app-shell .text-slate-500 { color: #94a3b8 !important; }
+.dark .app-shell .border-slate-300 { border-color: #475569 !important; }
+.dark .app-shell .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+
+/* Tinted surfaces: light tint backgrounds become translucent dark tints. */
+.dark .app-shell .bg-blue-50 { background-color: rgb(30 58 138 / 0.35) !important; }
+.dark .app-shell .bg-blue-100 { background-color: rgb(30 58 138 / 0.5) !important; }
+.dark .app-shell .bg-sky-50 { background-color: rgb(12 74 110 / 0.4) !important; }
+.dark .app-shell .bg-sky-100 { background-color: rgb(12 74 110 / 0.55) !important; }
+.dark .app-shell .bg-cyan-100 { background-color: rgb(21 94 117 / 0.5) !important; }
+.dark .app-shell .bg-teal-100 { background-color: rgb(19 78 74 / 0.5) !important; }
+.dark .app-shell .bg-emerald-50 { background-color: rgb(6 78 59 / 0.35) !important; }
+.dark .app-shell .bg-emerald-100 { background-color: rgb(6 78 59 / 0.5) !important; }
+.dark .app-shell .bg-amber-50 { background-color: rgb(120 53 15 / 0.35) !important; }
+.dark .app-shell .bg-amber-100 { background-color: rgb(120 53 15 / 0.5) !important; }
+.dark .app-shell .bg-orange-50 { background-color: rgb(124 45 18 / 0.35) !important; }
+.dark .app-shell .bg-orange-100 { background-color: rgb(124 45 18 / 0.5) !important; }
+.dark .app-shell .bg-rose-50 { background-color: rgb(136 19 55 / 0.35) !important; }
+.dark .app-shell .bg-rose-100 { background-color: rgb(136 19 55 / 0.5) !important; }
+.dark .app-shell .bg-red-50 { background-color: rgb(127 29 29 / 0.4) !important; }
+.dark .app-shell .bg-indigo-50 { background-color: rgb(49 46 129 / 0.4) !important; }
+.dark .app-shell .bg-indigo-100 { background-color: rgb(49 46 129 / 0.55) !important; }
+.dark .app-shell .bg-violet-100 { background-color: rgb(76 29 149 / 0.5) !important; }
+.dark .app-shell .bg-fuchsia-100 { background-color: rgb(134 25 143 / 0.45) !important; }
+.dark .app-shell .bg-zinc-100 { background-color: #3f3f46 !important; }
+.dark .app-shell .bg-zinc-50 { background-color: #27272a !important; }
+.dark .app-shell .bg-slate-200 { background-color: #334155 !important; }
+
+/* Tinted text becomes light tints so it stays legible on dark surfaces. */
+.dark .app-shell .text-blue-900, .dark .app-shell .text-blue-800 { color: #bfdbfe !important; }
+.dark .app-shell .text-blue-700 { color: #93c5fd !important; }
+.dark .app-shell .text-sky-800, .dark .app-shell .text-sky-700 { color: #bae6fd !important; }
+.dark .app-shell .text-cyan-800, .dark .app-shell .text-cyan-700 { color: #a5f3fc !important; }
+.dark .app-shell .text-teal-800, .dark .app-shell .text-teal-700 { color: #99f6e4 !important; }
+.dark .app-shell .text-emerald-800, .dark .app-shell .text-emerald-700 { color: #a7f3d0 !important; }
+.dark .app-shell .text-amber-900, .dark .app-shell .text-amber-800 { color: #fde68a !important; }
+.dark .app-shell .text-amber-700 { color: #fcd34d !important; }
+.dark .app-shell .text-orange-800 { color: #fed7aa !important; }
+.dark .app-shell .text-rose-800, .dark .app-shell .text-rose-700 { color: #fecdd3 !important; }
+.dark .app-shell .text-rose-600, .dark .app-shell .text-red-600, .dark .app-shell .text-red-700 { color: #fda4af !important; }
+.dark .app-shell .text-indigo-800, .dark .app-shell .text-indigo-700 { color: #c7d2fe !important; }
+.dark .app-shell .text-violet-800 { color: #ddd6fe !important; }
+.dark .app-shell .text-fuchsia-800 { color: #f5d0fe !important; }
+.dark .app-shell .text-zinc-700 { color: #e4e4e7 !important; }
+
+/* Tinted borders. */
+.dark .app-shell .border-blue-200, .dark .app-shell .border-blue-300 { border-color: #1d4ed8 !important; }
+.dark .app-shell .border-sky-200 { border-color: #0c4a6e !important; }
+.dark .app-shell .border-amber-200 { border-color: #92400e !important; }
+.dark .app-shell .border-orange-200 { border-color: #9a3412 !important; }
+.dark .app-shell .border-rose-200, .dark .app-shell .border-rose-300, .dark .app-shell .border-red-200 { border-color: #9f1239 !important; }
+.dark .app-shell .border-emerald-200 { border-color: #065f46 !important; }
+
+/* Light hover surfaces inside dark mode. */
+.dark .app-shell .hover\:bg-slate-50:hover, .dark .app-shell .hover\:bg-slate-50\/70:hover, .dark .app-shell .hover\:bg-slate-50\/80:hover { background-color: rgb(30 41 59 / 0.7) !important; }
+.dark .app-shell .hover\:bg-slate-100:hover, .dark .app-shell .hover\:bg-gray-100:hover, .dark .app-shell .hover\:bg-gray-50:hover, .dark .app-shell .hover\:bg-gray-50\/60:hover { background-color: #1e293b !important; }
+.dark .app-shell .hover\:bg-blue-50:hover, .dark .app-shell .hover\:bg-blue-50\/50:hover { background-color: rgb(30 58 138 / 0.45) !important; }
+.dark .app-shell .hover\:bg-rose-50:hover, .dark .app-shell .hover\:bg-red-50:hover { background-color: rgb(136 19 55 / 0.45) !important; }
+.dark .app-shell .hover\:bg-amber-100:hover { background-color: rgb(120 53 15 / 0.55) !important; }
+.dark .app-shell .ring-indigo-50 { --tw-ring-color: rgb(99 102 241 / 0.3) !important; }
+
+/* Brand arbitrary colors used on light cards and gallery previews. */
+.dark .app-shell .text-\[\#0066FF\] { color: #60a5fa !important; }
+.dark .app-shell .text-\[\#0F172A\] { color: #f8fafc !important; }
+.dark .app-shell .bg-\[\#EEF6FF\] { background-color: rgb(30 58 138 / 0.35) !important; }
+.dark .app-shell .border-\[\#BFDBFE\], .dark .app-shell .border-\[\#0066FF\] { border-color: #1d4ed8 !important; }
+
+/* Opacity-modified light surfaces (distinct classes from their base). */
+.dark .app-shell .bg-slate-50\/70 { background-color: rgb(15 23 42 / 0.85) !important; }
+.dark .app-shell .bg-gray-50\/60 { background-color: rgb(15 23 42 / 0.85) !important; }
+.dark .app-shell .bg-blue-50\/50, .dark .app-shell .bg-blue-50\/60, .dark .app-shell .bg-blue-50\/70 { background-color: rgb(30 58 138 / 0.45) !important; }
 
 /* shadcn-inspired primitives used by shared application components. */
 .ui-card { border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--card)); color: hsl(var(--card-foreground)); box-shadow: 0 1px 2px rgb(15 23 42 / 0.04); }
@@ -434,6 +509,68 @@
 .dark .worksheet-add-row { border-color: #1d4ed8; color: #93c5fd; }
 .dark .worksheet-add-row:hover { background: #172554; }
 .dark .worksheet-total { border-color: #1e40af; background: #0f172a; color: #93c5fd; }
+
+/* Transaction sheets: full dark surfaces so inherited text stays legible. */
+.dark .leave-sheet, .dark .medical-sheet, .dark .travel-sheet { color: #e2e8f0; }
+.dark .leave-sheet-section, .dark .medical-sheet-section, .dark .travel-sheet-section { background: #111827; border-color: #334155; color: #e2e8f0; }
+.dark .leave-sheet-section h2, .dark .leave-sheet-section h3, .dark .medical-sheet-section h2, .dark .travel-sheet-section h2, .dark .travel-sheet-section h3 { color: #f8fafc; }
+.dark .leave-sheet-profile-grid, .dark .travel-sheet-profile-grid, .dark .medical-identity-grid { border-color: #334155; }
+.dark .leave-sheet-profile-grid > div, .dark .travel-sheet-field, .dark .medical-identity-grid > div { background: #111827; border-color: #334155; }
+.dark .leave-sheet-value-cell span, .dark .leave-sheet-master-note span, .dark .travel-sheet-field label, .dark .medical-identity-grid span { color: #94a3b8; }
+.dark .leave-sheet-value-cell strong, .dark .travel-sheet-value, .dark .medical-identity-grid strong { color: #f8fafc; }
+.dark .leave-sheet-master-note, .dark .travel-sheet-master-note, .dark .medical-identity-grid .medical-master-note { background: #0f172a; }
+.dark .leave-sheet-input-cell label, .dark .leave-period-grid-row label, .dark .leave-cost-fields label, .dark .medical-claim-table label, .dark .medical-attachment-grid h3, .dark .medical-attachment-grid label, .dark .leave-sheet-reason-row label { color: #cbd5e1; }
+.dark .leave-sheet input:not([readonly]), .dark .leave-sheet select:not([disabled]), .dark .leave-sheet textarea:not([readonly]), .dark .leave-period-grid-row input, .dark .leave-period-grid-row select, .dark .leave-cost-fields input, .dark .medical-claim-table input, .dark .medical-claim-table select, .dark .medical-attachment-grid input, .dark .leave-sheet-reason-row textarea, .dark .travel-sheet-days input, .dark .travel-sheet-input, .dark .medical-patient strong { background: #0f172a !important; border-color: #334155 !important; color: #e2e8f0 !important; }
+.dark .travel-sheet input[readonly], .dark .travel-sheet textarea[readonly], .dark .travel-sheet select[disabled] { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+.dark .leave-sheet .worksheet-row, .dark .leave-cost-row, .dark .medical-claim-row, .dark .leave-period-grid-row, .dark .leave-cost-section, .dark .travel-sheet-cost-section, .dark .travel-sheet-days { border-color: #334155; background: #111827; }
+.dark .leave-sheet .worksheet-row-header, .dark .leave-cost-row > header, .dark .medical-claim-row > header, .dark .travel-sheet .worksheet-row-header { background: #1e293b; border-color: #334155; color: #f8fafc; }
+.dark .leave-sheet .worksheet-fields, .dark .medical-benefit-grid, .dark .medical-claim-table, .dark .medical-attachment-grid { background: #334155; }
+.dark .leave-sheet .worksheet-fields > .worksheet-cell, .dark .leave-sheet .worksheet-fields > div, .dark .medical-benefit-option, .dark .medical-claim-table > div, .dark .medical-attachment-grid > div, .dark .travel-sheet .worksheet-fields > .worksheet-cell, .dark .travel-sheet .worksheet-fields > div, .dark .travel-sheet-days > * { background: #111827; border-color: #334155; }
+.dark .leave-cost-row > header span:not(.worksheet-row-index), .dark .medical-claim-row > header span:not(.worksheet-row-index), .dark .travel-cost-row > header .travel-cost-estimate { color: #6ee7b7; }
+.dark .medical-benefit-option > span { background: rgb(30 58 138 / 0.45); border-color: #1d4ed8; color: #93c5fd; }
+.dark .leave-period-total, .dark .travel-sheet-days-total { background: #0f172a; }
+.dark .leave-period-total strong, .dark .leave-period-label { color: #f8fafc; }
+.dark .leave-period-total span { color: #94a3b8; }
+.dark .leave-cost-section > header, .dark .travel-sheet-cost-heading { background: #172554; border-color: #1e3a8a; color: #bfdbfe; }
+.dark .leave-cost-section > header button, .dark .travel-sheet-cost-heading button, .dark .medical-add-row, .dark .travel-sheet .worksheet-add-row, .dark .leave-sheet .worksheet-add-row { background: #111827; border-color: #1d4ed8; color: #93c5fd; }
+.dark .medical-total-row, .dark .travel-sheet-note, .dark .travel-sheet-section-title span { background: rgb(30 58 138 / 0.3); border-color: #1e40af; color: #bfdbfe; }
+.dark .medical-total-row strong { color: #6ee7b7; }
+.dark .leave-sheet-instruction, .dark .travel-sheet-instruction, .dark .medical-sheet-instruction, .dark .travel-sheet-section-title { color: #93c5fd; }
+.dark .travel-sheet-section-title-spaced { color: #f0abfc; }
+.dark .leave-date-review-note { color: #fcd34d; }
+.dark .leave-local-policy-note { background: rgb(120 53 15 / 0.35); border-color: #92400e; color: #fde68a; }
+.dark .leave-sheet-empty-row, .dark .leave-cost-empty, .dark .travel-sheet-empty-row, .dark .travel-sheet-days-empty, .dark .medical-attachment-grid p, .dark .medical-attachment-grid ul, .dark .medical-attachment-panel li span { color: #94a3b8; }
+.dark .medical-attachment-panel { background: #111827; border-color: #334155; }
+.dark .medical-attachment-panel h2 { color: #f8fafc; }
+.dark .medical-attachment-panel a { color: #93c5fd; }
+.dark .medical-attachment-panel form { border-color: #334155; }
+.dark .travel-sheet-reason-row, .dark .leave-sheet-reason-row { color: #e2e8f0; }
+.dark .travel-terms-grid { color: #e2e8f0; }
+.dark .travel-terms-grid h3 { color: #f8fafc; }
+
+/* Employee lookup dropdown. */
+.dark .employee-lookup label { color: #cbd5e1; }
+.dark .employee-lookup input { border-color: #334155; background: #0f172a; color: #e2e8f0; }
+.dark .employee-lookup-options { border-color: #334155; background: #1e293b; }
+.dark .employee-lookup-options button { color: #e2e8f0; }
+.dark .employee-lookup-options button:hover, .dark .employee-lookup-options button[data-active="true"] { background: #172554; }
+.dark .employee-lookup-options small, .dark .employee-lookup-options p { color: #94a3b8; }
+
+/* Input affordance: editable fields must read as inputs in both modes. */
+.worksheet-form input:not([type="checkbox"]):not([type="radio"]):not([readonly]),
+.worksheet-form select:not([disabled]),
+.worksheet-form textarea:not([readonly]) { border-color: #bfdbfe; background: #eaf5ff; box-shadow: none; }
+.worksheet-form input[type="checkbox"], .worksheet-form input[type="radio"] { width: 1rem; height: 1rem; accent-color: #0066ff; }
+.worksheet-form input:focus, .worksheet-form select:focus, .worksheet-form textarea:focus { outline: none; border-color: #0066ff; box-shadow: 0 0 0 3px rgb(0 102 255 / 0.22); }
+.worksheet-form input[readonly], .worksheet-form textarea[readonly], .worksheet-form select[disabled] { background: #f1f5f9; color: #475569; }
+.dark .app-shell { color-scheme: dark; }
+.dark .app-shell select option { background-color: #1e293b; color: #e2e8f0; }
+.dark .worksheet-form input:not([type="checkbox"]):not([type="radio"]):not([readonly]),
+.dark .worksheet-form select:not([disabled]),
+.dark .worksheet-form textarea:not([readonly]) { border-color: #3b82f6 !important; background: #172554 !important; color: #eff6ff !important; }
+.dark .worksheet-form input::placeholder, .dark .worksheet-form textarea::placeholder { color: #7fa6f5; }
+.dark .worksheet-form input:focus, .dark .worksheet-form select:focus, .dark .worksheet-form textarea:focus { border-color: #60a5fa !important; box-shadow: 0 0 0 3px rgb(96 165 250 / 0.3); }
+.dark .worksheet-form input[readonly], .dark .worksheet-form textarea[readonly], .dark .worksheet-form select[disabled] { background: #0f172a !important; border-color: #334155 !important; color: #94a3b8 !important; }
 @media (max-width: 767px) {
     .worksheet-fields-period,
     .worksheet-fields-cost,
