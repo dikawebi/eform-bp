@@ -125,7 +125,26 @@ function MenuIcon({ menuKey }) {
     paths['settings-settlement'] = paths.settlements;
     paths['settings-medical'] = paths['medical-claims'];
     paths['settings-it-request'] = paths['it-requests'];
-    paths['settings-erp-request'] = paths['erp-requests'];
+    paths['settings-erp-request'] = (
+        <>
+            <path d="M12 3 3 8l9 5 9-5-9-5Z" />
+            <path d="M3 13l9 5 9-5" />
+        </>
+    );
+    paths['settings-roles'] = (
+        <>
+            <circle cx="8" cy="15" r="4" />
+            <path d="M11 12 20 3M16 7l3 3M13.5 9.5l2.5 2.5" />
+        </>
+    );
+    paths['settings-users'] = (
+        <>
+            <circle cx="9" cy="8" r="3.2" />
+            <path d="M3.5 19c.8-3 2.9-4.5 5.5-4.5s4.7 1.5 5.5 4.5" />
+            <circle cx="16.5" cy="9" r="2.4" />
+            <path d="M15.5 14.6c2.9.1 4.4 1.5 5 4.4" />
+        </>
+    );
     paths['master-it-items'] = paths['it-requests'];
 
     return (
