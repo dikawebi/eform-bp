@@ -9,16 +9,19 @@ const moduleLabels = { leave: 'Cuti / Izin', travel: 'Perjalanan Dinas', settlem
 const money = (value) => value == null ? 'Terbatas' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
 
 export default function Index({ report = {}, filters = {}, statuses = [], canExport = false }) {
-    const [values, setValues] = useState({ module: filters.module ?? '', status: filters.status ?? '', date_from: filters.date_from ?? '', date_to: filters.date_to ?? '' });
+    const [values, setValues] = useState({ module: filters.module ?? '', status: filters.status ?? '', exclude_status: filters.exclude_status ?? '', date_from: filters.date_from ?? '', date_to: filters.date_to ?? '' });
     const rows = report.data ?? [];
     const update = (key, value) => setValues((current) => ({ ...current, [key]: value }));
     const apply = (event) => { event.preventDefault(); router.get(route('reports.index'), Object.fromEntries(Object.entries(values).filter(([, value]) => value)), { preserveState: true, preserveScroll: true }); };
-    const reset = () => { const empty = { module: '', status: '', date_from: '', date_to: '' }; setValues(empty); router.get(route('reports.index'), {}, { preserveState: true, replace: true }); };
+    const reset = () => { const empty = { module: '', status: '', exclude_status: '', date_from: '', date_to: '' }; setValues(empty); router.get(route('reports.index'), {}, { preserveState: true, replace: true }); };
+    const clearExcluded = () => { const next = { ...values, exclude_status: '' }; setValues(next); router.get(route('reports.index'), Object.fromEntries(Object.entries(next).filter(([, value]) => value)), { preserveState: true, preserveScroll: true }); };
 
     return <AuthenticatedLayout title="Laporan Transaksi" breadcrumbs={['Kendali', 'Laporan']}>
         <Head title="Laporan Transaksi" />
         <div className="mx-auto max-w-7xl space-y-5 px-4 py-7 sm:px-6 lg:px-8">
             <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-600">Kendali / Insight</p><h1 className="mt-1 text-2xl font-extrabold tracking-tight">Laporan Transaksi</h1><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Telusuri pengajuan berdasarkan modul, status, dan periode.</p></div>{canExport && <a href={route('reports.index', { ...filters, export: 1 })} className="ui-button-primary w-fit rounded-lg px-4 py-2.5 text-sm">Ekspor CSV</a>}</header>
+
+            {values.exclude_status && <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><p>Menampilkan semua status <strong>kecuali {values.exclude_status.replaceAll('_', ' ')}</strong>.</p><button type="button" onClick={clearExcluded} className="rounded-lg border border-amber-300 px-3 py-1.5 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900">Tampilkan semua</button></div>}
 
             <section className="grid grid-cols-1 gap-3 sm:grid-cols-3"><SummaryCard title="Total transaksi" value={report.total ?? rows.length} subtitle="Sesuai filter dan hak akses" className="border-l-4 border-l-blue-600" /><SummaryCard title="Selesai" value={report.completed ?? 0} subtitle="Transaksi berstatus selesai" className="border-l-4 border-l-emerald-500" /><SummaryCard title="Nilai agregat" value={report.total_amount == null ? 'Terbatas' : money(report.total_amount)} subtitle={report.total_amount == null ? 'Nominal dibatasi sesuai hak akses' : 'Nilai transaksi sesuai filter'} className="border-l-4 border-l-amber-400" /></section>
 

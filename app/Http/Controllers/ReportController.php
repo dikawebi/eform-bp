@@ -92,6 +92,9 @@ class ReportController extends Controller
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
         }
+        if (isset($filters['exclude_status'])) {
+            $query->where('status', '!=', $filters['exclude_status']);
+        }
         if (isset($filters['date_from'])) {
             $query->whereDate($date, '>=', $filters['date_from']);
         }
@@ -133,6 +136,9 @@ class ReportController extends Controller
             }
             if (isset($filters['status'])) {
                 $query->where('status', $filters['status']);
+            }
+            if (isset($filters['exclude_status'])) {
+                $query->where('status', '!=', $filters['exclude_status']);
             }
             if (isset($filters['date_from'])) {
                 $query->whereDate($dateColumn, '>=', $filters['date_from']);

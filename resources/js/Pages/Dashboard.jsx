@@ -57,7 +57,7 @@ export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingA
 
                     <section className={`grid grid-cols-1 gap-4 ${pendingApproval !== null ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
                         <SummaryCard title="Total pengajuan" value={total} subtitle="Seluruh modul" className="border-l-4 border-l-[#0066FF]" href={canViewReports ? '/reports' : null} />
-                        <SummaryCard title="Dalam proses" value={inProcess} subtitle="Menunggu langkah berikutnya" className="border-l-4 border-l-amber-400" href={canViewReports ? '/reports' : null} />
+                        <SummaryCard title="Dalam proses" value={inProcess} subtitle="Menunggu langkah berikutnya" className="border-l-4 border-l-amber-400" href={canViewReports ? '/reports?exclude_status=completed' : null} />
                         <SummaryCard title="Selesai" value={completed} subtitle="Pengajuan telah ditutup" className="border-l-4 border-l-emerald-500" href={canViewReports ? '/reports?status=completed' : null} />
                         {pendingApproval !== null && (
                             <Link href="/approvals" className="ui-card group relative overflow-hidden border-l-4 border-l-rose-500 p-5 transition hover:-translate-y-0.5 hover:border-rose-400 hover:shadow-md">
