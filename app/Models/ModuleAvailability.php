@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 
 /**
  * Saklar ketersediaan modul untuk admin: modul dapat dinonaktifkan
@@ -34,12 +35,22 @@ class ModuleAvailability extends Model
 
     public static function isEnabled(string $module): bool
     {
-        return (bool) (static::query()->where('module', $module)->value('is_enabled') ?? true);
+        try {
+            return (bool) (static::query()->where('module', $module)->value('is_enabled') ?? true);
+        } catch (QueryException) {
+            // Tabel belum termigrasi (mis. deploy baru): anggap aktif agar
+            // aplikasi tidak 500 di setiap request.
+            return true;
+        }
     }
 
     public static function message(string $module): ?string
     {
-        $message = static::query()->where('module', $module)->value('maintenance_message');
+        try {
+            $message = static::query()->where('module', $module)->value('maintenance_message');
+        } catch (QueryException) {
+            return null;
+        }
 
         return $message !== null && trim((string) $message) !== '' ? (string) $message : null;
     }
