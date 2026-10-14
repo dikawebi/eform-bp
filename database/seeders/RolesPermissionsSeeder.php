@@ -103,6 +103,7 @@ class RolesPermissionsSeeder extends Seeder
         'attachment.upload.all',
 
         'workflow.manage',
+        'module.manage',
         'role.manage',
         'user.manage',
         'report.export',

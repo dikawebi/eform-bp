@@ -86,6 +86,7 @@ final class AdvanceProcessing
                 $final === RequestStatus::SettlementRequired ? 'advance.settlement_required' : 'advance.completed',
                 $final === RequestStatus::SettlementRequired ? 'Advance telah diproses' : 'Pengajuan selesai diproses',
                 $final === RequestStatus::SettlementRequired ? 'Advance telah diproses. Settlement dapat diajukan setelah transaksi selesai.' : 'Pengajuan tanpa advance telah selesai diproses.',
+                $actor,
             );
 
             return $locked->refresh();

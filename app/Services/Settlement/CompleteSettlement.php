@@ -55,6 +55,7 @@ final class CompleteSettlement
                 'settlement.completed',
                 'Settlement selesai diproses',
                 'Review dan proses pembayaran settlement Anda telah selesai.',
+                $actor,
             );
 
             return $locked->refresh();

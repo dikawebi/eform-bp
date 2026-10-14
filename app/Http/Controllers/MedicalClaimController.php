@@ -12,6 +12,7 @@ use App\Models\Employee;
 use App\Models\MedicalClaim;
 use App\Services\EmployeeVisibility;
 use App\Services\Approval\ApprovalActionAvailability;
+use App\Services\Approval\WithdrawRequest;
 use App\Services\Medical\CalculateMedicalClaim;
 use App\Services\Medical\MedicalClaimNumber;
 use App\Services\Medical\SubmitMedicalClaim;
@@ -197,12 +198,17 @@ class MedicalClaimController extends Controller
     public function cancel(Request $request, MedicalClaim $medical_claim): RedirectResponse
     {
         $this->authorize('cancel', $medical_claim);
-        DB::transaction(function () use ($request, $medical_claim) {
+        $reason = $request->validate(['reason' => ['nullable', 'string', 'max:2000']])['reason'] ?? null;
+        DB::transaction(function () use ($request, $medical_claim, $reason) {
             $claim = MedicalClaim::lockForUpdate()->findOrFail($medical_claim->id);
             $this->authorize('cancel', $claim);
+            if (! in_array($claim->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview, RequestStatus::Approved], true)) {
+                throw ValidationException::withMessages(['status' => 'Medical claim pada status ini tidak dapat dibatalkan.']);
+            }
             $from = $claim->status;
+            $withdraw = WithdrawRequest::run($claim, $request->user(), $reason);
             $claim->forceFill(['status' => RequestStatus::Cancelled, 'updated_by' => $request->user()->id])->save();
-            activity()->performedOn($claim)->causedBy($request->user())->withProperties(['from' => $from->value, 'to' => 'cancelled'])->log('medical.cancelled');
+            activity()->performedOn($claim)->causedBy($request->user())->withProperties(array_filter(['from' => $from->value, 'to' => 'cancelled', 'withdrawn_from_review' => in_array($from, [RequestStatus::InReview, RequestStatus::Approved], true), 'approved_count' => $withdraw['approved_count'], 'reason' => $reason], fn ($value) => $value !== null))->log('medical.cancelled');
         });
 
         return back()->with('success', 'Medical claim dibatalkan.');

@@ -60,9 +60,11 @@ class HandleInertiaRequests extends Middleware
             'unreadNotifications' => fn () => $user?->unreadNotifications()->count() ?? 0,
             'notifications' => fn () => $user?->notifications()->latest()->limit(8)->get()->map(fn ($notification) => [
                 'id' => $notification->id,
+                'event' => (string) data_get($notification->data, 'event', ''),
                 'title' => (string) data_get($notification->data, 'title', 'Notifikasi eForm BP'),
                 'message' => (string) data_get($notification->data, 'message', ''),
-                'url' => str_starts_with((string) data_get($notification->data, 'url', ''), '/') ? data_get($notification->data, 'url') : route('dashboard'),
+                'url' => \App\Services\InAppNotifier::resolveUrl($notification->data),
+                'meta' => (array) data_get($notification->data, 'meta', []),
                 'read_at' => $notification->read_at?->toISOString(),
                 'created_at' => $notification->created_at?->toISOString(),
             ])->values()->all() ?? [],
@@ -73,7 +75,7 @@ class HandleInertiaRequests extends Middleware
      * Menu dasar difilter by permission di server.
      * Frontend hanya me-render apa yang dikirim server (bukan kontrol akses utama).
      *
-     * @return list<array{label: string, url: string, permission: string|list<string>|null, group?: string, key?: string}>
+     * @return list<array{label: string, url: string, permission: string|list<string>|null, group?: string, key?: string, module?: string}>
      */
     protected function menus(Request $request): array
     {
@@ -81,14 +83,14 @@ class HandleInertiaRequests extends Middleware
 
         $menus = [
             ['label' => 'Dashboard', 'url' => '/dashboard', 'permission' => 'dashboard.view'],
-            ['label' => 'Cuti/Izin', 'url' => '/leaves', 'permission' => 'leave.view.own'],
-            ['label' => 'Perjalanan Dinas', 'url' => '/travels', 'permission' => 'travel.view.own'],
-            ['label' => 'Settlement', 'url' => '/settlements', 'permission' => 'settlement.create.own'],
-            ['label' => 'Medical Claim', 'url' => '/medical-claims', 'permission' => 'medical.view.own'],
-            ['label' => 'Hardware & Software (Non-ERP) Request', 'url' => '/it-requests', 'permission' => 'it_request.create.own'],
-            ['label' => 'ERP Request', 'url' => '/erp-requests', 'permission' => 'erp_request.create.own'],
+            ['label' => 'Cuti/Izin', 'url' => '/leaves', 'permission' => 'leave.view.own', 'module' => 'leave'],
+            ['label' => 'Perjalanan Dinas', 'url' => '/travels', 'permission' => 'travel.view.own', 'module' => 'travel'],
+            ['label' => 'Settlement', 'url' => '/settlements', 'permission' => 'settlement.create.own', 'module' => 'settlement'],
+            ['label' => 'Medical Claim', 'url' => '/medical-claims', 'permission' => 'medical.view.own', 'module' => 'medical_claim'],
+            ['label' => 'Hardware & Software (Non-ERP) Request', 'url' => '/it-requests', 'permission' => 'it_request.create.own', 'module' => 'it_request'],
+            ['label' => 'ERP Request', 'url' => '/erp-requests', 'permission' => 'erp_request.create.own', 'module' => 'erp_request'],
             ['label' => 'Approval', 'url' => '/approvals', 'permission' => 'approval.inbox.view'],
-            ['label' => 'Laporan', 'url' => '/reports', 'permission' => 'report.view'],
+            ['label' => 'Laporan', 'url' => '/reports', 'permission' => 'report.view', 'module' => 'report'],
             ['key' => 'master', 'label' => 'Karyawan', 'url' => '/master/employees', 'group' => 'Administrasi', 'permission' => ['employee.view.any', 'employee.manage']],
             ['key' => 'master-it-items', 'label' => 'Perangkat & Accessories IT', 'url' => '/master/it-items', 'group' => 'Administrasi', 'permission' => 'it.master.manage'],
             ['key' => 'settings-leave', 'label' => 'Workflow Cuti/Izin', 'url' => '/settings/workflows/leave', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
@@ -99,6 +101,7 @@ class HandleInertiaRequests extends Middleware
             ['key' => 'settings-erp-request', 'label' => 'Workflow ERP Request', 'url' => '/settings/workflows/erp-request', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-roles', 'label' => 'Role dan Permission', 'url' => '/settings/roles', 'group' => 'Pengaturan', 'permission' => 'role.manage'],
             ['key' => 'settings-users', 'label' => 'Pengguna', 'url' => '/settings/users', 'group' => 'Pengaturan', 'permission' => 'user.manage'],
+            ['key' => 'settings-modules', 'label' => 'Modul & Maintenance', 'url' => '/settings/modules', 'group' => 'Pengaturan', 'permission' => 'module.manage'],
         ];
 
         if (! $user) {
@@ -112,7 +115,17 @@ class HandleInertiaRequests extends Middleware
 
             $permissions = is_array($menu['permission']) ? $menu['permission'] : [$menu['permission']];
 
-            return collect($permissions)->contains(fn (string $permission): bool => $user->can($permission));
+            if (! collect($permissions)->contains(fn (string $permission): bool => $user->can($permission))) {
+                return false;
+            }
+
+            // Modul yang dimatikan admin disembunyikan; pemegang
+            // module.manage tetap melihatnya untuk verifikasi.
+            if (isset($menu['module']) && ! \App\Models\ModuleAvailability::isEnabled($menu['module']) && ! $user->can('module.manage')) {
+                return false;
+            }
+
+            return true;
         }));
     }
 }

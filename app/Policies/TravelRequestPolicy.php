@@ -65,11 +65,13 @@ class TravelRequestPolicy
     }
 
     /**
-     * Cancel: owner + masih di tahap awal (draft/submitted/returned).
+     * Cancel/withdraw: owner + belum ada uang bergerak. Mencakup
+     * draft/submitted/returned, masa review, hingga Approved selama
+     * advance belum diproses (bukan AdvancePaid/SettlementRequired).
      */
     public function cancel(User $user, TravelRequest $travel): bool
     {
-        if (! in_array($travel->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned], true)) {
+        if (! in_array($travel->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview, RequestStatus::Approved, RequestStatus::Processing], true)) {
             return false;
         }
 

@@ -18,7 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        $middleware->alias([
+            'module' => \App\Http\Middleware\EnsureModuleEnabled::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

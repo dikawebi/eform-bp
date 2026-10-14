@@ -38,7 +38,9 @@ class SettlementPolicy
 
     public function cancel(User $user, Settlement $settlement): bool
     {
-        return in_array($settlement->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned], true) && $this->owner($user, $settlement);
+        // Withdraw juga berlaku selama masa review HRGA/Finance.
+        // PaymentProcessing/Completed dikunci karena uang sedang/ sudah bergerak.
+        return in_array($settlement->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview], true) && $this->owner($user, $settlement);
     }
 
     public function upload(User $user, Settlement $settlement): bool

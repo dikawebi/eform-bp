@@ -17,8 +17,6 @@ abstract class ErpRequestRequest extends FormRequest
 
     public function rules(): array
     {
-        $modules = (array) config('eform.erp_request.modules', []);
-
         return [
             'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
             'recipient_name' => ['nullable', 'string', 'max:150'],
@@ -29,7 +27,7 @@ abstract class ErpRequestRequest extends FormRequest
             'existing_erp_username' => ['nullable', 'string', 'max:150'],
             'business_purpose' => ['required', 'string', 'max:5000'],
             'modules' => ['nullable', 'array', 'max:20'],
-            'modules.*' => ['string', Rule::in($modules)],
+            'modules.*' => ['string', 'max:100'],
         ];
     }
 

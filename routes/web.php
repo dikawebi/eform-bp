@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\MedicalClaimController;
+use App\Http\Controllers\ModuleAvailabilityController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -45,7 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/api/dashboard/summary', [ReportController::class, 'dashboard'])->name('reports.dashboard');
-    Route::get('/reports', [ReportController::class, 'index'])->can('report.view')->name('reports.index');
+    Route::get('/reports', [ReportController::class, 'index'])->can('report.view')->middleware('module:report')->name('reports.index');
     Route::get('/audit-timeline/{module}/{id}', AuditTimelineController::class)->whereNumber('id')->name('audit.timeline');
 
     // Phase 1 — Master Karyawan (PRD §4, §6, §7).
@@ -101,7 +102,7 @@ Route::middleware('auth')->group(function () {
 
     // Phase 2 — Cuti/Izin (PRD §2 modul A, §5.1, §6). Auth diperiksa di
     // controller via LeaveRequestPolicy; tanpa route hapus fisik.
-    Route::prefix('leaves')->name('leaves.')->group(function () {
+    Route::prefix('leaves')->name('leaves.')->middleware('module:leave')->group(function () {
         Route::get('/', [LeaveRequestController::class, 'index'])->name('index');
         Route::get('/create', [LeaveRequestController::class, 'create'])->name('create');
         Route::post('/', [LeaveRequestController::class, 'store'])->name('store');
@@ -116,7 +117,7 @@ Route::middleware('auth')->group(function () {
 
     // Phase 3 — Perjalanan Dinas (PRD §2 modul B, §5.2, §6). Auth diperiksa di
     // controller via TravelRequestPolicy; tanpa route hapus fisik.
-    Route::prefix('travels')->name('travels.')->group(function () {
+    Route::prefix('travels')->name('travels.')->middleware('module:travel')->group(function () {
         Route::get('/', [TravelRequestController::class, 'index'])->name('index');
         Route::get('/create', [TravelRequestController::class, 'create'])->name('create');
         Route::post('/', [TravelRequestController::class, 'store'])->name('store');
@@ -130,7 +131,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::get('/attachments/{attachment}/download', [TravelRequestController::class, 'downloadAttachment'])->name('attachments.download');
 
-    Route::prefix('medical-claims')->name('medical-claims.')->group(function () {
+    Route::prefix('medical-claims')->name('medical-claims.')->middleware('module:medical_claim')->group(function () {
         Route::get('/', [MedicalClaimController::class, 'index'])->name('index');
         Route::get('/create', [MedicalClaimController::class, 'create'])->name('create');
         Route::post('/', [MedicalClaimController::class, 'store'])->name('store');
@@ -144,11 +145,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/{medical_claim}/attachments', [MedicalClaimController::class, 'uploadAttachment'])->name('attachments.store');
     });
 
-    Route::prefix('it-requests')->name('it-requests.')->group(function () {
+    Route::prefix('it-requests')->name('it-requests.')->middleware('module:it_request')->group(function () {
         Route::get('/', [ItRequestController::class, 'index'])->name('index');
         Route::get('/create', [ItRequestController::class, 'create'])->name('create');
         Route::post('/', [ItRequestController::class, 'store'])->name('store');
         Route::get('/{it_request}', [ItRequestController::class, 'show'])->name('show');
+        Route::get('/{it_request}/print', [ItRequestController::class, 'print'])->name('print');
         Route::get('/{it_request}/edit', [ItRequestController::class, 'edit'])->name('edit');
         Route::match(['put', 'patch'], '/{it_request}', [ItRequestController::class, 'update'])->name('update');
         Route::post('/{it_request}/submit', [ItRequestController::class, 'submit'])->name('submit');
@@ -156,7 +158,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{it_request}/attachments', [ItRequestController::class, 'uploadAttachment'])->name('attachments.store');
     });
 
-    Route::prefix('erp-requests')->name('erp-requests.')->group(function () {
+    Route::prefix('erp-requests')->name('erp-requests.')->middleware('module:erp_request')->group(function () {
         Route::get('/', [ErpRequestController::class, 'index'])->name('index');
         Route::get('/create', [ErpRequestController::class, 'create'])->name('create');
         Route::post('/', [ErpRequestController::class, 'store'])->name('store');
@@ -168,7 +170,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{erp_request}/attachments', [ErpRequestController::class, 'uploadAttachment'])->name('attachments.store');
     });
 
-    Route::prefix('settlements')->name('settlements.')->group(function () {
+    Route::prefix('settlements')->name('settlements.')->middleware('module:settlement')->group(function () {
         Route::get('/', [SettlementController::class, 'index'])->name('index');
         Route::get('/create', [SettlementController::class, 'create'])->name('create');
         Route::post('/', [SettlementController::class, 'store'])->name('store');
@@ -195,6 +197,13 @@ Route::middleware('auth')->group(function () {
             ->can('viewAny', ApprovalWorkflow::class)->name('scope');
         Route::put('/{workflow}', [ApprovalWorkflowController::class, 'update'])
             ->can('update', 'workflow')->name('update');
+    });
+
+    Route::prefix('settings/modules')->name('settings.modules.')->group(function () {
+        Route::get('/', [ModuleAvailabilityController::class, 'index'])
+            ->can('module.manage')->name('index');
+        Route::put('/', [ModuleAvailabilityController::class, 'update'])
+            ->can('module.manage')->name('update');
     });
 
     Route::prefix('settings/roles')->name('settings.roles.')->group(function () {

@@ -13,6 +13,7 @@ use App\Models\Settlement;
 use App\Models\TravelRequest;
 use App\Services\EmployeeVisibility;
 use App\Services\Approval\ApprovalActionAvailability;
+use App\Services\Approval\WithdrawRequest;
 use App\Services\Settlement\CompleteSettlement;
 use App\Services\Settlement\CreateSettlement;
 use App\Services\Settlement\ResolveSettlementSource;
@@ -203,14 +204,18 @@ class SettlementController extends Controller
     public function cancel(Request $request, Settlement $settlement): RedirectResponse
     {
         $this->authorize('cancel', $settlement);
-        DB::transaction(function () use ($request, $settlement) {
+        $reason = $request->validate(['reason' => ['nullable', 'string', 'max:2000']])['reason'] ?? null;
+        DB::transaction(function () use ($request, $settlement, $reason) {
             $locked = Settlement::whereKey($settlement->id)->lockForUpdate()->firstOrFail();
-            if (! in_array($locked->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned], true)) {
+            $this->authorize('cancel', $locked);
+            if (! in_array($locked->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview], true)) {
                 throw ValidationException::withMessages(['status' => 'Settlement tidak dapat dibatalkan pada status ini.']);
             }
             $from = $locked->status;
+            $oldSourceKey = $locked->source_key;
+            $withdraw = WithdrawRequest::run($locked, $request->user(), $reason);
             $locked->forceFill(['status' => RequestStatus::Cancelled, 'source_key' => null, 'updated_by' => $request->user()->id])->save();
-            activity()->performedOn($locked)->causedBy($request->user())->withProperties(['from' => $from->value, 'to' => 'cancelled'])->log('settlement.cancelled');
+            activity()->performedOn($locked)->causedBy($request->user())->withProperties(array_filter(['from' => $from->value, 'to' => 'cancelled', 'old_source_key' => $oldSourceKey, 'withdrawn_from_review' => $from === RequestStatus::InReview, 'approved_count' => $withdraw['approved_count'], 'reason' => $reason], fn ($value) => $value !== null))->log('settlement.cancelled');
         });
 
         return redirect()->route('settlements.show', $settlement);

@@ -9,11 +9,15 @@ class WorkflowNotification extends Notification
 {
     use Queueable;
 
+    /**
+     * @param  array{module?: string, document_number?: string, actor?: string, step?: string}  $meta
+     */
     public function __construct(
         public readonly string $event,
         public readonly string $title,
         public readonly string $message,
         public readonly string $url,
+        public readonly array $meta = [],
     ) {}
 
     /** @return list<string> */
@@ -22,7 +26,7 @@ class WorkflowNotification extends Notification
         return ['database'];
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, mixed> */
     public function toDatabase(object $notifiable): array
     {
         return [
@@ -30,6 +34,7 @@ class WorkflowNotification extends Notification
             'title' => $this->title,
             'message' => $this->message,
             'url' => $this->url,
+            'meta' => $this->meta,
         ];
     }
 }

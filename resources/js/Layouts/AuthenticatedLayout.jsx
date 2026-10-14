@@ -1,6 +1,7 @@
 import Dropdown from '@/Components/Dropdown';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Toast from '@/Components/Toast';
+import { EventBadge, MetaLine } from '@/Components/NotificationMeta';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
@@ -375,7 +376,7 @@ function NotificationBell() {
                     </header>
                     <div className="max-h-[min(24rem,65vh)] overflow-y-auto">
                         {notifications.length === 0 ? <div className="px-5 py-10 text-center"><p className="text-sm font-semibold">Belum ada notifikasi</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Pembaruan workflow akan muncul di sini.</p></div> : notifications.map((notification) => <button key={notification.id} type="button" onClick={() => openNotification(notification)} className={`app-notification-item w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/70 ${notification.read_at ? '' : 'app-notification-unread'}`}>
-                            <span className="flex items-start gap-3"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-600" style={{ opacity: notification.read_at ? 0 : 1 }} /><span className="min-w-0"><span className="block text-sm font-semibold">{notification.title}</span><span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">{notification.message}</span><span className="mt-1 block text-[11px] text-slate-400">{notification.created_at ? new Date(notification.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</span></span></span>
+                            <span className="flex items-start gap-3"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-600" style={{ opacity: notification.read_at ? 0 : 1 }} /><span className="min-w-0"><span className="block text-sm font-semibold">{notification.title}<EventBadge event={notification.event} /></span><span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">{notification.message}</span><MetaLine meta={notification.meta} /><span className="mt-1 block text-[11px] text-slate-400">{notification.created_at ? new Date(notification.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</span></span></span>
                         </button>)}
                     </div>
                     <footer className="border-t border-slate-200 p-3 text-center dark:border-slate-700"><Link href={route('notifications.index')} onClick={() => setOpen(false)} className="text-xs font-bold text-blue-700 hover:underline dark:text-blue-400">Lihat semua notifikasi</Link></footer>
@@ -442,13 +443,13 @@ export default function AuthenticatedLayout({
     return (
             <div className="app-shell min-h-screen bg-slate-50 text-slate-900 transition-colors">
             {/* Sidebar desktop */}
-            <aside className="app-sidebar-frame hidden border-r lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col">
+            <aside className="app-sidebar-frame hidden border-r print:hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col">
                 <SidebarContent menus={visibleMenus} currentUrl={url} pendingApprovalCount={pendingApprovalCount} />
             </aside>
 
             {/* Sidebar mobile */}
             <div
-                className={`relative z-40 lg:hidden ${sidebarOpen ? '' : 'hidden'}`}
+                className={`relative z-40 print:hidden lg:hidden ${sidebarOpen ? '' : 'hidden'}`}
             >
                 <div
                     className="fixed inset-0 bg-gray-900/50"
@@ -489,7 +490,7 @@ export default function AuthenticatedLayout({
 
             <div className="flex min-h-screen flex-col lg:pl-64">
                 {/* Topbar */}
-                <nav className="app-topbar sticky top-0 z-30 border-b">
+                <nav className="app-topbar sticky top-0 z-30 border-b print:hidden">
                     <div className="mx-auto flex h-16 max-w-7xl items-center gap-x-3 px-4 sm:px-6 lg:px-8">
                         <button
                             type="button"

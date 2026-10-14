@@ -44,7 +44,8 @@ class ErpRequestPolicy
 
     public function cancel(User $user, ErpRequest $request): bool
     {
-        return in_array($request->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned], true)
+        // Withdraw juga berlaku selama masa review. Completed terkunci.
+        return in_array($request->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview], true)
             && $this->owner($user, $request);
     }
 

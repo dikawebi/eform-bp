@@ -58,7 +58,9 @@ class MedicalClaimPolicy
 
     public function cancel(User $user, MedicalClaim $claim): bool
     {
-        return in_array($claim->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned], true) && $this->owner($user, $claim);
+        // Withdraw juga berlaku selama review hingga Approved.
+        // PaymentProcessing/Completed dikunci karena pembayaran sedang/ sudah berjalan.
+        return in_array($claim->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview, RequestStatus::Approved], true) && $this->owner($user, $claim);
     }
 
     public function review(User $user, MedicalClaim $claim): bool

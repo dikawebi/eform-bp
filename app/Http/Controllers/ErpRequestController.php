@@ -10,6 +10,7 @@ use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\ErpRequest;
 use App\Services\Approval\ApprovalActionAvailability;
+use App\Services\Approval\WithdrawRequest;
 use App\Services\EmployeeVisibility;
 use App\Services\It\ErpRequestNumber;
 use App\Services\It\SubmitErpRequest;
@@ -18,6 +19,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,21 +32,60 @@ class ErpRequestController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', ErpRequest::class);
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', 'string', Rule::in(RequestStatus::values())],
+            'action_type' => ['nullable', 'string', Rule::in(['new_account', 'modify_role', 'reset_auth'])],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'sort' => ['nullable', 'string', Rule::in(['request_number', 'action_type', 'status', 'created_at'])],
+            'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
+        ]);
         $user = $request->user();
-        $query = ErpRequest::with('employee:id,employee_number,name,department')->latest();
+        $query = ErpRequest::with('employee:id,employee_number,name,department');
         if (! app(EmployeeVisibility::class)->hasBroadAccess($user)) {
             app(EmployeeVisibility::class)->scope($user, $query);
         }
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = "%{$search}%";
+            $query->where(function ($inner) use ($like) {
+                $inner->where('request_number', 'like', $like)
+                    ->orWhere('recipient_name', 'like', $like)
+                    ->orWhereHas('employee', fn ($employee) => $employee->where('name', 'like', $like)->orWhere('employee_number', 'like', $like));
+            });
+        }
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (! empty($filters['action_type'])) {
+            $query->where('action_type', $filters['action_type']);
+        }
+        $dateFrom = $filters['date_from'] ?? null;
+        $dateTo = $filters['date_to'] ?? null;
+        if ($dateFrom && $dateTo) {
+            $query->whereDate('created_at', '>=', $dateFrom)->whereDate('created_at', '<=', $dateTo);
+        } elseif ($dateFrom) {
+            $query->whereDate('created_at', $dateFrom);
+        }
+        $sort = $filters['sort'] ?? 'created_at';
+        $direction = $filters['direction'] ?? 'desc';
+        $query->orderBy($sort, $direction)->orderBy('id', $direction);
         $page = $query->paginate(15)->withQueryString();
         $page->setCollection($page->getCollection()->map(fn (ErpRequest $erp) => [
             'id' => $erp->id,
             'request_number' => $erp->request_number,
             'status' => $erp->status->value,
             'action_type' => $erp->action_type,
+            'created_at' => $erp->created_at?->toISOString(),
             'recipient' => $erp->employee?->only(['id', 'employee_number', 'name', 'department']) ?? ['name' => $erp->recipient_name],
         ]));
 
-        return Inertia::render('ErpRequests/Index', ['requests' => $page, 'statuses' => RequestStatus::values(), 'canCreate' => $user->can('create', ErpRequest::class)]);
+        return Inertia::render('ErpRequests/Index', [
+            'requests' => $page, 'statuses' => RequestStatus::values(), 'canCreate' => $user->can('create', ErpRequest::class),
+            'filters' => ['search' => $search, 'status' => $filters['status'] ?? '', 'action_type' => $filters['action_type'] ?? '', 'date_from' => $dateFrom ?? '', 'date_to' => $dateTo ?? ''],
+            'sort' => $sort, 'direction' => $direction,
+        ]);
     }
 
     public function create(Request $request): Response
@@ -169,12 +210,17 @@ class ErpRequestController extends Controller
     public function cancel(Request $request, ErpRequest $erp_request): RedirectResponse
     {
         $this->authorize('cancel', $erp_request);
-        DB::transaction(function () use ($request, $erp_request) {
+        $reason = $request->validate(['reason' => ['nullable', 'string', 'max:2000']])['reason'] ?? null;
+        DB::transaction(function () use ($request, $erp_request, $reason) {
             $erp = ErpRequest::lockForUpdate()->findOrFail($erp_request->id);
             $this->authorize('cancel', $erp);
+            if (! in_array($erp->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview], true)) {
+                throw ValidationException::withMessages(['status' => 'ERP request pada status ini tidak dapat dibatalkan.']);
+            }
             $from = $erp->status;
+            $withdraw = WithdrawRequest::run($erp, $request->user(), $reason);
             $erp->forceFill(['status' => RequestStatus::Cancelled, 'updated_by' => $request->user()->id])->save();
-            activity()->performedOn($erp)->causedBy($request->user())->withProperties(['from' => $from->value, 'to' => 'cancelled'])->log('erp.cancelled');
+            activity()->performedOn($erp)->causedBy($request->user())->withProperties(array_filter(['from' => $from->value, 'to' => 'cancelled', 'withdrawn_from_review' => $from === RequestStatus::InReview, 'approved_count' => $withdraw['approved_count'], 'reason' => $reason], fn ($value) => $value !== null))->log('erp.cancelled');
         });
 
         return back()->with('success', 'ERP request dibatalkan.');

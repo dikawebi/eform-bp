@@ -1,5 +1,6 @@
 import StatusBadge from '@/Components/StatusBadge';
 import ApprovalActions from '@/Components/ApprovalActions';
+import Modal from '@/Components/Modal';
 import ITRequestForm from './ITRequestForm';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -16,6 +17,8 @@ export default function Show({ request, meta = {}, timeline = [], activities = [
     const input = useRef();
     const [documentType, setDocumentType] = useState('justification');
     const [uploading, setUploading] = useState(false);
+    const [printOpen, setPrintOpen] = useState(false);
+    const [printFormat, setPrintFormat] = useState('memo');
     const action = (name) => {
         router.post(route(`it-requests.${name}`, request.id), {}, { preserveScroll: true });
     };
@@ -36,8 +39,10 @@ export default function Show({ request, meta = {}, timeline = [], activities = [
              <div className="flex flex-wrap gap-2">
                 {availableActions.can_edit && <Link href={route('it-requests.edit', request.id)} className="rounded border px-3 py-2 text-sm">Ubah</Link>}
                 {availableActions.can_submit && <button onClick={() => action('submit')} className="rounded bg-gray-900 px-3 py-2 text-sm text-white">Ajukan</button>}
-                {availableActions.can_cancel && <button onClick={() => action('cancel')} className="rounded border border-rose-300 px-3 py-2 text-sm text-rose-700">Batalkan</button>}
+                {availableActions.can_cancel && <button onClick={() => { const inProcess = ['submitted', 'in_review'].includes(request.status); if (!inProcess || window.confirm('Request sedang dalam proses. Membatalkan akan menghentikan approval dan memberi tahu approver. Lanjutkan?')) action('cancel'); }} className="rounded bg-rose-600 px-3 py-2 text-sm font-bold text-white shadow-sm hover:bg-rose-700">Batalkan</button>}
+                {request.status === 'completed' && <button onClick={() => setPrintOpen(true)} className="rounded bg-indigo-700 px-3 py-2 text-sm font-bold text-white shadow-sm hover:bg-indigo-800">Cetak untuk Commercial</button>}
              </div>
+             <Modal show={printOpen} onClose={() => setPrintOpen(false)} maxWidth="md"><div className="p-6"><h2 className="text-lg font-bold">Cetak untuk Commercial</h2><p className="mt-1 text-sm text-slate-500">Pilih format dokumen serah terima sebagai dasar PR.</p><div className="mt-4 grid gap-2">{[['memo', 'Memo Penerusan', 'Surat pengantar resmi ke Commercial beserta ringkasan item dan dasar persetujuan.'], ['items', 'Daftar Item', 'Tabel item perangkat, accessories, dan software untuk lampiran PR.'], ['form', 'Formulir Lengkap', 'Tampilan formulir request apa adanya.']].map(([value, title, desc]) => <label key={value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${printFormat === value ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200'}`}><input type="radio" name="print-format" checked={printFormat === value} onChange={() => setPrintFormat(value)} className="mt-1" /><span><span className="block text-sm font-bold">{title}</span><span className="mt-0.5 block text-xs text-slate-500">{desc}</span></span></label>)}</div><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setPrintOpen(false)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold">Batal</button><button type="button" onClick={() => router.visit(route('it-requests.print', { it_request: request.id, format: printFormat }))} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white">Buka Dokumen</button></div></div></Modal>
              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Persetujuan ini bukan persetujuan pembelian. Setelah mendapat persetujuan akhir, request diteruskan kepada IT untuk proses lanjutan.</div>
              <ITRequestForm request={request} meta={{ ...meta, software_standard: request.software_standard ?? [] }} readOnly embedded approvalTimeline={timeline} />
              <section className="rounded bg-white p-5 shadow-sm"><h3 className="font-semibold">Lampiran</h3>{request.attachments?.length ? <ul className="mt-3 space-y-2 text-sm">{request.attachments.map((file) => <li key={file.id} className="flex flex-wrap items-center justify-between gap-2"><span>{file.original_name} <span className="text-gray-500">({file.document_type})</span></span>{file.download_url && <a className="text-indigo-600 hover:underline" href={file.download_url}>Unduh</a>}</li>)}</ul> : <p className="mt-3 text-sm text-gray-500">Belum ada lampiran.</p>}{availableActions.can_upload && <form onSubmit={upload} className="mt-4 flex flex-wrap gap-2 border-t pt-4"><select aria-label="Jenis dokumen" value={documentType} onChange={(e) => setDocumentType(e.target.value)} className="rounded border text-sm"><option value="justification">Justifikasi kebutuhan</option><option value="quotation">Penawaran / quotation</option><option value="supporting_document">Dokumen pendukung</option></select><input aria-label="File lampiran" ref={input} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" /><button disabled={uploading} className="rounded bg-gray-900 px-3 py-2 text-sm text-white">Unggah</button></form>}</section>

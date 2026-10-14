@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\ErpRequest;
+use App\Models\ItRequest;
 use App\Models\User;
 use App\Notifications\WorkflowNotification;
+use App\Services\InAppNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,6 +26,52 @@ class InAppNotificationTest extends TestCase
                 ->has('notifications', 1)
                 ->where('notifications.0.title', 'Approval baru')
                 ->where('notifications.0.url', '/approvals/10'));
+    }
+
+    public function test_notification_shares_event_and_meta_detail(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new WorkflowNotification('approval.assigned', 'Approval baru', 'Periksa IT-2026-0001.', '/approvals/10', [
+            'module' => 'IT Request', 'document_number' => 'IT-2026-0001', 'actor' => 'Budi', 'step' => 'it',
+        ]));
+
+        $this->actingAs($user)->get('/profile')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('notifications.0.event', 'approval.assigned')
+                ->where('notifications.0.meta.module', 'IT Request')
+                ->where('notifications.0.meta.document_number', 'IT-2026-0001')
+                ->where('notifications.0.meta.actor', 'Budi')
+                ->where('notifications.0.meta.step', 'it'));
+    }
+
+    public function test_it_and_erp_notification_urls_point_to_pending_data(): void
+    {
+        $notifier = app(InAppNotifier::class);
+
+        $it = new ItRequest();
+        $it->id = 99;
+        $this->assertStringEndsWith('/it-requests/99', $notifier->url($it));
+        $this->assertSame('IT Request', $notifier->label($it));
+
+        $erp = new ErpRequest();
+        $erp->id = 77;
+        $this->assertStringEndsWith('/erp-requests/77', $notifier->url($erp));
+        $this->assertSame('ERP Request', $notifier->label($erp));
+
+        $context = InAppNotifier::context($it, null, 'it');
+        $this->assertSame('IT Request', $context['module']);
+        $this->assertSame('it', $context['step']);
+    }
+
+    public function test_absolute_notification_url_resolves_to_pending_data_path(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new WorkflowNotification('approval.assigned', 'Approval baru', 'Periksa data.', 'http://localhost/it-requests/99'));
+
+        $this->actingAs($user)->get('/profile')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('notifications.0.url', '/it-requests/99'));
     }
 
     public function test_user_can_only_mark_their_own_notifications_as_read(): void

@@ -44,9 +44,20 @@ class ApprovalController extends Controller
             ->filter(fn (User $user) => (! $user->employee || $user->employee->active)
                 && ! in_array($user->id, array_merge(ApprovalActorConflicts::ids($approval->approvable, $approval), [(int) $request->user()->id], $approval->actions->pluck('actor_id')->map(fn ($id) => (int) $id)->all()), true))
             ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name, 'employee_name' => $user->employee?->name])->values()->all() : [];
+        // Keputusan eskalasi COO/CEO: hanya tahap IT dari IT Request
+        // (Hardware & Software) bertanda kebutuhan khusus.
+        $needsEscalation = $canAct && $approval->step_code === 'it'
+            && $approval->approvable instanceof \App\Models\ItRequest
+            && (bool) $approval->approvable->special_specification;
+        $escalateUsers = $needsEscalation ? User::query()->where('active', true)->role('coo_ceo')->permission('approval.act')
+            ->with('employee:id,user_id,name')->orderBy('name')->orderBy('id')->get()
+            ->filter(fn (User $user) => (! $user->employee || $user->employee->active)
+                && ! in_array($user->id, array_merge(ApprovalActorConflicts::ids($approval->approvable, $approval), [(int) $request->user()->id], $approval->actions->pluck('actor_id')->map(fn ($id) => (int) $id)->all()), true))
+            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name, 'employee_name' => $user->employee?->name])->values()->all() : [];
         $availableActions = [
             'approve' => $canAct, 'return' => $canAct, 'reject' => $canAct,
             'delegate' => $canAct && $delegates !== [], 'eligibleDelegates' => $delegates,
+            'needsEscalationDecision' => $needsEscalation, 'eligibleEscalateUsers' => $escalateUsers,
         ];
 
         return Inertia::render('Approvals/Show', ['approval' => ApprovalViewData::make($approval, $request->user()), 'availableActions' => $availableActions]);
@@ -70,7 +81,7 @@ class ApprovalController extends Controller
         $this->authorize('act', $approval);
         $data = $request->validated();
         match ($action) {
-            'approve' => ApproveApprovalRequest::run($approval, $request->user()),
+            'approve' => ApproveApprovalRequest::run($approval, $request->user(), ['escalation' => $data['escalation'] ?? null, 'escalate_user_id' => isset($data['escalate_user_id']) ? (int) $data['escalate_user_id'] : null]),
             'return' => ReturnApprovalRequest::run($approval, $request->user(), $data['comments']),
             'reject' => RejectApprovalRequest::run($approval, $request->user(), $data['comments']),
             'delegate' => DelegateApprovalRequest::run($approval, $request->user(), User::findOrFail($data['delegate_user_id']), $data['comments'] ?? null),

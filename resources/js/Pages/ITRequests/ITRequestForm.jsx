@@ -22,7 +22,7 @@ function ErrorSummary({ errors }) {
     </div>;
 }
 
-export default function ITRequestForm({ request = null, meta = {}, edit = false, readOnly = false, approvalTimeline = [], embedded = false }) {
+export default function ITRequestForm({ request = null, meta = {}, edit = false, readOnly = false, approvalTimeline = [], embedded = false, hideStepper = false }) {
     const employees = meta?.employees ?? [];
     const defaultEmployee = request?.employee ?? employees[0] ?? null;
     const { data, setData, post, put, processing, errors } = useForm({
@@ -43,14 +43,15 @@ export default function ITRequestForm({ request = null, meta = {}, edit = false,
         purpose: request?.purpose ?? "",
         software_standard: request?.software_standard ?? ["MS Office", "AntiVirus", "WinZip", "PDF Reader", "AnyDesk"],
         software_optional: request?.software_optional ?? [],
-        software_name: "",
         accessories: request?.accessories ?? [],
         accessory_other_note: request?.accessory_other_note ?? "",
         needed_date: request?.needed_date ?? "",
         priority: request?.priority ?? "normal",
     });
     const [confirm, setConfirm] = useState(false);
+    const [softwareName, setSoftwareName] = useState("");
     const [softwareLicense, setSoftwareLicense] = useState("new");
+    const [softwareError, setSoftwareError] = useState("");
 
     const recipient = employees.find((item) => String(item.id) === String(data.employee_id)) ?? (defaultEmployee && String(defaultEmployee.id) === String(data.employee_id) ? defaultEmployee : null);
     const approvalPic = (stepCode) => {
@@ -66,6 +67,13 @@ export default function ITRequestForm({ request = null, meta = {}, edit = false,
         { key: "completed", label: "Selesai" },
     ];
 
+    // Stepper mengikuti tahap approval yang sedang pending (bukan status
+    // parent yang tetap in_review sepanjang chain), agar setelah HOD
+    // approve indikator berpindah ke Tinjauan IT, dst.
+    const itStepKey = { hod: "in_review", it: "processing", pm_gm: "approved", coo_ceo: "high_spec_approval" };
+    const pendingApproval = (approvalTimeline ?? []).find((item) => item.status === "pending");
+    const stepperStatus = pendingApproval && itStepKey[pendingApproval.step_code] ? itStepKey[pendingApproval.step_code] : (request?.status ?? "draft");
+
     const deviceOptions = meta?.device_options?.length ? meta.device_options : fallbackDevices;
     const accessoryOptions = meta?.accessory_options?.length ? meta.accessory_options : fallbackAccessories;
     const storedLabels = meta?.option_labels ?? {};
@@ -75,19 +83,26 @@ export default function ITRequestForm({ request = null, meta = {}, edit = false,
 
     const toggleAccessory = (code) => setData("accessories", data.accessories.includes(code) ? data.accessories.filter((item) => item !== code) : [...data.accessories, code]);
     const addSoftware = () => {
-        const name = String(data.software_name ?? "").trim();
-        if (!name || data.software_optional.some((item) => item.name === name)) { setData("software_name", ""); return; }
+        const name = String(softwareName ?? "").trim();
+        if (!name) {
+            setSoftwareError("Isi nama software dulu sebelum menekan + Tambah.");
+            return;
+        }
+        if (data.software_optional.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
+            setSoftwareError("Software sudah ada di daftar.");
+            setSoftwareName("");
+            return;
+        }
+        setSoftwareError("");
         setData("software_optional", [...data.software_optional, { name, license: softwareLicense }]);
-        setData("software_name", "");
+        setSoftwareName("");
     };
     const removeSoftware = (name) => setData("software_optional", data.software_optional.filter((item) => item.name !== name));
     const save = () => {
-        const payload = { ...data };
-        delete payload.software_name;
         if (edit) {
-            put(route("it-requests.update", request.id), { ...payload, _method: "put" });
+            put(route("it-requests.update", request.id), { ...data, _method: "put" });
         } else {
-            post(route("it-requests.store"), payload);
+            post(route("it-requests.store"), data);
         }
     };
     const requestSave = (event) => { event.preventDefault(); setConfirm(true); };
@@ -97,7 +112,7 @@ export default function ITRequestForm({ request = null, meta = {}, edit = false,
         <Head title={edit ? "Ubah IT Request" : "Buat IT Request"} />
         <form onSubmit={readOnly ? (event) => event.preventDefault() : requestSave} className="worksheet-form medical-sheet space-y-6">
             <fieldset disabled={readOnly} className="block min-w-0 space-y-6 border-0 p-0">
-            <WorkflowStepper currentStatus={request?.status ?? "draft"} title="Alur IT Request" steps={steps} />
+            {!hideStepper && <WorkflowStepper currentStatus={stepperStatus} title="Alur IT Request" steps={steps} />}
             <header className="medical-sheet-header">
                 <div className="medical-sheet-logo"><strong>BP</strong><small>PT. BORNEO PRIMA</small><em>COAL MINING &amp; TRADING</em></div>
                 <div className="medical-sheet-title"><p>PT. BORNEO PRIMA</p><h1>IT &amp; TELECOMMUNICATION ACQUISITION REQUEST</h1></div>
@@ -134,16 +149,16 @@ export default function ITRequestForm({ request = null, meta = {}, edit = false,
             <section className="medical-sheet-section">
                 <div className="worksheet-section-heading mb-4"><p className="worksheet-eyebrow">Bagian 03 · Software</p><h2>Kebutuhan software</h2><p>Software standar terpasang sesuai kebijakan dan tidak dapat diubah. Tambahkan software opsional sesuai kebutuhan.</p></div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-bold text-slate-600">SOFTWARE STANDAR (TERPASANG SESUAI KEBIJAKAN)</p><p className="mt-2 text-sm text-slate-700">{(meta?.software_standard ?? data.software_standard).join(", ")}.</p></div>
-                <div className="mt-4"><label className={label}>Tambah software opsional</label><div className="mt-1 flex flex-col gap-2 sm:flex-row"><input value={data.software_name} onChange={(event) => setData("software_name", event.target.value)} className={input} placeholder="Nama software" maxLength="100" /><select value={softwareLicense} onChange={(event) => setSoftwareLicense(event.target.value)} className={input}><option value="existing">Lisensi tersedia</option><option value="new">Lisensi baru</option></select><button type="button" onClick={addSoftware} className="rounded-md border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700">+ Tambah</button></div></div>
+                <div className="mt-4"><label className={label}>Tambah software opsional</label><div className="mt-1 flex flex-col gap-2 sm:flex-row"><input value={softwareName} onChange={(event) => { setSoftwareName(event.target.value); if (softwareError) setSoftwareError(""); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSoftware(); } }} className={input} placeholder="Nama software" maxLength="100" /><select value={softwareLicense} onChange={(event) => setSoftwareLicense(event.target.value)} className={input}><option value="existing">Lisensi tersedia</option><option value="new">Lisensi baru</option></select><button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); addSoftware(); }} className="rounded-md border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700">+ Tambah</button></div>{softwareError && <p className="mt-1 text-xs text-rose-600">{softwareError}</p>}</div>
                 {data.software_optional.length > 0 && <ul className="mt-3 space-y-2">{data.software_optional.map((item) => <li key={item.name} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-3 text-sm"><span><strong>{item.name}</strong> <span className="text-slate-500">({item.license === "existing" ? "Lisensi tersedia" : "Lisensi baru"})</span></span><button type="button" onClick={() => removeSoftware(item.name)} className="text-xs font-semibold text-rose-600">Hapus</button></li>)}</ul>}
                 <InputError message={errors.software_optional} className="mt-1" />
             </section>
 
             <section className="medical-sheet-section">
-                <div className="worksheet-section-heading mb-4"><p className="worksheet-eyebrow">Bagian 04 · Perangkat</p><h2>Perangkat dan accessories</h2><p>Pilih satu perangkat utama dan accessories tambahan dalam satu daftar. Spesifikasi teknis ditentukan internal oleh IT di luar sistem ini.</p></div>
+                <div className="worksheet-section-heading mb-4"><p className="worksheet-eyebrow">Bagian 04 · Perangkat</p><h2>Perangkat dan accessories</h2><p>Spesifikasi teknis ditentukan internal oleh IT.</p></div>
                 <div className="rounded-lg border border-slate-300"><div className="border-b border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-800">PERANGKAT &amp; ACCESSORIES</div><div className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">{data.device_type && !deviceOptions.some((item) => item.value === data.device_type) && <span className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900">{deviceLabelOf(data.device_type)} <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold">Nonaktif</span></span>}{deviceOptions.map((item) => <label key={`device-${item.value}`} className={`flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm ${data.device_type === item.value ? "border-blue-500 bg-blue-50 font-semibold text-blue-900" : "border-slate-200 text-slate-700"}`}><input type="checkbox" checked={data.device_type === item.value} onChange={() => setData("device_type", data.device_type === item.value ? "" : item.value)} /> {item.label} <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">Utama</span></label>)}{accessoryOptions.map((item) => <label key={`acc-${item.value}`} className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 p-3 text-sm text-slate-700"><input type="checkbox" checked={data.accessories.includes(item.value)} onChange={() => toggleAccessory(item.value)} /> {item.label}</label>)}{data.accessories.filter((value) => !accessoryOptions.some((item) => item.value === value)).map((value) => <span key={`acc-old-${value}`} className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900">{accessoryOf(value).label} <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold">Nonaktif</span></span>)}</div>{needsAccessoryNote && <div className="border-t border-slate-200 p-4"><label className={label}>Keterangan tambahan <b className="text-rose-600">*</b></label><input className={input} value={data.accessory_other_note} onChange={(event) => setData("accessory_other_note", event.target.value)} placeholder="Contoh: docking station USB-C" /><InputError message={errors.accessory_other_note} /></div>}</div>
                 <InputError message={errors.device_type || errors.accessories} className="mt-1" />
-                <div className="mt-4 rounded-lg border border-slate-200 p-4"><label className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={Boolean(data.special_specification)} onChange={(event) => setData("special_specification", event.target.checked)} /> Ada kebutuhan khusus untuk spesifikasi perangkat</label><p className="mt-1 text-xs text-slate-500">Jika dipilih, pengajuan otomatis memerlukan persetujuan COO/CEO setelah PM/GM.</p></div>
+                <div className="mt-4 rounded-lg border border-slate-200 p-4"><label className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={Boolean(data.special_specification)} onChange={(event) => setData("special_specification", event.target.checked)} /> Ada kebutuhan khusus untuk spesifikasi perangkat</label><p className="mt-1 text-xs text-slate-500">Jika dipilih, IT menilai kebutuhan dan menentukan eskalasi ke COO/CEO atau tidak saat tahap review IT.</p></div>
                 {Boolean(data.special_specification) && <div className="mt-3 grid gap-4 lg:grid-cols-2"><div><label className={label}>Deskripsi perangkat <b className="text-rose-600">*</b></label><textarea required rows="4" className={input} value={data.description} onChange={(event) => setData("description", event.target.value)} placeholder="Contoh: Laptop untuk pemodelan CAD." /><InputError message={errors.description} /></div><div><label className={label}>Tujuan utama penggunaan <b className="text-rose-600">*</b></label><textarea required rows="4" className={input} value={data.purpose} onChange={(event) => setData("purpose", event.target.value)} placeholder="Jelaskan aktivitas kerja yang memerlukan spesifikasi khusus." /><InputError message={errors.purpose} /></div></div>}
             </section>
 

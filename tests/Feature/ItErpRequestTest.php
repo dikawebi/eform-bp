@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Data\Approval\ApprovalViewData;
 use App\Enums\ApprovalStepStatus;
 use App\Enums\RequestStatus;
 use App\Models\Attachment;
@@ -16,6 +17,7 @@ use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -65,7 +67,7 @@ class ItErpRequestTest extends TestCase
         $this->assertTrue(Activity::where('subject_type', 'it_request')->where('subject_id', $itRequest->id)->where('description', 'it.submitted')->exists());
     }
 
-    public function test_it_request_with_special_specification_keeps_coo_ceo_step(): void
+    public function test_it_request_with_special_specification_defers_coo_ceo_to_it_decision(): void
     {
         [$user, $employee] = $this->itActors();
 
@@ -74,8 +76,122 @@ class ItErpRequestTest extends TestCase
 
         $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
         $coo = $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail();
+        // Step dipertahankan tetapi TANPA approver: IT yang memutuskan nanti.
         $this->assertNotSame(ApprovalStepStatus::Skipped, $coo->status);
-        $this->assertNotNull($coo->approver_user_id);
+        $this->assertNull($coo->approver_user_id);
+        $this->assertTrue(Activity::where('subject_type', 'it_request')->where('subject_id', $itRequest->id)->where('description', 'approval.step_deferred')->exists());
+    }
+
+    public function test_it_approve_without_escalation_decision_is_rejected(): void
+    {
+        [$user, $employee, $hodUser, $itUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'special_specification' => true, 'description' => 'Butuh GPU', 'purpose' => 'CAD'])->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $hod = $itRequest->approvalRequests()->where('step_code', 'hod')->firstOrFail();
+        $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
+
+        $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        $this->actingAs($itUser)->get(route('approvals.show', $it))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('availableActions.needsEscalationDecision', true)->has('availableActions.eligibleEscalateUsers'));
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']))
+            ->assertSessionHasErrors('escalation');
+    }
+
+    public function test_it_escalation_none_skips_coo_and_completes(): void
+    {
+        [$user, $employee, $hodUser, $itUser, $pmUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'special_specification' => true, 'description' => 'Butuh GPU', 'purpose' => 'CAD'])->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $hod = $itRequest->approvalRequests()->where('step_code', 'hod')->firstOrFail();
+        $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
+
+        $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), ['escalation' => 'none'])->assertRedirect();
+
+        $this->assertSame(ApprovalStepStatus::Skipped, $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail()->status);
+        $this->assertTrue(Activity::where('subject_type', 'it_request')->where('subject_id', $itRequest->id)->where('description', 'approval.escalation_decided')->exists());
+
+        $pm = $itRequest->approvalRequests()->where('step_code', 'pm_gm')->firstOrFail();
+        $this->actingAs($pmUser)->post(route('approvals.action', [$pm, 'approve']))->assertRedirect();
+
+        $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
+        $this->assertNotNull($itRequest->completed_at);
+    }
+
+    public function test_it_escalation_to_coo_assigns_target_and_completes(): void
+    {
+        [$user, $employee, $hodUser, $itUser, $pmUser, $cooUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'special_specification' => true, 'description' => 'Butuh GPU', 'purpose' => 'CAD'])->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $hod = $itRequest->approvalRequests()->where('step_code', 'hod')->firstOrFail();
+        $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
+
+        $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), ['escalation' => 'coo_ceo', 'escalate_user_id' => $cooUser->id])->assertRedirect();
+
+        $coo = $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail();
+        $this->assertSame((int) $cooUser->id, (int) $coo->approver_user_id);
+
+        $pm = $itRequest->approvalRequests()->where('step_code', 'pm_gm')->firstOrFail();
+        $this->actingAs($pmUser)->post(route('approvals.action', [$pm, 'approve']))->assertRedirect();
+
+        $coo = $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail();
+        $this->assertSame(ApprovalStepStatus::Pending, $coo->status);
+        $this->actingAs($cooUser)->post(route('approvals.action', [$coo, 'approve']))->assertRedirect();
+
+        $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
+        $this->assertNotNull($itRequest->completed_at);
+    }
+
+    public function test_it_escalation_to_ineligible_user_is_rejected(): void
+    {
+        [$user, $employee, $hodUser, $itUser, $pmUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'special_specification' => true, 'description' => 'Butuh GPU', 'purpose' => 'CAD'])->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $hod = $itRequest->approvalRequests()->where('step_code', 'hod')->firstOrFail();
+        $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
+
+        $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        // PM bukan pemegang role coo_ceo sehingga tidak eligible sebagai target.
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), ['escalation' => 'coo_ceo', 'escalate_user_id' => $pmUser->id])
+            ->assertSessionHasErrors('escalate_user_id');
+    }
+
+    public function test_it_approval_summary_exposes_description_and_purpose(): void
+    {
+        [$user, $employee] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'special_specification' => true, 'description' => 'Butuh GPU', 'purpose' => 'CAD', 'accessories' => ['acc_1'], 'software_standard' => ['MS Office'], 'software_optional' => [['name' => 'AutoCAD', 'license' => 'new']]])->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $approval = $itRequest->approvalRequests()->where('step_code', 'hod')->firstOrFail();
+        $summary = ApprovalViewData::make($approval, $user)['approvable'];
+
+        $this->assertSame('it_request', $summary['type']);
+        $this->assertSame('Butuh GPU', $summary['description']);
+        $this->assertSame('CAD', $summary['purpose']);
+        $this->assertSame(['hod', 'it', 'pm_gm', 'coo_ceo'], array_column($summary['chain'], 'step_code'));
+        $this->assertSame('laptop', $summary['form']['device_type']);
+        $this->assertSame('Butuh GPU', $summary['form']['description']);
+        $this->assertSame('Laptop', $summary['form_meta']['option_labels']['laptop']);
+        $this->assertSame('Laptop', $summary['device_label']);
+        $this->assertSame([['code' => 'acc_1', 'label' => 'Monitor 20 inci']], $summary['accessories']);
+        $this->assertSame(['MS Office'], $summary['software_standard']);
+        $this->assertSame([['name' => 'AutoCAD', 'license' => 'new']], $summary['software_optional']);
     }
 
     public function test_it_request_submit_requires_site_pm_gm_mapping(): void
@@ -201,6 +317,119 @@ class ItErpRequestTest extends TestCase
         $unused = \App\Models\ItItemOption::where('code', 'desktop')->firstOrFail();
         $this->actingAs($admin)->delete(route('master.it-items.destroy', $unused))->assertRedirect();
         $this->assertDatabaseMissing('it_item_options', ['code' => 'desktop']);
+    }
+
+    public function test_completed_it_request_print_renders_all_commercial_formats(): void
+    {
+        [$user, $employee, $hodUser, $itUser, $pmUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), $this->itPayload($employee))->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        foreach (['hod' => $hodUser, 'it' => $itUser, 'pm_gm' => $pmUser] as $step => $actor) {
+            $approval = $itRequest->approvalRequests()->where('step_code', $step)->firstOrFail();
+            $this->actingAs($actor)->post(route('approvals.action', [$approval, 'approve']))->assertRedirect();
+        }
+        $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
+
+        foreach (['memo', 'items', 'form'] as $format) {
+            $this->actingAs($user)->get(route('it-requests.print', [$itRequest, 'format' => $format]))
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('ITRequests/Print')
+                    ->where('format', $format)
+                    ->has('request')
+                    ->has('timeline'));
+        }
+    }
+
+    public function test_print_is_forbidden_before_completed_or_for_stranger(): void
+    {
+        [$user, $employee] = $this->itActors();
+        [$stranger] = $this->employee('employee');
+
+        $this->actingAs($user)->post(route('it-requests.store'), $this->itPayload($employee))->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->get(route('it-requests.print', $itRequest))->assertForbidden();
+        $this->actingAs($stranger)->get(route('it-requests.print', $itRequest))->assertForbidden();
+    }
+
+    public function test_it_index_supports_search_filter_and_sort(): void
+    {
+        [$user, $employee] = $this->employee('employee');
+
+        $this->actingAs($user)->post(route('it-requests.store'), $this->itPayload($employee))->assertRedirect();
+        $this->actingAs($user)->post(route('it-requests.store'), $this->itPayload($employee))->assertRedirect();
+        $first = ItRequest::oldest('id')->firstOrFail();
+        $second = ItRequest::latest('id')->firstOrFail();
+        $second->forceFill(['status' => RequestStatus::Completed])->save();
+
+        $this->actingAs($user)->get(route('it-requests.index', ['search' => $first->request_number]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('requests.data', 1)->where('requests.data.0.id', $first->id));
+
+        $this->actingAs($user)->get(route('it-requests.index', ['status' => 'completed']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('requests.data', 1)->where('requests.data.0.id', $second->id));
+
+        $this->actingAs($user)->get(route('it-requests.index', ['sort' => 'request_number', 'direction' => 'asc']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('requests.data.0.id', $first->id)->where('requests.data.1.id', $second->id));
+
+        $this->actingAs($user)->get(route('it-requests.index', ['sort' => 'password']))->assertSessionHasErrors('sort');
+    }
+
+    public function test_it_index_filters_by_device_types_and_date_range(): void
+    {
+        [$user, $employee] = $this->employee('employee');
+
+        $this->actingAs($user)->post(route('it-requests.store'), $this->itPayload($employee))->assertRedirect();
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'device_type' => 'desktop'])->assertRedirect();
+        $laptop = ItRequest::where('device_type', 'laptop')->firstOrFail();
+        $desktop = ItRequest::where('device_type', 'desktop')->firstOrFail();
+        $laptop->forceFill(['created_at' => '2026-01-05 08:00:00', 'updated_at' => '2026-01-05 08:00:00'])->save();
+
+        $this->actingAs($user)->get(route('it-requests.index', ['device_types' => ['desktop']]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('requests.data', 1)->where('requests.data.0.id', $desktop->id));
+
+        $this->actingAs($user)->get(route('it-requests.index', ['date_from' => '2026-01-05', 'date_to' => '2026-01-05']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('requests.data', 1)->where('requests.data.0.id', $laptop->id));
+
+        $this->actingAs($user)->get(route('it-requests.index', ['device_types' => ['photon_torpedo']]))->assertSessionHasErrors('device_types.0');
+        $this->actingAs($user)->get(route('it-requests.index', ['date_from' => '2026-02-01', 'date_to' => '2026-01-01']))->assertSessionHasErrors('date_to');
+    }
+
+    public function test_erp_index_supports_search_filter_and_sort(): void
+    {
+        [$user, $employee] = $this->employee('employee');
+
+        $this->actingAs($user)->post(route('erp-requests.store'), $this->erpPayload($employee))->assertRedirect();
+        $this->actingAs($user)->post(route('erp-requests.store'), [...$this->erpPayload($employee), 'action_type' => 'reset_auth', 'existing_erp_username' => 'u.baru'])->assertRedirect();
+        $first = ErpRequest::oldest('id')->firstOrFail();
+        $second = ErpRequest::latest('id')->firstOrFail();
+        $second->forceFill(['status' => RequestStatus::Completed])->save();
+
+        $this->actingAs($user)->get(route('erp-requests.index', ['action_type' => 'reset_auth']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('requests.data', 1)->where('requests.data.0.id', $second->id));
+
+        $this->actingAs($user)->get(route('erp-requests.index', ['search' => $first->request_number]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('requests.data', 1)->where('requests.data.0.id', $first->id));
+
+        $this->actingAs($user)->get(route('erp-requests.index', ['sort' => 'request_number', 'direction' => 'asc']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('requests.data.0.id', $first->id)->where('requests.data.1.id', $second->id));
+
+        $first->forceFill(['created_at' => '2026-01-05 08:00:00', 'updated_at' => '2026-01-05 08:00:00'])->save();
+        $this->actingAs($user)->get(route('erp-requests.index', ['date_from' => '2026-01-05', 'date_to' => '2026-01-05']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('requests.data', 1)->where('requests.data.0.id', $first->id));
     }
 
     public function test_employee_without_onbehalf_cannot_file_for_another_employee(): void

@@ -38,7 +38,8 @@ class ApprovalWorkflowSeeder extends Seeder
                 }
 
                 if ($code === 'it_default') {
-                    // HOD diketahui, IT meninjau, PM/GM site menyetujui, COO/CEO hanya bila special_specification.
+                    // HOD diketahui, IT meninjau, PM/GM site menyetujui. Bila special_specification,
+                    // step COO/CEO tidak langsung di-assign; IT memutuskannya saat review (eskalasi / tidak).
                     foreach ([[1, 'hod', 'hod', 'hod_id', true], [2, 'it', 'it', 'role_users', true], [3, 'pm_gm', 'project_manager', 'site_pm_gm', true], [4, 'coo_ceo', 'coo_ceo', 'role_users', false]] as [$order, $step, $role, $resolver, $required]) {
                         $workflow->steps()->firstOrCreate(['step_order' => $order], ['step_code' => $step, 'approver_role' => $role, 'approver_resolver' => $resolver, 'is_required' => $required, 'can_skip_if_no_supervisor' => false]);
                     }

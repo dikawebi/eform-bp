@@ -20,7 +20,7 @@ function ErrorSummary({ errors }) {
     </div>;
 }
 
-export default function ErpRequestForm({ request = null, meta = {}, edit = false, readOnly = false, approvalTimeline = [], embedded = false }) {
+export default function ErpRequestForm({ request = null, meta = {}, edit = false, readOnly = false, approvalTimeline = [], embedded = false, hideStepper = false }) {
     const employees = meta?.employees ?? [];
     const defaultEmployee = request?.employee ?? employees[0] ?? null;
     const { data, setData, post, put, processing, errors } = useForm({
@@ -51,7 +51,7 @@ export default function ErpRequestForm({ request = null, meta = {}, edit = false
         <Head title={edit ? "Ubah ERP Request" : "Buat ERP Request"} />
         <form onSubmit={readOnly ? (event) => event.preventDefault() : requestSave} className="worksheet-form medical-sheet space-y-6">
             <fieldset disabled={readOnly} className="block min-w-0 space-y-6 border-0 p-0">
-            <WorkflowStepper currentStatus={request?.status ?? "draft"} title="Alur ERP Request" steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Diketahui HOD", pic: approvalPic("hod") }, { key: "erp_review", label: "Reviewer ERP", pic: approvalPic("erp_review") }, { key: "processing", label: "Tinjauan IT", pic: approvalPic("it") }, { key: "approved", label: "Disetujui PM/GM", pic: approvalPic("pm_gm") }, { key: "completed", label: "Selesai" }]} />
+            {!hideStepper && <WorkflowStepper currentStatus={request?.status ?? "draft"} title="Alur ERP Request" steps={[{ key: "draft", label: "Draf" }, { key: "submitted", label: "Diajukan" }, { key: "in_review", label: "Diketahui HOD", pic: approvalPic("hod") }, { key: "erp_review", label: "Reviewer ERP", pic: approvalPic("erp_review") }, { key: "processing", label: "Tinjauan IT", pic: approvalPic("it") }, { key: "approved", label: "Disetujui PM/GM", pic: approvalPic("pm_gm") }, { key: "completed", label: "Selesai" }]} />}
             <header className="medical-sheet-header">
                 <div className="medical-sheet-logo"><strong>BP</strong><small>PT. BORNEO PRIMA</small><em>COAL MINING &amp; TRADING</em></div>
                 <div className="medical-sheet-title"><p>PT. BORNEO PRIMA</p><h1>ERP (D365 F&amp;O) ACCESS &amp; AUTHORIZATION REQUEST</h1></div>

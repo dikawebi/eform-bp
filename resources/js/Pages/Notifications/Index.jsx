@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import EmptyState from '@/Components/EmptyState';
+import { EventBadge, MetaLine } from '@/Components/NotificationMeta';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 
 export default function Index({ notifications }) {
@@ -33,7 +34,7 @@ export default function Index({ notifications }) {
                         {rows.map((item) => <li key={item.id} className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between ${item.read_at ? '' : 'bg-blue-50/60 dark:bg-blue-950/20'}`}>
                             <div className="flex min-w-0 gap-3">
                                 <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${item.read_at ? 'bg-slate-300 dark:bg-slate-600' : 'bg-blue-600'}`} />
-                                <div className="min-w-0"><h2 className="text-sm font-bold">{item.title}</h2><p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{item.message}</p><p className="mt-1 text-xs text-slate-400">{item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</p></div>
+                                <div className="min-w-0"><h2 className="text-sm font-bold">{item.title}<EventBadge event={item.event} /></h2><p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{item.message}</p><MetaLine meta={item.meta} className="mt-1 block text-xs text-slate-400" /><p className="mt-1 text-xs text-slate-400">{item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</p></div>
                             </div>
                             <div className="flex shrink-0 gap-2 pl-5 sm:pl-0">
                                 {!item.read_at && <button type="button" onClick={() => router.post(route('notifications.read', item.id), {}, { preserveScroll: true })} className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Tandai dibaca</button>}

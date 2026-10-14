@@ -14,9 +14,11 @@ class NotificationController extends Controller
         $notifications = $request->user()->notifications()->latest()->paginate(20)->withQueryString();
         $notifications->setCollection($notifications->getCollection()->map(fn ($notification) => [
             'id' => $notification->id,
+            'event' => (string) data_get($notification->data, 'event', ''),
             'title' => (string) data_get($notification->data, 'title', 'Notifikasi eForm BP'),
             'message' => (string) data_get($notification->data, 'message', ''),
-            'url' => str_starts_with((string) data_get($notification->data, 'url', ''), '/') ? data_get($notification->data, 'url') : route('dashboard'),
+            'url' => \App\Services\InAppNotifier::resolveUrl($notification->data),
+            'meta' => (array) data_get($notification->data, 'meta', []),
             'read_at' => $notification->read_at?->toISOString(),
             'created_at' => $notification->created_at?->toISOString(),
         ]));

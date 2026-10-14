@@ -6,6 +6,7 @@ use App\Enums\ApprovalActionType;
 use App\Enums\ApprovalStepStatus;
 use App\Enums\RequestStatus;
 use App\Models\ApprovalRequest;
+use App\Models\ItRequest;
 use App\Models\MedicalClaim;
 use App\Models\Settlement;
 use App\Models\User;
@@ -14,9 +15,12 @@ use Illuminate\Validation\ValidationException;
 
 class ApprovalTransition
 {
-    public static function run(ApprovalRequest $request, User $actor, ApprovalActionType $action, ?string $comments = null, ?User $delegateTo = null): ApprovalRequest
+    /**
+     * @param  array{escalation?: string, escalate_user_id?: int|null}|null  $options
+     */
+    public static function run(ApprovalRequest $request, User $actor, ApprovalActionType $action, ?string $comments = null, ?User $delegateTo = null, ?array $options = null): ApprovalRequest
     {
-        return DB::transaction(function () use ($request, $actor, $action, $comments, $delegateTo) {
+        return DB::transaction(function () use ($request, $actor, $action, $comments, $delegateTo, $options) {
             $approval = ApprovalRequest::query()->with('approvable')->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
             $actor = User::query()->with('employee')->whereKey($actor->getKey())->lockForUpdate()->firstOrFail();
             $parent = $approval->approvable;
@@ -63,7 +67,7 @@ class ApprovalTransition
                 $approval->forceFill(['approver_user_id' => $delegateTo->getKey(), 'comments' => $comments])->save();
                 $approval->actions()->create(['actor_id' => $actor->getKey(), 'action' => $action, 'comments' => $comments]);
                 activity()->performedOn($parent)->causedBy($actor)->withProperties(self::auditProperties($approval, $parent, $action, $actor, $comments, ['delegate_user_id' => $delegateTo->id]))->log('approval.delegated');
-                app(\App\Services\InAppNotifier::class)->notifyUser($delegateTo->id, 'approval.assigned', 'Approval didelegasikan kepada Anda', 'Ada pengajuan yang didelegasikan dan menunggu pemeriksaan Anda.', route('approvals.show', $approval));
+                app(\App\Services\InAppNotifier::class)->notifyUser($delegateTo->id, 'approval.assigned', 'Approval didelegasikan kepada Anda', 'Ada pengajuan yang didelegasikan dan menunggu pemeriksaan Anda.', route('approvals.show', $approval), \App\Services\InAppNotifier::context($parent, $actor, $approval->step_code));
 
                 return $approval->refresh();
             }
@@ -78,16 +82,25 @@ class ApprovalTransition
 
             $parentFrom = $parent->status;
             if ($action === ApprovalActionType::Approve) {
+                // Hanya IT Request (Hardware & Software): keputusan eskalasi
+                // COO/CEO diputuskan IT pada tahap review IT, bukan saat submit.
+                if ($parent instanceof ItRequest && $approval->step_code === 'it' && (bool) $parent->special_specification) {
+                    self::applyItEscalationDecision($approval, $parent, $actor, $options, $comments);
+                }
                 $next = ApprovalRequest::query()->where('approvable_type', $approval->approvable_type)->where('approvable_id', $approval->approvable_id)->where('chain_generation', $approval->chain_generation)->where('status', ApprovalStepStatus::Cancelled)->where('step_order', '>', $approval->step_order)->orderBy('step_order')->lockForUpdate()->first();
                 if ($next) {
                     $next->forceFill(['status' => ApprovalStepStatus::Pending])->save();
                     activity()->performedOn($parent)->causedBy($actor)->withProperties(['approval_id' => $next->id, 'generation' => $approval->chain_generation, 'approver_user_id' => $next->approver_user_id, 'reason' => 'previous_step_approved'])->log('approval.step_activated');
-                    app(\App\Services\InAppNotifier::class)->notifyUser($next->approver_user_id, 'approval.assigned', 'Approval baru menunggu Anda', 'Tahap berikutnya dari pengajuan telah menunggu pemeriksaan Anda.', route('approvals.show', $next));
+                    app(\App\Services\InAppNotifier::class)->notifyUser($next->approver_user_id, 'approval.assigned', 'Approval baru menunggu Anda', 'Tahap berikutnya dari pengajuan telah menunggu pemeriksaan Anda.', route('approvals.show', $next), \App\Services\InAppNotifier::context($parent, $actor, $next->step_code));
                 } else {
+                    $now = now();
                     if ($parent instanceof Settlement) {
-                        $parent->forceFill(['status' => RequestStatus::PaymentProcessing, 'approved_at' => now()])->save();
+                        $parent->forceFill(['status' => RequestStatus::PaymentProcessing, 'approved_at' => $now])->save();
+                    } elseif ($parent instanceof \App\Models\ItRequest || $parent instanceof \App\Models\ErpRequest) {
+                        $parent->forceFill(['status' => RequestStatus::Completed, 'approved_at' => $parent->approved_at ?? $now, 'completed_at' => $now, 'updated_by' => $actor->id])->save();
+                        activity()->performedOn($parent)->causedBy($actor)->withProperties(['from' => $parentFrom->value, 'to' => RequestStatus::Completed->value, 'approval_id' => $approval->id])->log($parent instanceof \App\Models\ItRequest ? 'it.completed' : 'erp.completed');
                     } else {
-                        $parent->forceFill(['status' => RequestStatus::Approved, 'approved_at' => now()])->save();
+                        $parent->forceFill(['status' => RequestStatus::Approved, 'approved_at' => $now])->save();
                     }
                 }
             } elseif ($action === ApprovalActionType::Return) {
@@ -112,10 +125,63 @@ class ApprovalTransition
                 ApprovalActionType::Reject => 'Pengajuan Anda ditolak. Silakan lihat catatan pada transaksi.',
                 default => 'Status pengajuan Anda telah diperbarui.',
             };
-            app(\App\Services\InAppNotifier::class)->notifyOwner($parent, $event, $title, $message);
+            app(\App\Services\InAppNotifier::class)->notifyOwner($parent, $event, $title, $message, $actor);
 
             return $approval->refresh();
         });
+    }
+
+    /**
+     * Keputusan eskalasi COO/CEO oleh reviewer IT. Hanya untuk ItRequest
+     * bertanda special_specification. Step coo_ceo dibuat tanpa approver
+     * saat submit (deferred); di sini IT menetapkan target atau menutup
+     * eskalasi. Dipanggil di dalam transaction induk (parent sudah di-lock).
+     *
+     * @param  array{escalation?: string, escalate_user_id?: int|null}|null  $options
+     */
+    private static function applyItEscalationDecision(ApprovalRequest $approval, ItRequest $parent, User $actor, ?array $options, ?string $comments): void
+    {
+        $decision = $options['escalation'] ?? null;
+        if (! in_array($decision, ['none', 'coo_ceo'], true)) {
+            throw ValidationException::withMessages(['escalation' => 'IT wajib memilih eskalasi ke COO/CEO atau tidak perlu eskalasi.']);
+        }
+
+        $coo = ApprovalRequest::query()->where('approvable_type', $approval->approvable_type)->where('approvable_id', $approval->approvable_id)->where('chain_generation', $approval->chain_generation)->where('step_code', 'coo_ceo')->lockForUpdate()->first();
+        if ($coo === null) {
+            activity()->performedOn($parent)->causedBy($actor)->withProperties(['approval_id' => $approval->id, 'decision' => $decision, 'reason' => 'no_coo_ceo_step'])->log('approval.escalation_decided');
+
+            return;
+        }
+        if (in_array($coo->status, [ApprovalStepStatus::Approved, ApprovalStepStatus::Rejected, ApprovalStepStatus::Returned], true)) {
+            throw ValidationException::withMessages(['escalation' => 'Tahap COO/CEO sudah diproses sehingga keputusan eskalasi tidak dapat diubah.']);
+        }
+
+        $snapshot = (array) $parent->employee_snapshot_json;
+
+        if ($decision === 'none') {
+            $coo->forceFill(['status' => ApprovalStepStatus::Skipped, 'acted_at' => now(), 'comments' => trim((string) $comments) !== '' ? $comments : 'Tidak dieskalasi oleh IT'])->save();
+            $snapshot['approval_snapshot']['coo_ceo'] = ['decision' => 'none', 'decided_by' => $actor->getKey(), 'step' => 'coo_ceo', 'role' => 'coo_ceo'];
+            $parent->forceFill(['employee_snapshot_json' => $snapshot])->save();
+            activity()->performedOn($parent)->causedBy($actor)->withProperties(['approval_id' => $approval->id, 'coo_approval_id' => $coo->id, 'decision' => 'none'])->log('approval.escalation_decided');
+
+            return;
+        }
+
+        $target = User::query()->with('employee')->whereKey((int) ($options['escalate_user_id'] ?? 0))->first();
+        $chainUserIds = ApprovalRequest::query()->where('approvable_type', $approval->approvable_type)->where('approvable_id', $approval->approvable_id)->where('chain_generation', $approval->chain_generation)->whereNotNull('approver_user_id')->pluck('approver_user_id')->map(fn ($id) => (int) $id)->all();
+        $forbidden = array_merge(ApprovalActorConflicts::ids($parent, $approval), [(int) $actor->id], $approval->actions()->pluck('actor_id')->map(fn ($id) => (int) $id)->all());
+        if ($target === null || ! $target->active || $target->employee?->active !== true || ! $target->hasRole('coo_ceo') || ! $target->can('approval.act') || ApprovalActorConflicts::conflicts($parent, $target, $coo) || in_array((int) $target->getKey(), array_merge($forbidden, $chainUserIds), true)) {
+            throw ValidationException::withMessages(['escalate_user_id' => 'Target eskalasi harus pengguna COO/CEO yang aktif, eligible, dan tanpa konflik kepentingan.']);
+        }
+
+        $coo->forceFill(['approver_user_id' => $target->getKey()])->save();
+        $snapshot['approval_snapshot']['coo_ceo'] = [
+            'user_id' => $target->getKey(), 'employee_id' => $target->employee?->id,
+            'nik' => $target->employee?->employee_number, 'name' => $target->name,
+            'role' => 'coo_ceo', 'step' => 'coo_ceo', 'decided_by' => $actor->getKey(),
+        ];
+        $parent->forceFill(['employee_snapshot_json' => $snapshot])->save();
+        activity()->performedOn($parent)->causedBy($actor)->withProperties(['approval_id' => $approval->id, 'coo_approval_id' => $coo->id, 'decision' => 'coo_ceo', 'target_user_id' => $target->getKey()])->log('approval.escalation_decided');
     }
 
     private static function auditProperties(ApprovalRequest $approval, object $parent, ApprovalActionType $action, User $actor, ?string $comments, array $extra = []): array

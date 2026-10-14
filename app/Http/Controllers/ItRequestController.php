@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\ItItemOption;
 use App\Models\ItRequest;
 use App\Services\Approval\ApprovalActionAvailability;
+use App\Services\Approval\WithdrawRequest;
 use App\Services\EmployeeVisibility;
 use App\Services\It\ItRequestNumber;
 use App\Services\It\SubmitItRequest;
@@ -19,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,11 +33,52 @@ class ItRequestController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', ItRequest::class);
+        $deviceCodes = ItItemOption::query()->where('kind', 'device')->pluck('code')->all();
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', 'string', Rule::in(RequestStatus::values())],
+            'request_type' => ['nullable', 'string', Rule::in(['new_item', 'replacement'])],
+            'device_types' => ['nullable', 'array', 'max:20'],
+            'device_types.*' => ['string', Rule::in($deviceCodes)],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'sort' => ['nullable', 'string', Rule::in(['request_number', 'request_type', 'status', 'created_at'])],
+            'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
+        ]);
         $user = $request->user();
-        $query = ItRequest::with('employee:id,employee_number,name,department')->latest();
+        $query = ItRequest::with('employee:id,employee_number,name,department');
         if (! app(EmployeeVisibility::class)->hasBroadAccess($user)) {
             app(EmployeeVisibility::class)->scope($user, $query);
         }
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = "%{$search}%";
+            $query->where(function ($inner) use ($like) {
+                $inner->where('request_number', 'like', $like)
+                    ->orWhere('recipient_name', 'like', $like)
+                    ->orWhere('device_type', 'like', $like)
+                    ->orWhereHas('employee', fn ($employee) => $employee->where('name', 'like', $like)->orWhere('employee_number', 'like', $like));
+            });
+        }
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (! empty($filters['request_type'])) {
+            $query->where('request_type', $filters['request_type']);
+        }
+        if (! empty($filters['device_types'])) {
+            $query->whereIn('device_type', $filters['device_types']);
+        }
+        $dateFrom = $filters['date_from'] ?? null;
+        $dateTo = $filters['date_to'] ?? null;
+        if ($dateFrom && $dateTo) {
+            $query->whereDate('created_at', '>=', $dateFrom)->whereDate('created_at', '<=', $dateTo);
+        } elseif ($dateFrom) {
+            $query->whereDate('created_at', $dateFrom);
+        }
+        $sort = $filters['sort'] ?? 'created_at';
+        $direction = $filters['direction'] ?? 'desc';
+        $query->orderBy($sort, $direction)->orderBy('id', $direction);
         $page = $query->paginate(15)->withQueryString();
         $page->setCollection($page->getCollection()->map(fn (ItRequest $it) => [
             'id' => $it->id,
@@ -45,10 +88,16 @@ class ItRequestController extends Controller
             'device_type' => $it->device_type,
             'priority' => $it->priority,
             'needed_date' => $it->needed_date?->toDateString(),
+            'created_at' => $it->created_at?->toISOString(),
             'recipient' => $it->employee?->only(['id', 'employee_number', 'name', 'department']) ?? ['name' => $it->recipient_name],
         ]));
 
-        return Inertia::render('ITRequests/Index', ['requests' => $page, 'statuses' => RequestStatus::values(), 'canCreate' => $user->can('create', ItRequest::class)]);
+        return Inertia::render('ITRequests/Index', [
+            'requests' => $page, 'statuses' => RequestStatus::values(), 'canCreate' => $user->can('create', ItRequest::class),
+            'filters' => ['search' => $search, 'status' => $filters['status'] ?? '', 'request_type' => $filters['request_type'] ?? '', 'device_types' => $filters['device_types'] ?? [], 'date_from' => $dateFrom ?? '', 'date_to' => $dateTo ?? ''],
+            'device_options' => self::itemOptions('device'),
+            'sort' => $sort, 'direction' => $direction,
+        ]);
     }
 
     public function create(Request $request): Response
@@ -118,12 +167,7 @@ class ItRequestController extends Controller
         $user = $request->user();
 
         $dto = $this->dto($it_request);
-        $timeline = $it_request->approvalRequests->sortBy('step_order')->map(fn ($a) => array_filter([
-            'step_code' => $a->step_code, 'status' => $a->status->value,
-            'actor' => $a->approver?->name,
-            'acted_by' => $a->actions->sortByDesc('id')->first()?->actor?->name,
-            'at' => $a->acted_at?->toISOString(), 'comments' => $a->comments,
-        ], fn ($value) => $value !== null))->values()->all();
+        $timeline = $this->approvalTimeline($it_request);
         $activities = Activity::where('subject_type', $it_request->getMorphClass())->where('subject_id', $it_request->id)->latest()->limit(50)->get()->map(fn ($a) => ['id' => $a->id, 'action' => $a->description, 'actor' => $a->causer?->name, 'at' => $a->created_at?->toISOString()])->values()->all();
 
         return Inertia::render('ITRequests/Show', [
@@ -139,6 +183,45 @@ class ItRequestController extends Controller
             ],
             'approvalActions' => ApprovalActionAvailability::for($it_request, $user),
         ]);
+    }
+
+    /**
+     * Dokumen cetak serah terima ke Commercial sebagai dasar PR.
+     * Hanya untuk request yang sudah completed.
+     */
+    public function print(Request $request, ItRequest $it_request): Response
+    {
+        $this->authorize('view', $it_request);
+        abort_unless($it_request->status === RequestStatus::Completed, 403, 'Hanya request yang sudah completed yang dapat dicetak untuk commercial.');
+
+        $format = $request->validate(['format' => ['nullable', 'string', Rule::in(['memo', 'items', 'form'])]])['format'] ?? 'memo';
+        $it_request->load(['employee:id,employee_number,name,department,job_title', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
+
+        return Inertia::render('ITRequests/Print', [
+            'request' => $this->dto($it_request),
+            'meta' => [
+                'device_options' => self::itemOptions('device'),
+                'accessory_options' => self::itemOptions('accessory'),
+                'option_labels' => ItItemOption::query()->pluck('label', 'code')->all(),
+                'software_standard' => config('eform.it_request.software_standard', []),
+            ],
+            'timeline' => $this->approvalTimeline($it_request),
+            'format' => $format,
+            'company' => config('eform.company', []),
+        ]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function approvalTimeline(ItRequest $it_request): array
+    {
+        return $it_request->approvalRequests->sortBy('step_order')->map(fn ($a) => array_filter([
+            'step_code' => $a->step_code, 'status' => $a->status->value,
+            'actor' => $a->approver?->name,
+            'acted_by' => $a->actions->sortByDesc('id')->first()?->actor?->name,
+            'at' => $a->acted_at?->toISOString(), 'comments' => $a->comments,
+        ], fn ($value) => $value !== null))->values()->all();
     }
 
     public function edit(Request $request, ItRequest $it_request): Response
@@ -199,12 +282,17 @@ class ItRequestController extends Controller
     public function cancel(Request $request, ItRequest $it_request): RedirectResponse
     {
         $this->authorize('cancel', $it_request);
-        DB::transaction(function () use ($request, $it_request) {
+        $reason = $request->validate(['reason' => ['nullable', 'string', 'max:2000']])['reason'] ?? null;
+        DB::transaction(function () use ($request, $it_request, $reason) {
             $it = ItRequest::lockForUpdate()->findOrFail($it_request->id);
             $this->authorize('cancel', $it);
+            if (! in_array($it->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview], true)) {
+                throw ValidationException::withMessages(['status' => 'IT request pada status ini tidak dapat dibatalkan.']);
+            }
             $from = $it->status;
+            $withdraw = WithdrawRequest::run($it, $request->user(), $reason);
             $it->forceFill(['status' => RequestStatus::Cancelled, 'updated_by' => $request->user()->id])->save();
-            activity()->performedOn($it)->causedBy($request->user())->withProperties(['from' => $from->value, 'to' => 'cancelled'])->log('it.cancelled');
+            activity()->performedOn($it)->causedBy($request->user())->withProperties(array_filter(['from' => $from->value, 'to' => 'cancelled', 'withdrawn_from_review' => $from === RequestStatus::InReview, 'approved_count' => $withdraw['approved_count'], 'reason' => $reason], fn ($value) => $value !== null))->log('it.cancelled');
         });
 
         return back()->with('success', 'IT request dibatalkan.');
@@ -289,6 +377,9 @@ class ItRequestController extends Controller
             'accessory_other_note' => $it->accessory_other_note,
             'needed_date' => $it->needed_date?->toDateString(),
             'priority' => $it->priority,
+            'submitted_at' => $it->submitted_at?->toISOString(),
+            'approved_at' => $it->approved_at?->toISOString(),
+            'completed_at' => $it->completed_at?->toISOString(),
             'attachments' => $it->attachments->map(fn (Attachment $a) => ['id' => $a->id, 'document_type' => $a->document_type, 'original_name' => $a->original_name, 'download_url' => route('attachments.download', $a)])->values()->all(),
         ];
     }

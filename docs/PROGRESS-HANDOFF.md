@@ -41,6 +41,26 @@ Blocker aktif:
 
 Seeder terkait: `database/seeders/AndikaHeruUserSeeder.php`
 
+### Akun demo approver (semua form, domain korporat)
+
+Password semua akun: `password`. Seeder: `database/seeders/DemoApproverSeeder.php`
+(`php artisan db:seed --class=DemoApproverSeeder`, idempoten).
+
+| Akun | Role | Approver di form |
+|---|---|---|
+| `demo.pemohon@borneoprima.com` | employee | Pemohon (supervisor + HOD terisi) |
+| `demo.supervisor@borneoprima.com` | employee, supervisor | Cuti/Izin, Perjalanan Dinas |
+| `demo.hod@borneoprima.com` | employee, hod | Cuti/Izin, Dinas, IT, ERP |
+| `demo.pm@borneoprima.com` | employee, project_manager | Cuti/Izin, Dinas, IT/ERP (PM/GM site) |
+| `demo.hrga@borneoprima.com` | employee, hrga | Cuti/Izin, Dinas, Settlement, Medical |
+| `demo.hrgamanager@borneoprima.com` | employee, hrga_manager | Medical (validasi dokumen) |
+| `demo.finance@borneoprima.com` | employee, finance | Settlement, Medical (pembayaran) |
+| `demo.it@borneoprima.com` | employee, it | IT, ERP (+ penentu eskalasi COO/CEO) |
+| `demo.erpreviewer@borneoprima.com` | employee, erp_reviewer | ERP Request |
+| `demo.cooceo@borneoprima.com` | employee, coo_ceo | IT (bila dieskalasi IT) |
+| `demo.admin@borneoprima.com` | employee, admin | Master, workflow, role, user |
+| `demo.auditor@borneoprima.com` | auditor | Lihat + laporan (read-only) |
+
 ## Perubahan Penting
 
 ### Authorization dan visibility

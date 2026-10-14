@@ -13,6 +13,7 @@ use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Services\AdvanceProcessing;
 use App\Services\Approval\ApprovalActionAvailability;
+use App\Services\Approval\WithdrawRequest;
 use App\Services\EmployeeVisibility;
 use App\Services\Leave\CalculateLeaveAdvance;
 use App\Services\Leave\CalculateLeaveDays;
@@ -375,38 +376,47 @@ class LeaveRequestController extends Controller
     }
 
     /**
-     * Cancel draft/submitted/returned → cancelled (tanpa hapus fisik).
+     * Cancel/withdraw → cancelled (tanpa hapus fisik). Berlaku hingga
+     * Approved selama advance belum diproses; tahap pending ikut
+     * dibatalkan dan approver aktif diberi tahu.
      */
     public function cancel(Request $request, LeaveRequest $leave): RedirectResponse
     {
         $this->authorize('cancel', $leave);
 
+        $reason = $request->validate(['reason' => ['nullable', 'string', 'max:2000']])['reason'] ?? null;
         $user = $request->user();
 
-        DB::transaction(function () use ($user, $leave) {
-            $leave->refresh();
+        DB::transaction(function () use ($user, $leave, $reason) {
+            $locked = LeaveRequest::query()->whereKey($leave->getKey())->lockForUpdate()->firstOrFail();
+            $this->authorize('cancel', $locked);
 
-            if (! in_array($leave->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned], true)) {
+            if (! in_array($locked->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview, RequestStatus::Approved, RequestStatus::Processing], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Pengajuan pada status ini tidak dapat dibatalkan.',
                 ]);
             }
 
-            $from = $leave->status;
+            $from = $locked->status;
 
-            $leave->forceFill([
+            $withdraw = WithdrawRequest::run($locked, $user, $reason);
+
+            $locked->forceFill([
                 'status' => RequestStatus::Cancelled,
                 'updated_by' => $user->getKey(),
             ])->save();
 
             activity()
-                ->performedOn($leave)
+                ->performedOn($locked)
                 ->causedBy($user)
-                ->withProperties([
-                    'request_number' => $leave->request_number,
+                ->withProperties(array_filter([
+                    'request_number' => $locked->request_number,
                     'from' => $from->value,
                     'to' => RequestStatus::Cancelled->value,
-                ])
+                    'withdrawn_from_review' => in_array($from, [RequestStatus::InReview, RequestStatus::Approved, RequestStatus::Processing], true),
+                    'approved_count' => $withdraw['approved_count'],
+                    'reason' => $reason,
+                ], fn ($value) => $value !== null))
                 ->log('leave.cancelled');
         });
 

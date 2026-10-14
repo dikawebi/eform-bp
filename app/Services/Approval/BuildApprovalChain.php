@@ -39,7 +39,7 @@ class BuildApprovalChain
             $morph = $approvable->getMorphClass();
             $old = ApprovalRequest::query()->where('approvable_type', $morph)
                 ->where('approvable_id', $approvable->getKey())
-                ->where('status', '!=', ApprovalStepStatus::Cancelled->value)->get();
+                ->whereIn('status', [ApprovalStepStatus::Pending->value, ApprovalStepStatus::Cancelled->value, ApprovalStepStatus::Skipped->value])->get();
             foreach ($old as $oldApproval) {
                 $oldApproval->forceFill(['status' => ApprovalStepStatus::Cancelled, 'acted_at' => now(), 'comments' => 'Chain invalidated by new revision'])->save();
                 self::audit($approvable, 'approval.chain_invalidated', ['approval_id' => $oldApproval->id, 'old_generation' => $oldApproval->chain_generation, 'reason' => 'new_revision'], $actor);
@@ -69,6 +69,16 @@ class BuildApprovalChain
                     continue;
                 }
 
+                // Hanya IT Request (Hardware & Software): kebutuhan khusus TIDAK
+                // langsung assign ke COO/CEO. Step dibuat tanpa approver dan
+                // diputuskan oleh IT saat tahap review IT (eskalasi / tidak).
+                if ($step->step_code === 'coo_ceo' && $approvable instanceof ItRequest && (bool) data_get($approvable, 'special_specification', false)) {
+                    self::create($approvable, $workflow, $step, null, ApprovalStepStatus::Cancelled, $generation, $actor);
+                    self::audit($approvable, 'approval.step_deferred', ['step_code' => $step->step_code, 'generation' => $generation, 'reason' => 'awaiting_it_escalation_decision'], $actor);
+
+                    continue;
+                }
+
                 $userId = self::resolveUserId($step, $snapshot, $approvable, $selected);
                 $hasSupervisor = self::snapshotUser($snapshot, 'supervisor_id') !== null;
                 if ($userId === null && $step->step_code === 'supervisor' && $step->can_skip_if_no_supervisor && ! $hasSupervisor) {
@@ -89,6 +99,7 @@ class BuildApprovalChain
                         'Approval baru menunggu Anda',
                         'Ada pengajuan baru yang perlu Anda periksa.',
                         route('approvals.show', $created),
+                        \App\Services\InAppNotifier::context($approvable, $actor, $step->step_code),
                     );
                 }
                 self::persistSnapshot($approvable, $snapshot, $step, $created->approver);

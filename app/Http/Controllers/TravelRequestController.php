@@ -15,6 +15,7 @@ use App\Services\AdvanceProcessing;
 use App\Services\EmployeeVisibility;
 use App\Services\Travel\CalculateTravelAdvance;
 use App\Services\Approval\ApprovalActionAvailability;
+use App\Services\Approval\WithdrawRequest;
 use App\Services\Travel\SubmitTravelRequest;
 use App\Services\Settlement\SettlementSourceAvailability;
 use App\Services\Travel\TravelRequestNumber;
@@ -324,39 +325,47 @@ class TravelRequestController extends Controller
     }
 
     /**
-     * Cancel draft/submitted/returned → cancelled (tanpa hapus fisik).
+     * Cancel/withdraw → cancelled (tanpa hapus fisik). Berlaku hingga
+     * Approved selama advance belum diproses; tahap pending ikut
+     * dibatalkan dan approver aktif diberi tahu.
      */
     public function cancel(Request $request, TravelRequest $travel): RedirectResponse
     {
         $this->authorize('cancel', $travel);
 
+        $reason = $request->validate(['reason' => ['nullable', 'string', 'max:2000']])['reason'] ?? null;
         $user = $request->user();
 
-        DB::transaction(function () use ($user, $travel) {
-            $travel = TravelRequest::query()->whereKey($travel->getKey())->lockForUpdate()->firstOrFail();
-            $this->authorize('cancel', $travel);
+        DB::transaction(function () use ($user, $travel, $reason) {
+            $locked = TravelRequest::query()->whereKey($travel->getKey())->lockForUpdate()->firstOrFail();
+            $this->authorize('cancel', $locked);
 
-            if (! in_array($travel->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned], true)) {
+            if (! in_array($locked->status, [RequestStatus::Draft, RequestStatus::Submitted, RequestStatus::Returned, RequestStatus::InReview, RequestStatus::Approved, RequestStatus::Processing], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Pengajuan pada status ini tidak dapat dibatalkan.',
                 ]);
             }
 
-            $from = $travel->status;
+            $from = $locked->status;
 
-            $travel->forceFill([
+            $withdraw = WithdrawRequest::run($locked, $user, $reason);
+
+            $locked->forceFill([
                 'status' => RequestStatus::Cancelled,
                 'updated_by' => $user->getKey(),
             ])->save();
 
             activity()
-                ->performedOn($travel)
+                ->performedOn($locked)
                 ->causedBy($user)
-                ->withProperties([
-                    'request_number' => $travel->request_number,
+                ->withProperties(array_filter([
+                    'request_number' => $locked->request_number,
                     'from' => $from->value,
                     'to' => RequestStatus::Cancelled->value,
-                ])
+                    'withdrawn_from_review' => in_array($from, [RequestStatus::InReview, RequestStatus::Approved, RequestStatus::Processing], true),
+                    'approved_count' => $withdraw['approved_count'],
+                    'reason' => $reason,
+                ], fn ($value) => $value !== null))
                 ->log('travel.cancelled');
         });
 
