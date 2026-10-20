@@ -53,4 +53,10 @@ return [
         'allowed_documents' => ['justification', 'supporting_document'],
         'max_file_size_kb' => 5120,
     ],
+    // Email workflow: dikirim dari job antrian database; notifikasi in-app
+    // tetap sinkron. Kill-switch global + blacklist event rendah nilai.
+    'mail' => [
+        'enabled' => env('MAIL_NOTIFICATIONS_ENABLED', true),
+        'skip_events' => ['approval.step_deferred', 'approval.chain_step_cancelled'],
+    ],
 ];

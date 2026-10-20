@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock-up Save to PDF — IT &amp; Telecommunication Acquisition Request</title>
+<style>
+:root { --ink:#0f172a; --muted:#64748b; --line:#cbd5e1; --soft:#f1f5f9; --accent:#2563eb; --ok:#059669; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#e2e8f0; font-family:"Segoe UI",Arial,Helvetica,sans-serif; color:var(--ink); padding:24px 16px 80px; }
+.top { max-width:794px; margin:0 auto 20px; background:#fff; border-radius:12px; padding:16px 20px; box-shadow:0 2px 10px rgba(15,23,42,.08); }
+.top h1 { font-size:16px; }
+.top p { color:var(--muted); font-size:13px; margin-top:4px; }
+#chosen { font-size:13px; margin-top:8px; font-weight:700; color:var(--accent); }
+.variant { max-width:794px; margin:36px auto; }
+.vhead { display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#fff; border-radius:10px 10px 0 0; padding:10px 14px; border:1px solid var(--line); border-bottom:none; }
+.vhead .no { background:var(--accent); color:#fff; font-weight:800; font-size:12px; border-radius:6px; padding:3px 8px; }
+.vhead .nm { font-weight:700; font-size:14px; }
+.vhead .ds { color:var(--muted); font-size:12px; margin-left:auto; text-align:right; }
+.vhead label.sel { display:flex; gap:6px; align-items:center; font-size:12px; font-weight:700; color:var(--accent); cursor:pointer; margin-left:14px; white-space:nowrap; }
+.variant.chosen .vhead { background:#eff6ff; border-color:var(--accent); outline:2px solid var(--accent); }
+.sheet { background:#fff; width:794px; min-height:1000px; box-shadow:0 2px 14px rgba(15,23,42,.12); border:1px solid var(--line); border-radius:0 0 8px 8px; margin:0 auto; padding:44px 48px; font-size:12px; line-height:1.45; position:relative; }
+.sheet:after { content:""; position:absolute; inset:10px; border-radius:4px; pointer-events:none; }
+.cap { display:inline-block; border:1.5px solid var(--ok); color:var(--ok); font-weight:800; font-size:7.5px; letter-spacing:.4px; padding:1px 4px; border-radius:3px; transform:rotate(-2deg); margin-bottom:3px; }
+.sig .cap { margin-top:6px; }
+dt { font-size:9px; font-weight:800; letter-spacing:1.2px; color:var(--muted); }
+dd { font-size:12px; font-weight:700; }
+table { border-collapse:collapse; width:100%; }
+td,th { text-align:left; }
+/* ===== V1 klasik tabel ===== */
+.v1 .kop { text-align:center; border-bottom:3px double #334155; padding-bottom:10px; }
+.v1 .kop .nm { font-size:15px; font-weight:800; letter-spacing:1px; }
+.v1 .kop .ad { font-size:10px; color:var(--muted); font-weight:600; }
+.v1 h2.ttl { text-align:center; font-size:12px; letter-spacing:2px; margin:10px 0 14px; font-weight:800; text-decoration:underline; text-underline-offset:4px; }
+.v1 .kv td { padding:7px 10px; border:1px solid #94a3b8; font-size:11.5px; }
+.v1 .kv td.l { background:var(--soft); font-weight:700; width:120px; font-size:10px; text-transform:uppercase; color:#475569; letter-spacing:.6px; }
+.v1 .box { border:1.5px solid #334155; margin-top:14px; }
+.v1 .box h3 { font-size:10px; letter-spacing:1.2px; background:var(--soft); padding:5px 10px; border-bottom:1.5px solid #334155; }
+.v1 .box table td { padding:6px 10px; border:1px solid #94a3b8; font-size:11.5px; }
+.v1 .box table td.l { background:var(--soft); font-weight:700; width:150px; }
+.v1 .sig row { display:flex; }
+.v1 .sigrow { display:flex; justify-content:space-between; margin-top:52px; }
+.v1 .sig { width:23%; text-align:center; }
+.v1 .sig .ttl { font-size:10.5px; font-weight:800; }
+.v1 .sig .sp { height:52px; border-bottom:1px dotted #94a3b8; margin:34px 6px 6px; }
+.v1 .sig .nm { font-weight:800; font-size:11.5px; }
+.v1 .sig .dt { font-size:10px; color:var(--muted); }
+.v1 .foot { margin-top:16px; font-size:8.5px; color:var(--muted); border-top:1px solid var(--line); padding-top:6px; }
+/* ===== V2 modern minimal ===== */
+.v2 .kop { display:flex; justify-content:space-between; align-items:flex-end; }
+.v2 .kop .nm { font-size:20px; font-weight:800; letter-spacing:-.2px; }
+.v2 .kop .ad { font-size:10.5px; color:var(--muted); }
+.v2 .rno { margin-top:14px; padding:10px 0; border-top:2px solid var(--ink); border-bottom:1px solid var(--line); display:flex; gap:28px; font-size:11px; }
+.v2 .rno b { display:block; font-size:9px; letter-spacing:1.1px; color:var(--muted); font-weight:800; margin-bottom:1px; }
+.v2 h3 { font-size:9.5px; font-weight:800; letter-spacing:1.4px; color:var(--muted); margin:18px 0 6px; }
+.v2 .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 24px; }
+.v2 .fld { padding:6px 0; border-bottom:1px solid var(--soft); }
+.v2 .fld b { display:block; font-size:9px; letter-spacing:1px; color:var(--muted); font-weight:800; }
+.v2 .fld span { font-weight:700; }
+.v2 table { margin-top:2px; }
+.v2 table td { padding:6px 8px 6px 0; border-bottom:1px solid var(--soft); font-size:11.5px; }
+.v2 table td.l { color:var(--muted); width:150px; font-size:10.5px; font-weight:600; }
+.v2 .sigrow { display:flex; gap:16px; margin-top:44px; border-top:2px solid var(--ink); padding-top:18px; }
+.v2 .sig { flex:1; }
+.v2 .sig .ttl { font-size:10px; font-weight:800; }
+.v2 .sig .sp { height:44px; }
+.v2 .sig .nm { font-weight:800; font-size:11.5px; }
+.v2 .sig .dt { font-size:10px; color:var(--muted); }
+.v2 .foot { margin-top:14px; font-size:8.5px; color:var(--muted); }
+/* ===== V3 grid ringkas ===== */
+.v3 .kop { display:flex; justify-content:space-between; align-items:center; border-bottom:4px solid var(--accent); padding-bottom:10px; }
+.v3 .kop .nm { font-size:16px; font-weight:800; }
+.v3 .kop .ad { font-size:10px; color:var(--muted); }
+.v3 h2.ttl { text-align:center; font-size:11px; letter-spacing:1.6px; margin:10px 0 12px; font-weight:800; }
+.v3 .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.v3 .chip { background:var(--soft); border-radius:8px; padding:8px 10px; }
+.v3 .chip b { display:block; font-size:8.5px; letter-spacing:1px; color:var(--muted); font-weight:800; }
+.v3 .chip span { font-weight:800; font-size:12px; }
+.v3 h3 { font-size:9.5px; font-weight:800; letter-spacing:1.3px; color:var(--muted); margin:16px 0 6px; }
+.v3 table td { padding:6px 10px; border-bottom:1px solid var(--line); font-size:11.5px; }
+.v3 table tr:nth-child(even) td { background:#f8fafc; }
+.v3 table td.l { width:150px; font-weight:700; font-size:10.5px; color:#475569; }
+.v3 .meta { display:flex; gap:26px; margin-top:2px; }
+.v3 .meta div b { display:block; font-size:9px; letter-spacing:1px; color:var(--muted); font-weight:800; }
+.v3 .meta div span { font-weight:700; }
+.v3 .sigrow { display:flex; gap:14px; margin-top:40px; }
+.v3 .sig { flex:1; background:var(--soft); border-radius:8px; padding:10px 12px 12px; }
+.v3 .sig .ttl { font-size:10px; font-weight:800; }
+.v3 .sig .sp { height:34px; }
+.v3 .sig .nm { font-weight:800; font-size:11px; }
+.v3 .sig .dt { font-size:9.5px; color:var(--muted); }
+.v3 .foot { margin-top:14px; font-size:8.5px; color:var(--muted); }
+/* ===== V4 formal memo ===== */
+.v4 { font-family:Georgia,"Times New Roman",serif; }
+.v4 .kop { text-align:center; }
+.v4 .kop .nm { font-size:17px; font-weight:700; letter-spacing:1.5px; }
+.v4 .kop .ad { font-size:10.5px; font-style:italic; color:#475569; }
+.v4 .rule { border-bottom:1.5px solid #334155; position:relative; margin:10px 0 0; }
+.v4 .rule:after { content:""; position:absolute; left:0; right:0; bottom:-4px; border-bottom:3px solid #334155; }
+.v4 h2.ttl { text-align:center; font-size:12.5px; font-weight:700; letter-spacing:.8px; margin:18px 0 4px; }
+.v4 .ref { text-align:center; font-size:10.5px; color:#475569; }
+.v4 .body p { font-size:12px; margin-top:10px; }
+.v4 .kv { margin-top:14px; font-size:12px; }
+.v4 .kv div { display:flex; margin-top:5px; }
+.v4 .kv .l { width:190px; font-weight:700; }
+.v4 .kv .l:after { content:""; }
+.v4 table.item { margin-top:12px; }
+.v4 table.item th { border-top:1.5px solid #334155; border-bottom:1.5px solid #334155; font-size:11px; padding:5px 8px; }
+.v4 table.item td { border-bottom:1px solid #cbd5e1; padding:5px 8px; font-size:11.5px; }
+.v4 .notes { margin-top:12px; font-size:10.5px; color:#475569; font-style:italic; }
+.v4 .sigrow { display:flex; justify-content:space-between; margin-top:56px; }
+.v4 .sig { width:24%; text-align:center; }
+.v4 .sig .ttl { font-size:11px; font-weight:700; border-top:1px solid #64748b; padding-top:4px; margin-top:64px; }
+.v4 .sig .nm { font-weight:700; font-size:11.5px; }
+.v4 .sig .dt { font-size:10px; color:var(--muted); font-style:italic; }
+.v4 .foot { margin-top:18px; font-size:9px; color:var(--muted); text-align:center; font-style:italic; }
+/* ===== V5 korporat aksen ===== */
+.v5 .band { background:linear-gradient(90deg,#0f172a,#1e3a8a); color:#fff; margin:-44px -48px 0; padding:16px 48px 14px; display:flex; justify-content:space-between; align-items:center; }
+.v5 .band .nm { font-size:16px; font-weight:800; }
+.v5 .band .ad { font-size:9.5px; color:#cbd5e1; margin-top:2px; }
+.v5 .band .no { text-align:right; font-size:9px; color:#cbd5e1; }
+.v5 .band .no b { display:block; color:#fff; font-size:13px; font-family:Consolas,monospace; }
+.v5 h2.ttl { font-size:11.5px; letter-spacing:2px; font-weight:800; margin:14px 0 10px; color:#1d4ed8; }
+.v5 h2.ttl:after { content:""; display:block; height:3px; width:64px; background:#1d4ed8; margin-top:5px; border-radius:2px; }
+.v5 h3 { font-size:9px; font-weight:800; letter-spacing:1.4px; color:#475569; margin:14px 0 6px; padding-left:8px; border-left:3px solid #1d4ed8; }
+.v5 .grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; }
+.v5 .fld { padding:6px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; }
+.v5 .fld b { display:block; font-size:8.5px; letter-spacing:1px; color:var(--muted); font-weight:800; }
+.v5 .fld span { font-weight:700; }
+.v5 table td { padding:5px 10px; border-bottom:1px solid var(--line); font-size:11.5px; }
+.v5 table td.l { width:140px; font-weight:700; color:#1e3a8a; font-size:10.5px; }
+.v5 table th { background:#eef2ff; color:#1e3a8a; font-size:9.5px; letter-spacing:1px; padding:5px 10px; text-align:left; }
+.v5 .meta { display:flex; gap:22px; }
+.v5 .sigrow { display:flex; gap:12px; margin-top:36px; }
+.v5 .sig { flex:1; border:1px solid var(--line); border-radius:8px; padding:10px 10px 12px; position:relative; }
+.v5 .sig .ttl { font-size:10px; font-weight:800; color:#1e3a8a; }
+.v5 .sig .sp { height:40px; }
+.v5 .sig .nm { font-weight:800; font-size:11px; }
+.v5 .sig .dt { font-size:9.5px; color:var(--muted); }
+.v5 .foot { margin-top:12px; background:#eef2ff; color:#1e3a8a; font-size:8.5px; padding:6px 10px; border-radius:6px; }
+.screen-note { font-size:12px; color:var(--muted); font-family:Consolas,monospace; text-align:center; margin-top:8px; }
+@media print { .vhead,.top { display:none; } .sheet { box-shadow:none; border:none; page-break-after:always; } body { background:#fff; padding:0; } }
+</style>
+</head>
+<body>
+<div class="top">
+<h1>Mock-up dokumen “Save to PDF” — IT &amp; Telecommunication Acquisition Request</h1>
+<p>Contoh data: ITR-202610-0003 (AZHAR, selesai disetujui). Skrol ke bawah untuk melihat 5 varian, lalu centang yang dipilih.</p>
+<div id="chosen">Belum ada varian dipilih.</div>
+</div>
+
+<!-- ================= V1 ================= -->
+<section class="variant" id="v1">
+<div class="vhead"><span class="no">V1</span><span class="nm">Klasik Tabel Berline</span><span class="ds">Semua data dalam tabel bergaris ala formulir instansi; formal &amp; padat</span><label class="sel"><input type="radio" name="pick" value="V1 · Klasik Tabel Berline"> Pilih</label></div>
+<div class="sheet v1">
+<div class="kop"><div class="nm">PT BORNEO PRIMA</div><div class="ad">Puruk Cahu · Murung Raya · Kalimantan Tengah</div></div>
+<h2 class="ttl">IT &amp; TELECOMMUNICATION ACQUISITION REQUEST</h2>
+<table class="kv">
+<tr><td class="l">No. Permintaan</td><td><b>ITR-202610-0003</b></td><td class="l">Tanggal Selesai</td><td>20 Okt 2026</td></tr>
+<tr><td class="l">Status</td><td><b>Selesai — Disetujui</b></td><td class="l">Prioritas</td><td>Normal</td></tr>
+</table>
+<div class="box"><h3>PENERIMA</h3><table>
+<tr><td class="l">Nama</td><td><b>AZHAR</b></td><td class="l">Jenis permintaan</td><td><b>Barang baru</b></td></tr>
+<tr><td class="l">NIK · Departemen</td><td>10015 · Technical Mining</td><td class="l">Jabatan</td><td>Senior Superintendent Mine Plan</td></tr>
+<tr><td class="l">Site / Cost code</td><td>—</td><td class="l">Dibutuhkan</td><td>—</td></tr>
+</table></div>
+<div class="box"><h3>PERANGKAT &amp; SOFTWARE</h3><table>
+<tr><td class="l">Perangkat utama</td><td>Laptop</td></tr>
+<tr><td class="l">Accessories</td><td>Wireless keyboard/mouse, Digital camera</td></tr>
+<tr><td class="l">Software standar</td><td>MS Office, AntiVirus, WinZip, PDF Reader, AnyDesk</td></tr>
+<tr><td class="l">Software tambahan</td><td>—</td></tr>
+<tr><td class="l">Deskripsi</td><td>butuh laptop high spec</td></tr>
+<tr><td class="l">Tujuan</td><td>untuk menunjang pekerjaan</td></tr>
+</table></div>
+<div class="sigrow">
+<div class="sig"><div class="ttl">Diminta oleh</div><span class="cap">REQUESTED VIA EFORM</span><div class="sp"></div><div class="nm">AZHAR</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><div class="ttl">Diketahui</div><span class="cap">APPROVED VIA EFORM</span><div class="sp"></div><div class="nm">DEMO HOD</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><div class="ttl">Disetujui</div><span class="cap">APPROVED VIA EFORM</span><div class="sp"></div><div class="nm">DEMO Project Manager</div><div class="dt">20 Okt 2026</div></div>
+<div class="sig"><div class="ttl">IT</div><span class="cap">APPROVED VIA EFORM</span><div class="sp"></div><div class="nm">DEMO IT</div><div class="dt">20 Okt 2026</div></div>
+</div>
+<div class="foot">Persetujuan ini bukan persetujuan pembelian. Spesifikasi teknis ditentukan internal oleh IT.</div>
+</div>
+</section>
+
+<!-- ================= V2 ================= -->
+<section class="variant" id="v2">
+<div class="vhead"><span class="no">V2</span><span class="nm">Modern Minimal</span><span class="ds">Tanpa garis berat; whitespace, tipografi besar, garis tipis memisah bagian</span><label class="sel"><input type="radio" name="pick" value="V2 · Modern Minimal"> Pilih</label></div>
+<div class="sheet v2">
+<div class="kop"><div><div class="nm">Borneo Prima</div><div class="ad">Puruk Cahu · Murung Raya · Kalimantan Tengah</div></div><div class="ad">IT &amp; Telecommunication<br>Acquisition Request</div></div>
+<div class="rno"><div><b>NOMOR</b>ITR-202610-0003</div><div><b>TANGGAL</b>20 Okt 2026</div><div><b>STATUS</b>Selesai</div><div><b>JENIS</b>Barang baru</div></div>
+<h3>Penerima</h3>
+<div class="grid">
+<div class="fld"><b>Nama</b><span>AZHAR</span></div>
+<div class="fld"><b>NIK · Departemen</b><span>10015 · Technical Mining</span></div>
+<div class="fld"><b>Jabatan</b><span>Senior Superintendent Mine Plan</span></div>
+<div class="fld"><b>Site / Cost code</b><span>—</span></div>
+</div>
+<h3>Persetujuan &amp; Prioritas</h3>
+<div class="grid">
+<div class="fld"><b>Prioritas</b><span>Normal</span></div>
+<div class="fld"><b>Dibutuhkan</b><span>—</span></div>
+<div class="fld"><b>Kebutuhan khusus</b><span>Ya</span></div>
+<div class="fld"><b>Tanggal diminta</b><span>19 Okt 2026</span></div>
+</div>
+<h3>Perangkat &amp; Software</h3>
+<table>
+<tr><td class="l">Perangkat utama</td><td><b>Laptop</b></td></tr>
+<tr><td class="l">Accessories</td><td>Wireless keyboard/mouse, Digital camera</td></tr>
+<tr><td class="l">Software standar</td><td>MS Office, AntiVirus, WinZip, PDF Reader, AnyDesk</td></tr>
+<tr><td class="l">Software tambahan</td><td>—</td></tr>
+<tr><td class="l">Deskripsi</td><td>butuh laptop high spec</td></tr>
+<tr><td class="l">Tujuan</td><td>untuk menunjang pekerjaan</td></tr>
+</table>
+<div class="sigrow">
+<div class="sig"><span class="cap">Requested via eForm</span><div class="ttl">Diminta oleh</div><div class="sp"></div><div class="nm">AZHAR</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="ttl">HOD</div><div class="sp"></div><div class="nm">DEMO HOD</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="ttl">IT</div><div class="sp"></div><div class="nm">DEMO IT</div><div class="dt">20 Okt 2026</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="ttl">PM/GM Site</div><div class="sp"></div><div class="nm">DEMO Project Manager</div><div class="dt">20 Okt 2026</div></div>
+</div>
+<div class="foot">Persetujuan ini bukan persetujuan pembelian. Spesifikasi teknis ditentukan internal oleh IT.</div>
+</div>
+</section>
+
+<!-- ================= V3 ================= -->
+<section class="variant" id="v3">
+<div class="vhead"><span class="no">V3</span><span class="nm">Grid Ringkas Chip</span><span class="ds">Fakta kunci sebagai chip berlatar abu; tabel zebra; tanda tangan dalam kartu</span><label class="sel"><input type="radio" name="pick" value="V3 · Grid Ringkas Chip"> Pilih</label></div>
+<div class="sheet v3">
+<div class="kop"><div><div class="nm">PT Borneo Prima</div><div class="ad">Puruk Cahu · Murung Raya · Kalimantan Tengah</div></div><div class="ad" style="text-align:right;font-size:10px;color:var(--muted)">Formulir digital eForm BP</div></div>
+<h2 class="ttl">IT &amp; TELECOMMUNICATION ACQUISITION REQUEST</h2>
+<div class="chips">
+<div class="chip"><b>NO. PERMINTAAN</b><span>ITR-202610-0003</span></div>
+<div class="chip"><b>TANGGAL SELESAI</b><span>20 Okt 2026</span></div>
+<div class="chip"><b>STATUS</b><span>Selesai</span></div>
+</div>
+<h3>Penerima</h3>
+<div class="chips">
+<div class="chip"><b>NAMA</b><span>AZHAR</span></div>
+<div class="chip"><b>NIK · DEPARTEMEN</b><span>10015 · Technical Mining</span></div>
+<div class="chip"><b>JABATAN</b><span>Senior Superintendent Mine Plan</span></div>
+<div class="chip"><b>JENIS PERMINTAAN</b><span>Barang baru</span></div>
+<div class="chip"><b>SITE / COST CODE</b><span>—</span></div>
+<div class="chip"><b>PRIORITAS · DIBUTUHKAN</b><span>Normal · —</span></div>
+</div>
+<h3>Perangkat &amp; Software</h3>
+<table>
+<tr><td class="l">Perangkat utama</td><td><b>Laptop</b></td></tr>
+<tr><td class="l">Accessories</td><td>Wireless keyboard/mouse, Digital camera</td></tr>
+<tr><td class="l">Software standar</td><td>MS Office, AntiVirus, WinZip, PDF Reader, AnyDesk</td></tr>
+<tr><td class="l">Software tambahan</td><td>—</td></tr>
+</table>
+<h3>Rincian</h3>
+<div class="meta">
+<div><b>DESKRIPSI</b><span>butuh laptop high spec</span></div>
+<div><b>TUJUAN</b><span>untuk menunjang pekerjaan</span></div>
+<div><b>KEBUTUHAN KHUSUS</b><span>Ya</span></div>
+</div>
+<div class="sigrow">
+<div class="sig"><div class="ttl">Diminta oleh</div><span class="cap">REQUESTED VIA EFORM</span><div class="sp"></div><div class="nm">AZHAR</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><div class="ttl">HOD</div><span class="cap">APPROVED VIA EFORM</span><div class="sp"></div><div class="nm">DEMO HOD</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><div class="ttl">IT</div><span class="cap">APPROVED VIA EFORM</span><div class="sp"></div><div class="nm">DEMO IT</div><div class="dt">20 Okt 2026</div></div>
+<div class="sig"><div class="ttl">PM/GM Site</div><span class="cap">APPROVED VIA EFORM</span><div class="sp"></div><div class="nm">DEMO Project Manager</div><div class="dt">20 Okt 2026</div></div>
+</div>
+<div class="foot">Persetujuan ini bukan persetujuan pembelian. Spesifikasi teknis ditentukan internal oleh IT.</div>
+</div>
+</section>
+
+<!-- ================= V4 ================= -->
+<section class="variant" id="v4">
+<div class="vhead"><span class="no">V4</span><span class="nm">Memo Formal Serif</span><span class="ds">Gaya memo resmi kertas: serif, garis kop ganda, tanda tangan propinsi bawah</span><label class="sel"><input type="radio" name="pick" value="V4 · Memo Formal Serif"> Pilih</label></div>
+<div class="sheet v4">
+<div class="kop"><div class="nm">PT BORNEO PRIMA</div><div class="ad">Puruk Cahu · Murung Raya · Kalimantan Tengah</div></div>
+<div class="rule"></div>
+<h2 class="ttl">IT &amp; TELECOMMUNICATION ACQUISITION REQUEST</h2>
+<div class="ref">Nomor: ITR-202610-0003 &nbsp;·&nbsp; Selesai: 20 Oktober 2026 &nbsp;·&nbsp; Status: Disetujui</div>
+<div class="body"><p style="margin-top:16px">Dokumen ini merupakan hasil pengajuan yang telah disetujui melalui aplikasi <b>eForm BP</b> dan diserahkan sebagai dasar kebutuhan perangkat IT.</p></div>
+<div class="kv">
+<div class="l">Nama penerima / NIK</div><div><b>AZHAR</b> — 10015</div>
+<div class="l" style="width:190px">Departemen / Jabatan</div><div>Technical Mining — Senior Superintendent Mine Plan</div>
+<div class="l">Jenis permintaan</div><div><b>Barang baru</b>, prioritas Normal, kebutuhan khusus: Ya</div>
+<div class="l">Dibutuhkan</div><div>—</div>
+</div>
+<table class="item">
+<tr><th style="width:150px">Perangkat &amp; Software</th><th>Keterangan</th></tr>
+<tr><td>Perangkat utama</td><td>Laptop</td></tr>
+<tr><td>Accessories</td><td>Wireless keyboard/mouse, Digital camera</td></tr>
+<tr><td>Software standar</td><td>MS Office, AntiVirus, WinZip, PDF Reader, AnyDesk</td></tr>
+<tr><td>Uraian</td><td>butuh laptop high spec — untuk menunjang pekerjaan</td></tr>
+</table>
+<div class="notes">Persetujuan ini bukan persetujuan pembelian. Spesifikasi teknis ditentukan internal oleh IT.</div>
+<div class="sigrow">
+<div class="sig"><span class="cap">Requested via eForm</span><div class="nm">AZHAR</div><div class="dt">19 Okt 2026</div><div class="ttl">Diminta oleh</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="nm">DEMO HOD</div><div class="dt">19 Okt 2026</div><div class="ttl">Diketahui HOD</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="nm">DEMO IT</div><div class="dt">20 Okt 2026</div><div class="ttl">Diproses IT</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="nm">DEMO Project Manager</div><div class="dt">20 Okt 2026</div><div class="ttl">Diketahui PM/GM</div></div>
+</div>
+<div class="foot">Dokumen berprint dari aplikasi eForm BP — tanpa tanda tangan basah.</div>
+</div>
+</section>
+
+<!-- ================= V5 ================= -->
+<section class="variant" id="v5">
+<div class="vhead"><span class="no">V5</span><span class="nm">Korporat Aksen Biru</span><span class="ds">Header band gelap, nomor request menonjol monospace, aksen biru korporat</span><label class="sel"><input type="radio" name="pick" value="V5 · Korporat Aksen Biru"> Pilih</label></div>
+<div class="sheet v5">
+<div class="band"><div><div class="nm">PT Borneo Prima</div><div class="ad">Puruk Cahu · Murung Raya · Kalimantan Tengah</div></div><div class="no">NOMOR REQUEST<b>ITR-202610-0003</b></div></div>
+<h2 class="ttl">IT &amp; Telecommunication Acquisition Request</h2>
+<h3>Penerima</h3>
+<div class="grid">
+<div class="fld"><b>Nama</b><span>AZHAR</span></div>
+<div class="fld"><b>NIK</b><span>10015</span></div>
+<div class="fld"><b>Departemen</b><span>Technical Mining</span></div>
+<div class="fld"><b>Jabatan</b><span>Senior Superintendent Mine Plan</span></div>
+<div class="fld"><b>Jenis permintaan</b><span>Barang baru</span></div>
+<div class="fld"><b>Prioritas</b><span>Normal · Kebutuhan khusus: Ya</span></div>
+</div>
+<h3>Persetujuan</h3>
+<div class="grid">
+<div class="fld"><b>Selesai</b><span>20 Okt 2026</span></div>
+<div class="fld"><b>Dibutuhkan</b><span>—</span></div>
+</div>
+<h3>Perangkat &amp; Software</h3>
+<table>
+<tr><th style="width:140px">Komponen</th><th>Rincian</th></tr>
+<tr><td class="l">Perangkat utama</td><td><b>Laptop</b></td></tr>
+<tr><td class="l">Accessories</td><td>Wireless keyboard/mouse, Digital camera</td></tr>
+<tr><td class="l">Software standar</td><td>MS Office, AntiVirus, WinZip, PDF Reader, AnyDesk</td></tr>
+<tr><td class="l">Software tambahan</td><td>—</td></tr>
+</table>
+<h3>Deskripsi &amp; Tujuan</h3>
+<div class="grid"><div class="fld"><b>Deskripsi</b><span>butuh laptop high spec</span></div><div class="fld"><b>Tujuan</b><span>untuk menunjang pekerjaan</span></div></div>
+<div class="sigrow">
+<div class="sig"><span class="cap">Requested via eForm</span><div class="ttl">Diminta oleh</div><div class="sp"></div><div class="nm">AZHAR</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="ttl">HOD</div><div class="sp"></div><div class="nm">DEMO HOD</div><div class="dt">19 Okt 2026</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="ttl">IT</div><div class="sp"></div><div class="nm">DEMO IT</div><div class="dt">20 Okt 2026</div></div>
+<div class="sig"><span class="cap">Approved via eForm</span><div class="ttl">PM/GM Site</div><div class="sp"></div><div class="nm">DEMO Project Manager</div><div class="dt">20 Okt 2026</div></div>
+</div>
+<div class="foot">Persetujuan ini bukan persetujuan pembelian. Spesifikasi teknis ditentukan internal oleh IT.</div>
+</div>
+</section>
+
+<p class="screen-note">Ejaan data contoh mengikuti ITR-202610-0003. Hanya mock-up statis — tidak diakses aplikasi.</p>
+<script>
+var chosen = document.getElementById('chosen');
+document.querySelectorAll('input[name="pick"]').forEach(function (radio) {
+  radio.addEventListener('change', function () {
+    document.querySelectorAll('section.variant').forEach(function (sec) { sec.classList.remove('chosen'); });
+    if (!radio.checked) return;
+    radio.closest('section.variant').classList.add('chosen');
+    chosen.textContent = 'Dipilih: ' + radio.value + ' — sebutkan varian ini ke asisten.';
+    chosen.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+});
+</script>
+</body>
+</html>

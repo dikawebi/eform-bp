@@ -54,6 +54,20 @@ class ItRequestPolicy
         return $request->isEditable() && ($this->owner($user, $request) || $user->can('it_request.review'));
     }
 
+    public function print(User $user, ItRequest $request): bool
+    {
+        return $request->status === RequestStatus::Completed && $user->can('it_request.review');
+    }
+
+    /**
+     * Pengisian nomor PR MSD setelah request completed. Admin punya
+     * permission it_request.review sehingga ikut sah untuk koreksi.
+     */
+    public function fillPrNumber(User $user, ItRequest $request): bool
+    {
+        return $request->status === RequestStatus::Completed && $user->can('it_request.review');
+    }
+
     private function owner(User $user, ItRequest $request): bool
     {
         return (int) $request->created_by === (int) $user->id

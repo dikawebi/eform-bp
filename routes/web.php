@@ -7,6 +7,7 @@ use App\Http\Controllers\AuditTimelineController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\MailSettingsController;
 use App\Http\Controllers\MedicalClaimController;
 use App\Http\Controllers\ModuleAvailabilityController;
 use App\Http\Controllers\NotificationController;
@@ -155,6 +156,7 @@ Route::middleware('auth')->group(function () {
         Route::match(['put', 'patch'], '/{it_request}', [ItRequestController::class, 'update'])->name('update');
         Route::post('/{it_request}/submit', [ItRequestController::class, 'submit'])->name('submit');
         Route::post('/{it_request}/cancel', [ItRequestController::class, 'cancel'])->name('cancel');
+        Route::post('/{it_request}/pr-number', [ItRequestController::class, 'updatePrNumber'])->name('pr-number.update');
         Route::post('/{it_request}/attachments', [ItRequestController::class, 'uploadAttachment'])->name('attachments.store');
     });
 
@@ -204,6 +206,15 @@ Route::middleware('auth')->group(function () {
             ->can('module.manage')->name('index');
         Route::put('/', [ModuleAvailabilityController::class, 'update'])
             ->can('module.manage')->name('update');
+    });
+
+    Route::prefix('settings/mail')->name('settings.mail.')->group(function () {
+        Route::get('/', [MailSettingsController::class, 'index'])
+            ->can('mail.manage')->name('index');
+        Route::put('/', [MailSettingsController::class, 'update'])
+            ->can('mail.manage')->name('update');
+        Route::post('/test', [MailSettingsController::class, 'test'])
+            ->can('mail.manage')->name('test');
     });
 
     Route::prefix('settings/roles')->name('settings.roles.')->group(function () {

@@ -102,6 +102,7 @@ class HandleInertiaRequests extends Middleware
             ['key' => 'settings-roles', 'label' => 'Role dan Permission', 'url' => '/settings/roles', 'group' => 'Pengaturan', 'permission' => 'role.manage'],
             ['key' => 'settings-users', 'label' => 'Pengguna', 'url' => '/settings/users', 'group' => 'Pengaturan', 'permission' => 'user.manage'],
             ['key' => 'settings-modules', 'label' => 'Modul & Maintenance', 'url' => '/settings/modules', 'group' => 'Pengaturan', 'permission' => 'module.manage'],
+            ['key' => 'settings-mail', 'label' => 'Email & Notifikasi', 'url' => '/settings/mail', 'group' => 'Pengaturan', 'permission' => 'mail.manage'],
         ];
 
         if (! $user) {

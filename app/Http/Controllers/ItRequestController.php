@@ -56,6 +56,7 @@ class ItRequestController extends Controller
             $query->where(function ($inner) use ($like) {
                 $inner->where('request_number', 'like', $like)
                     ->orWhere('recipient_name', 'like', $like)
+                    ->orWhere('pr_msd_number', 'like', $like)
                     ->orWhere('device_type', 'like', $like)
                     ->orWhereHas('employee', fn ($employee) => $employee->where('name', 'like', $like)->orWhere('employee_number', 'like', $like));
             });
@@ -83,6 +84,8 @@ class ItRequestController extends Controller
         $page->setCollection($page->getCollection()->map(fn (ItRequest $it) => [
             'id' => $it->id,
             'request_number' => $it->request_number,
+            'pr_msd_number' => $it->pr_msd_number,
+            'can_print' => $it->status === RequestStatus::Completed && $user->can('it_request.review'),
             'status' => $it->status->value,
             'request_type' => $it->request_type,
             'device_type' => $it->device_type,
@@ -180,6 +183,8 @@ class ItRequestController extends Controller
                 'can_submit' => $user->can('submit', $it_request),
                 'can_cancel' => $user->can('cancel', $it_request),
                 'can_upload' => $user->can('upload', $it_request),
+                'can_print' => $user->can('print', $it_request),
+                'can_fill_pr' => $user->can('fillPrNumber', $it_request),
             ],
             'approvalActions' => ApprovalActionAvailability::for($it_request, $user),
         ]);
@@ -191,10 +196,8 @@ class ItRequestController extends Controller
      */
     public function print(Request $request, ItRequest $it_request): Response
     {
-        $this->authorize('view', $it_request);
-        abort_unless($it_request->status === RequestStatus::Completed, 403, 'Hanya request yang sudah completed yang dapat dicetak untuk commercial.');
+        $this->authorize('print', $it_request);
 
-        $format = $request->validate(['format' => ['nullable', 'string', Rule::in(['memo', 'items', 'form'])]])['format'] ?? 'memo';
         $it_request->load(['employee:id,employee_number,name,department,job_title', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
 
         return Inertia::render('ITRequests/Print', [
@@ -206,7 +209,6 @@ class ItRequestController extends Controller
                 'software_standard' => config('eform.it_request.software_standard', []),
             ],
             'timeline' => $this->approvalTimeline($it_request),
-            'format' => $format,
             'company' => config('eform.company', []),
         ]);
     }
@@ -326,6 +328,25 @@ class ItRequestController extends Controller
         return back()->with('success', 'Lampiran berhasil diunggah.');
     }
 
+    /**
+     * Nomor PR MSD diisi IT setelah request completed; perubahan masuk audit log.
+     */
+    public function updatePrNumber(Request $request, ItRequest $it_request): RedirectResponse
+    {
+        $this->authorize('fillPrNumber', $it_request);
+        $data = $request->validate(['pr_msd_number' => ['nullable', 'string', 'max:100']]);
+        $number = trim((string) ($data['pr_msd_number'] ?? '')) ?: null;
+        $old = $it_request->pr_msd_number;
+
+        DB::transaction(function () use ($request, $it_request, $number, $old) {
+            $it = ItRequest::lockForUpdate()->findOrFail($it_request->id);
+            $it->forceFill(['pr_msd_number' => $number, 'updated_by' => $request->user()->id])->save();
+            activity()->performedOn($it)->causedBy($request->user())->withProperties(['old' => $old, 'new' => $number])->log('it.pr_msd_number_updated');
+        });
+
+        return back()->with('success', $number ? 'Nomor PR MSD tersimpan.' : 'Nomor PR MSD dikosongkan.');
+    }
+
     public function downloadAttachment(Request $request, Attachment $attachment)
     {
         $this->authorize('download', $attachment);
@@ -377,6 +398,7 @@ class ItRequestController extends Controller
             'accessory_other_note' => $it->accessory_other_note,
             'needed_date' => $it->needed_date?->toDateString(),
             'priority' => $it->priority,
+            'pr_msd_number' => $it->pr_msd_number,
             'submitted_at' => $it->submitted_at?->toISOString(),
             'approved_at' => $it->approved_at?->toISOString(),
             'completed_at' => $it->completed_at?->toISOString(),

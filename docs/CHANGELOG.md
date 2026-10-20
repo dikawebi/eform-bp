@@ -1,5 +1,19 @@
 # Changelog dokumentasi
 
+## 2026-10-20
+
+- **Email workflow (skema produksi):** setiap notifikasi database kini juga mengirim email melalui job `SendWorkflowEmail` (antrian `database`, `afterCommit`, retry 3×) dan mailable `WorkflowMail` — satu pintu di `InAppNotifier`, logika penerima notifikasi tidak berubah. Template `mail/workflow` (Bahasa Indonesia, header band perusahaan, tombol "Buka di eForm BP") memakai payload yang sama dengan notifikasi in-app. Guard: `users.email_notifications` (default true, migration `2026_10_20_000002`), kill-switch `MAIL_NOTIFICATIONS_ENABLED`, blacklist `eform.mail.skip_events` (`approval.step_deferred`, `approval.chain_step_cancelled`), email kosong/dummy `.invalid` di-skip. `.env` diarahkan skema SMTP produksi (`MAIL_FROM_ADDRESS=admin.it@borneoprima.com`) dengan kredensial SMTP yang perlu diisi sebelum deploy.
+
+- Tombol "Cetak untuk Commercial" diganti menjadi **Save to PDF** dan langsung membuka dokumen formulir lengkap; modal pilih format dihapus.
+- Opsi **Memo Penerusan** dan **Daftar Item** dihapus dari halaman dokumen. Halaman `it-requests.print` kini hanya merender formulir lengkap beserta matriks tanda tangan; parameter `format` lama diabaikan agar tautan lama tetap aman.
+- Halaman `it-requests.print` kini merender **ringkasan satu halaman A4** berjudul "IT & Telecommunication Acquisition Request": kop perusahaan, data penerima, ringkasan permintaan/perangkat/software, deskripsi & tujuan yang dipersingkat, dan baris tanda tangan (satu kotak per tahap, tanpa duplikat).
+- Akses Save to PDF **khusus IT** (`it_request.review`, status completed) melalui ability `print` pada `ItRequestPolicy`; tombol Save to PDF hanya muncul untuk IT (`availableActions.can_print`).
+- **Redesign dokumen mengikuti mock-up varian V5 "Korporat Aksen Biru"** (`docs/mockups/it-print-mockup.html`): header band gelap dengan nomor request monospace, judul biru beraksen garis, chip info berlatar abu, tabel perangkat ber-header indigo, kartu tanda tangan dengan **cap stempel miring "✓ APPROVED VIA EFORM"** (border ganda, kemiringan ±9°, gaya tinta stempel), dan footer catatan indigo — semua memakai font **Plus Jakarta Sans** (warisan global aplikasi). Chip **"Dibutuhkan"** dan **"Prioritas"** dihapus dari dokumen karena field ini tidak tersedia di form input pemohon (nilainya tidak pernah terisi dari UI).
+- Label tahap **"IT Service Desk"** di dokumen diganti menjadi **"IT"**; kolom **"Diterima Commercial"** dihapus dari baris tanda tangan; **jenis permintaan** (Barang baru/Penggantian) dipindah ke card Penerima di bawah nama.
+- **Nomor PR MSD:** kolom baru `it_requests.pr_msd_number` (migration `2026_10_20_000001_add_pr_msd_number_to_it_requests`). Setelah request selesai, pemegang `it_request.review` (IT/admin) melihat kartu pengingat "segera buat PR di MSD" di halaman detail dengan input nomor PR; pengisian opsional dan setiap perubahan masuk audit log `it.pr_msd_number_updated`. Nomor PR ditampilkan sebagai kolom "Nomor PR" di listing IT request dan ikut dicocokkan pada pencarian server-side, tetapi tidak ditampilkan di dokumen Save to PDF.
+- **Listing IT request:** baris berstatus completed menampilkan tombol **Save to PDF** hanya untuk pemegang `it_request.review` (`can_print` per baris).
+- Tampilan halaman Save to PDF dan tombol aksi disesuaikan untuk dark mode (toolbar, tombol Kembali/Save to PDF, latar halaman). Kertas dokumen tetap putih agar hasil cetak konsisten.
+
 ## 2026-10-19
 
 - Eskalasi IT Request kini memilih tujuan secara eksplisit: **COO** atau **CEO** (role baru `coo` dan `ceo`, permission sama dengan role payung lama `coo_ceo`). Field `escalate_role` wajib saat `escalation=coo_ceo`; target harus memegang role yang dipilih, aktif, punya `approval.act`, tanpa konflik, dan tidak sedang menunggu di chain yang sama. `approver_role` tahap `coo_ceo` dipersempit ke role terpilih agar policy `act` tetap ketat.

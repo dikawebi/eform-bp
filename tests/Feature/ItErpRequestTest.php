@@ -387,7 +387,7 @@ class ItErpRequestTest extends TestCase
         $this->assertDatabaseMissing('it_item_options', ['code' => 'desktop']);
     }
 
-    public function test_completed_it_request_print_renders_all_commercial_formats(): void
+    public function test_completed_it_request_print_renders_save_to_pdf_document(): void
     {
         [$user, $employee, $hodUser, $itUser, $pmUser] = $this->itActors();
 
@@ -401,19 +401,62 @@ class ItErpRequestTest extends TestCase
         }
         $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
 
-        foreach (['memo', 'items', 'form'] as $format) {
-            $this->actingAs($user)->get(route('it-requests.print', [$itRequest, 'format' => $format]))
-                ->assertOk()
-                ->assertInertia(fn (Assert $page) => $page
-                    ->component('ITRequests/Print')
-                    ->where('format', $format)
-                    ->has('request')
-                    ->has('timeline'));
-        }
+        // Hanya IT yang dapat membuka dokumen Save to PDF; pemohon biasa ditolak.
+        $this->actingAs($user)->get(route('it-requests.print', $itRequest))->assertForbidden();
+        $this->actingAs($itUser)->get(route('it-requests.print', $itRequest))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('ITRequests/Print')
+                ->missing('format')
+                ->has('request')
+                ->has('timeline'));
+
+        // Parameter lama tidak lagi mengubah format dokumen.
+        $this->actingAs($itUser)->get(route('it-requests.print', [$itRequest, 'format' => 'memo']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('ITRequests/Print')->missing('format'));
+
+        // Listing menampilkan tombol Save to PDF hanya untuk IT pada baris completed.
+        $this->actingAs($itUser)->get(route('it-requests.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('requests.data.0.can_print', true));
+        $this->actingAs($user)->get(route('it-requests.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('requests.data.0.can_print', false));
     }
 
-    public function test_print_is_forbidden_before_completed_or_for_stranger(): void
+    public function test_it_fills_pr_msd_number_after_completion_and_audits_it(): void
     {
+        [$user, $employee, $hodUser, $itUser, $pmUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), $this->itPayload($employee))->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        foreach (['hod' => $hodUser, 'it' => $itUser, 'pm_gm' => $pmUser] as $step => $actor) {
+            $approval = $itRequest->approvalRequests()->where('step_code', $step)->firstOrFail();
+            $this->actingAs($actor)->post(route('approvals.action', [$approval, 'approve']))->assertRedirect();
+        }
+        $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
+
+        // Pemilik biasa tidak boleh mengisi nomor PR.
+        $this->actingAs($user)->post(route('it-requests.pr-number.update', $itRequest), ['pr_msd_number' => 'PR-1001'])->assertForbidden();
+        $this->assertNull($itRequest->refresh()->pr_msd_number);
+
+        // IT mengisi lalu merevisi nomor PR; semua perubahan tercatat di audit log.
+        $this->actingAs($itUser)->post(route('it-requests.pr-number.update', $itRequest), ['pr_msd_number' => 'PR-MSD-1001'])->assertSessionHasNoErrors();
+        $this->assertSame('PR-MSD-1001', $itRequest->refresh()->pr_msd_number);
+        $this->actingAs($itUser)->post(route('it-requests.pr-number.update', $itRequest), ['pr_msd_number' => 'PR-MSD-1002'])->assertSessionHasNoErrors();
+        $this->assertSame('PR-MSD-1002', $itRequest->refresh()->pr_msd_number);
+
+        $logs = Activity::where('subject_type', 'it_request')->where('subject_id', $itRequest->id)->where('description', 'it.pr_msd_number_updated')->get();
+        $this->assertCount(2, $logs);
+        $this->assertSame(['old' => null, 'new' => 'PR-MSD-1001'], $logs->first()->properties->toArray());
+
+        // Nomor PR boleh dikosongkan (opsional).
+        $this->actingAs($itUser)->post(route('it-requests.pr-number.update', $itRequest), ['pr_msd_number' => ''])->assertSessionHasNoErrors();
+        $this->assertNull($itRequest->refresh()->pr_msd_number);
+    }
+
+    public function test_print_is_forbidden_before_completed_or_for_stranger(): void    {
         [$user, $employee] = $this->itActors();
         [$stranger] = $this->employee('employee');
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendWorkflowEmail;
 use App\Models\ErpRequest;
 use App\Models\ItRequest;
 use App\Models\LeaveRequest;
@@ -23,7 +24,23 @@ final class InAppNotifier
             return;
         }
 
-        User::query()->whereKey($userId)->first()?->notify(new WorkflowNotification($event, $title, $message, $url, $meta));
+        $user = User::query()->whereKey($userId)->first();
+
+        if ($user === null) {
+            return;
+        }
+
+        $user->notify(new WorkflowNotification($event, $title, $message, $url, $meta));
+
+        // Email mengikuti seluruh notifikasi database; pengiriman diantrikan
+        // (afterCommit) lewat job supaya SMTP tidak memengaruhi transaksi.
+        SendWorkflowEmail::dispatch($user->getKey(), [
+            'event' => $event,
+            'title' => $title,
+            'message' => $message,
+            'url' => $url,
+            'meta' => $meta,
+        ])->afterCommit();
     }
 
     public function notifyOwner(Model $subject, string $event, string $title, string $message, ?User $actor = null): void

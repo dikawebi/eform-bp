@@ -33,6 +33,7 @@ class ItRequest extends Model
         'needed_date',
         'priority',
         'status',
+        'pr_msd_number',
         'employee_snapshot_json',
         'submitted_at',
         'approved_at',

@@ -151,6 +151,26 @@ Jika blocker masih terjadi setelah hard refresh:
 
 Periksa asset Vite/browser dan request Inertia melalui DevTools.
 
+## Email Workflow (2026-10-20)
+
+Setiap notifikasi database juga dikirim via email dengan skema produksi SMTP:
+
+- **Pintu tunggal**: `InAppNotifier::notifyUser()` tetap satu tempat memutuskan penerima. Ia mengirim notifikasi database secara sinkron, lalu mem-dispatch job `App\Jobs\SendWorkflowEmail` (antrian `database`, `afterCommit`, `tries=3`, backoff 30/120 s) yang mengirim `App\Mail\WorkflowMail`.
+- **Template**: `resources/views/mail/workflow.blade.php` — band perusahaan + chip chip "eForm BP", judul/pesan dari payload, metadata (Modul, Nomor dokumen, Pelaku, Tahap), tombol "Buka di eForm BP" memakai `config('app.url')` + path resolusi `InAppNotifier::resolveUrl`.
+- **Guard** (dievaluasi di dalam job agar retry memakai preferensi terbaru): kolom `users.email_notifications` (default true), `config('eform.mail.enabled')` (env `MAIL_NOTIFICATIONS_ENABLED`), blacklist `config('eform.mail.skip_events')` = `approval.step_deferred`, `approval.chain_step_cancelled`, email kosong atau domain `.invalid` (akun demo).
+- **Env**: `MAIL_MAILER=smtp`, `MAIL_FROM_ADDRESS=admin.it@borneoprima.com`, `MAIL_FROM_NAME="eForm BP"`. Kredensial SMTP host/port/user/password diisi saat deploy produksi; lokal pengembangan bisa kembali `MAIL_MAILER=log`.
+- **Tes**: `tests/Feature/WorkflowEmailNotificationTest.php` — dispatch job pada setiap notifikasi, isi payload, skip opt-out sementara, skip blacklist, skip tanpa email/dummy, skip kill-switch. `phpunit.xml` tetap menggunakan `MAIL_MAILER=array` + `QUEUE_CONNECTION=sync` sehingga test tidak mengirim email nyata.
+
+File terkait:
+
+- `app/Jobs/SendWorkflowEmail.php`
+- `app/Mail/WorkflowMail.php`
+- `resources/views/mail/workflow.blade.php`
+- `app/Services/InAppNotifier.php`
+- `config/eform.php` (bagian `mail`)
+- `database/migrations/2026_10_20_000002_add_email_notifications_to_users_table.php`
+- `tests/Feature/WorkflowEmailNotificationTest.php`
+
 ## Verifikasi Terakhir
 
 ```text
