@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ApprovalStepStatus;
 use App\Models\ApprovalRequest;
+use App\Models\Employee;
 use App\Models\User;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,5 +52,26 @@ class DashboardApprovalTest extends TestCase
         $this->actingAs($employee)
             ->get(route('dashboard'))
             ->assertInertia(fn ($page) => $page->where('pendingApproval', null)->where('pendingApprovalCount', null));
+    }
+
+    public function test_dashboard_greets_employee_master_name(): void
+    {
+        $user = User::factory()->create(['name' => 'Akun Login']);
+        $user->assignRole('employee');
+        Employee::factory()->create(['user_id' => $user->id, 'name' => 'Nama Dari Master', 'active' => true]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertInertia(fn ($page) => $page->where('employeeName', 'Nama Dari Master'));
+    }
+
+    public function test_dashboard_falls_back_to_account_name_without_employee(): void
+    {
+        $user = User::factory()->create(['name' => 'Akun Tanpa NIK']);
+        $user->assignRole('employee');
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertInertia(fn ($page) => $page->where('employeeName', 'Akun Tanpa NIK'));
     }
 }

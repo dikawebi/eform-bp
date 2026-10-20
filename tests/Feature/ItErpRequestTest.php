@@ -137,10 +137,16 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
 
         $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
-        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), ['escalation' => 'coo_ceo', 'escalate_user_id' => $cooUser->id])->assertRedirect();
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
+            'escalation' => 'coo_ceo', 'escalate_role' => 'coo', 'escalate_user_id' => $cooUser->id,
+            'comments' => 'GPU diperlukan untuk pemodelan CAD; tanpa GPU proyek tertunda.',
+        ])->assertRedirect();
 
         $coo = $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail();
         $this->assertSame((int) $cooUser->id, (int) $coo->approver_user_id);
+        $this->assertSame('coo', $coo->approver_role);
+        // Catatan eskalasi tersimpan pada tahap COO agar tampil menonjol.
+        $this->assertSame('GPU diperlukan untuk pemodelan CAD; tanpa GPU proyek tertunda.', $coo->comments);
 
         $pm = $itRequest->approvalRequests()->where('step_code', 'pm_gm')->firstOrFail();
         $this->actingAs($pmUser)->post(route('approvals.action', [$pm, 'approve']))->assertRedirect();
@@ -151,6 +157,67 @@ class ItErpRequestTest extends TestCase
 
         $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
         $this->assertNotNull($itRequest->completed_at);
+    }
+
+    public function test_it_escalation_to_ceo_assigns_ceo_role_and_exposes_highlighted_note(): void
+    {
+        [$user, $employee, $hodUser, $itUser, $pmUser, , $ceoUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'special_specification' => true, 'description' => 'Butuh GPU', 'purpose' => 'CAD'])->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $hod = $itRequest->approvalRequests()->where('step_code', 'hod')->firstOrFail();
+        $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
+
+        $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
+            'escalation' => 'coo_ceo', 'escalate_role' => 'ceo', 'escalate_user_id' => $ceoUser->id,
+            'comments' => 'Investasi strategis untuk lini produksi baru.',
+        ])->assertRedirect();
+
+        $step = $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail();
+        $this->assertSame((int) $ceoUser->id, (int) $step->approver_user_id);
+        $this->assertSame('ceo', $step->approver_role);
+
+        $pm = $itRequest->approvalRequests()->where('step_code', 'pm_gm')->firstOrFail();
+        $this->actingAs($pmUser)->post(route('approvals.action', [$pm, 'approve']))->assertRedirect();
+
+        $step = $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail();
+        $this->actingAs($ceoUser)->get(route('approvals.show', $step))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('approval.escalation.role', 'ceo')
+                ->where('approval.escalation.note', 'Investasi strategis untuk lini produksi baru.'));
+
+        $this->actingAs($ceoUser)->post(route('approvals.action', [$step, 'approve']))->assertRedirect();
+        $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
+    }
+
+    public function test_it_escalation_requires_role_and_note(): void
+    {
+        [$user, $employee, $hodUser, $itUser, , $cooUser] = $this->itActors();
+
+        $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'special_specification' => true, 'description' => 'Butuh GPU', 'purpose' => 'CAD'])->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        $hod = $itRequest->approvalRequests()->where('step_code', 'hod')->firstOrFail();
+        $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
+
+        $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        // Tanpa role tujuan.
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
+            'escalation' => 'coo_ceo', 'escalate_user_id' => $cooUser->id, 'comments' => 'Perlu GPU.',
+        ])->assertSessionHasErrors('escalate_role');
+        // Tanpa catatan eskalasi.
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
+            'escalation' => 'coo_ceo', 'escalate_role' => 'coo', 'escalate_user_id' => $cooUser->id,
+        ])->assertSessionHasErrors('comments');
+        // Role target tidak cocok (COO dipilih sebagai CEO).
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
+            'escalation' => 'coo_ceo', 'escalate_role' => 'ceo', 'escalate_user_id' => $cooUser->id, 'comments' => 'Perlu GPU.',
+        ])->assertSessionHasErrors('escalate_user_id');
     }
 
     public function test_it_escalation_to_ineligible_user_is_rejected(): void
@@ -165,9 +232,10 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
 
         $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
-        // PM bukan pemegang role coo_ceo sehingga tidak eligible sebagai target.
-        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), ['escalation' => 'coo_ceo', 'escalate_user_id' => $pmUser->id])
-            ->assertSessionHasErrors('escalate_user_id');
+        // PM bukan pemegang role coo/ceo sehingga tidak eligible sebagai target.
+        $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
+            'escalation' => 'coo_ceo', 'escalate_role' => 'coo', 'escalate_user_id' => $pmUser->id, 'comments' => 'Perlu GPU.',
+        ])->assertSessionHasErrors('escalate_user_id');
     }
 
     public function test_it_approval_summary_exposes_description_and_purpose(): void
@@ -451,10 +519,12 @@ class ItErpRequestTest extends TestCase
         [$itUser] = $this->employee('it');
         [$pmUser] = $this->employee('project_manager');
         [$cooUser] = $this->employee('coo_ceo');
+        $cooUser->assignRole('coo');
+        [$ceoUser] = $this->employee('ceo');
         $employee->forceFill(['site' => 'Site-UT', 'hod_id' => $hodEmployee->id])->save();
         SitePmGmAssignment::create(['site' => 'Site-UT', 'pm_gm_user_id' => $pmUser->id, 'is_active' => true]);
 
-        return [$user, $employee, $hodUser, $itUser, $pmUser, $cooUser];
+        return [$user, $employee, $hodUser, $itUser, $pmUser, $cooUser, $ceoUser];
     }
 
     /**

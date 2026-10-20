@@ -20,13 +20,22 @@ class ApprovalActionRequest extends FormRequest
         $action = (string) $this->route('action');
 
         return [
-            'comments' => [in_array($action, ['reject', 'return'], true) ? 'required' : 'nullable', 'string', 'max:2000'],
+            // Catatan wajib saat reject/return, dan wajib saat mengeskalasi
+            // agar COO/CEO langsung mendapat konteks tanpa mencari lama.
+            'comments' => [in_array($action, ['reject', 'return'], true) || $this->isEscalating() ? 'required' : 'nullable', 'string', 'max:2000'],
             'delegate_user_id' => [$action === 'delegate' ? 'required' : 'nullable', 'integer', 'exists:users,id'],
             // Keputusan eskalasi COO/CEO: wajib hanya saat IT menyetujui IT
             // Request (Hardware & Software) bertanda kebutuhan khusus.
             'escalation' => [$this->needsItEscalationDecision() ? 'required' : 'nullable', 'string', Rule::in(['none', 'coo_ceo'])],
+            'escalate_role' => ['required_if:escalation,coo_ceo', 'nullable', 'string', Rule::in(['coo', 'ceo'])],
             'escalate_user_id' => ['required_if:escalation,coo_ceo', 'nullable', 'integer', 'exists:users,id'],
         ];
+    }
+
+    private function isEscalating(): bool
+    {
+        return (string) $this->route('action') === 'approve'
+            && $this->input('escalation') === 'coo_ceo';
     }
 
     /**
@@ -50,22 +59,34 @@ class ApprovalActionRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            if ((string) $this->route('action') !== 'delegate' || ! $this->filled('delegate_user_id')) {
+            $approval = $this->route('approval');
+            if ($approval === null) {
                 return;
             }
-            $approval = $this->route('approval');
-            $target = User::query()->with('employee')->find($this->integer('delegate_user_id'));
-            $parent = $approval?->approvable;
-            $conflicts = array_merge(ApprovalActorConflicts::ids($parent, $approval), [(int) $this->user()->id], $approval->actions()->pluck('actor_id')->map(fn ($id) => (int) $id)->all());
-            if (! $target || $target->active === false || ! $target->hasRole($approval->approver_role) || ! $target->can('approval.act') || ($target->employee && ! $target->employee->active) || in_array((int) $target->id, $conflicts, true)) {
-                $validator->errors()->add('delegate_user_id', 'Delegasi harus pengguna aktif dengan role dan permission approval yang sesuai.');
+
+            $conflicts = array_merge(
+                ApprovalActorConflicts::ids($approval->approvable, $approval),
+                [(int) $this->user()->id],
+                $approval->actions()->pluck('actor_id')->map(fn ($id) => (int) $id)->all(),
+            );
+
+            if ((string) $this->route('action') === 'delegate' && $this->filled('delegate_user_id')) {
+                $target = User::query()->with('employee')->find($this->integer('delegate_user_id'));
+                if (! $target || $target->active === false || ! $target->hasRole($approval->approver_role) || ! $target->can('approval.act') || ($target->employee && ! $target->employee->active) || in_array((int) $target->id, $conflicts, true)) {
+                    $validator->errors()->add('delegate_user_id', 'Delegasi harus pengguna aktif dengan role dan permission approval yang sesuai.');
+                }
             }
 
-            if ((string) $this->route('action') === 'approve' && ($validator->getData()['escalation'] ?? null) === 'coo_ceo') {
-                $escalateTarget = User::query()->with('employee')->find($this->integer('escalate_user_id'));
-                if (! $escalateTarget || $escalateTarget->active === false || ! $escalateTarget->hasRole('coo_ceo') || ! $escalateTarget->can('approval.act') || ($escalateTarget->employee && ! $escalateTarget->employee->active) || in_array((int) $escalateTarget->id, $conflicts, true) || \App\Models\ApprovalRequest::query()->where('approvable_type', $approval->approvable_type)->where('approvable_id', $approval->approvable_id)->where('chain_generation', $approval->chain_generation)->where('status', \App\Enums\ApprovalStepStatus::Pending)->where('approver_user_id', $escalateTarget->id)->exists()) {
-                    $validator->errors()->add('escalate_user_id', 'Target eskalasi harus pengguna COO/CEO yang aktif dan eligible.');
-                }
+            if ((string) $this->route('action') !== 'approve' || $this->input('escalation') !== 'coo_ceo') {
+                return;
+            }
+
+            // Target harus memegang role eksekutif yang dipilih (COO atau CEO),
+            // bukan sekadar role payung lama.
+            $role = (string) $this->input('escalate_role');
+            $target = User::query()->with('employee')->find($this->integer('escalate_user_id'));
+            if (! $target || $target->active === false || ! $target->hasRole($role) || ! $target->can('approval.act') || ($target->employee && ! $target->employee->active) || in_array((int) $target->id, $conflicts, true) || \App\Models\ApprovalRequest::query()->where('approvable_type', $approval->approvable_type)->where('approvable_id', $approval->approvable_id)->where('chain_generation', $approval->chain_generation)->where('status', \App\Enums\ApprovalStepStatus::Pending)->where('approver_user_id', $target->id)->exists()) {
+                $validator->errors()->add('escalate_user_id', 'Target eskalasi harus pengguna COO/CEO yang aktif dan eligible untuk role yang dipilih.');
             }
         });
     }

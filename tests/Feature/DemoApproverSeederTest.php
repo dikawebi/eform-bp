@@ -15,7 +15,7 @@ class DemoApproverSeederTest extends TestCase
 
     public function test_it_is_idempotent_and_links_every_role(): void
     {
-        Employee::factory()->count(12)->create(['active' => true, 'user_id' => null]);
+        Employee::factory()->count(14)->create(['active' => true, 'user_id' => null]);
 
         $this->seed(DemoApproverSeeder::class);
         $this->seed(DemoApproverSeeder::class);
@@ -32,7 +32,8 @@ class DemoApproverSeederTest extends TestCase
             'demo.auditor@borneoprima.com' => ['auditor'],
             'demo.it@borneoprima.com' => ['employee', 'it'],
             'demo.erpreviewer@borneoprima.com' => ['employee', 'erp_reviewer'],
-            'demo.cooceo@borneoprima.com' => ['employee', 'coo_ceo'],
+            'demo.cooceo@borneoprima.com' => ['employee', 'coo', 'coo_ceo'],
+            'demo.ceo@borneoprima.com' => ['employee', 'ceo'],
         ];
 
         $this->assertSame(count($expectations), User::query()->where('email', 'like', '%@borneoprima.com')->count());

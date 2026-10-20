@@ -49,11 +49,23 @@ class ApprovalController extends Controller
         $needsEscalation = $canAct && $approval->step_code === 'it'
             && $approval->approvable instanceof \App\Models\ItRequest
             && (bool) $approval->approvable->special_specification;
-        $escalateUsers = $needsEscalation ? User::query()->where('active', true)->role('coo_ceo')->permission('approval.act')
-            ->with('employee:id,user_id,name')->orderBy('name')->orderBy('id')->get()
+        $escalateUsers = $needsEscalation ? User::query()->where('active', true)->role(['coo', 'ceo'])->permission('approval.act')
+            ->with(['employee:id,user_id,name', 'roles:id,name'])->orderBy('name')->orderBy('id')->get()
             ->filter(fn (User $user) => (! $user->employee || $user->employee->active)
                 && ! in_array($user->id, array_merge(ApprovalActorConflicts::ids($approval->approvable, $approval), [(int) $request->user()->id], $approval->actions->pluck('actor_id')->map(fn ($id) => (int) $id)->all()), true))
-            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name, 'employee_name' => $user->employee?->name])->values()->all() : [];
+            ->map(function (User $user): array {
+                // COO dan CEO dipisah agar IT memilih tujuan yang eksplisit.
+                // Role payung lama coo_ceo diperlakukan sebagai COO.
+                $roles = $user->roles->pluck('name')->all();
+                $executive = in_array('ceo', $roles, true) ? 'ceo' : 'coo';
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'employee_name' => $user->employee?->name,
+                    'escalate_role' => $executive,
+                ];
+            })->values()->all() : [];
         $availableActions = [
             'approve' => $canAct, 'return' => $canAct, 'reject' => $canAct,
             'delegate' => $canAct && $delegates !== [], 'eligibleDelegates' => $delegates,
@@ -81,7 +93,14 @@ class ApprovalController extends Controller
         $this->authorize('act', $approval);
         $data = $request->validated();
         match ($action) {
-            'approve' => ApproveApprovalRequest::run($approval, $request->user(), ['escalation' => $data['escalation'] ?? null, 'escalate_user_id' => isset($data['escalate_user_id']) ? (int) $data['escalate_user_id'] : null]),
+            'approve' => ApproveApprovalRequest::run($approval, $request->user(), [
+                'escalation' => $data['escalation'] ?? null,
+                'escalate_role' => $data['escalate_role'] ?? null,
+                'escalate_user_id' => isset($data['escalate_user_id']) ? (int) $data['escalate_user_id'] : null,
+                // Catatan eskalasi wajib ikut dikirim agar tersimpan pada
+                // tahap COO/CEO dan tampil menonjol bagi penerimanya.
+                'comments' => $data['comments'] ?? null,
+            ]),
             'return' => ReturnApprovalRequest::run($approval, $request->user(), $data['comments']),
             'reject' => RejectApprovalRequest::run($approval, $request->user(), $data['comments']),
             'delegate' => DelegateApprovalRequest::run($approval, $request->user(), User::findOrFail($data['delegate_user_id']), $data['comments'] ?? null),

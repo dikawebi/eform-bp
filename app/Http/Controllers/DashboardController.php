@@ -94,6 +94,10 @@ class DashboardController extends Controller
             'pendingApproval' => $pendingApproval,
             'pendingActions' => $pendingActions,
             'canViewReports' => $request->user()->can('report.view'),
+            'employeeName' => Employee::query()
+                ->where('user_id', $request->user()->getKey())
+                ->where('active', true)
+                ->value('name') ?? $request->user()->name,
         ]);
     }
 }

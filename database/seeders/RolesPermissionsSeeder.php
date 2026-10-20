@@ -26,6 +26,9 @@ class RolesPermissionsSeeder extends Seeder
         'auditor',
         'it',
         'erp_reviewer',
+        'coo',
+        'ceo',
+        // Legacy umbrella role; retained so akun lama tetap bisa bertindak.
         'coo_ceo',
     ];
 
@@ -267,6 +270,19 @@ class RolesPermissionsSeeder extends Seeder
             'attachment.download.assigned',
             'attachment.upload.assigned',
         ]);
+
+        // COO dan CEO dipisah agar IT dapat memilih tujuan eskalasi secara
+        // eksplisit. Permission disamakan dengan role payung lama coo_ceo.
+        foreach (['coo', 'ceo'] as $executiveRole) {
+            $give($executiveRole, [
+                'dashboard.view',
+                'it_request.view.all',
+                'approval.inbox.view',
+                'approval.act',
+                'attachment.download.assigned',
+                'attachment.upload.assigned',
+            ]);
+        }
 
         $give('hrga', [
             'dashboard.view',

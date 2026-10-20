@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link } from '@inertiajs/react';
 
-const labels = { hrga: 'HRGA', finance: 'Finance', supervisor: 'Supervisor', hod: 'HOD', project_manager: 'Project Manager', pm_gm: 'PM / GM Site', it: 'IT Service Desk', erp_review: 'Reviewer ERP', coo_ceo: 'COO / CEO', document_validation: 'Validasi Dokumen', document: 'Validasi Dokumen' };
+const labels = { hrga: 'HRGA', finance: 'Finance', supervisor: 'Supervisor', hod: 'HOD', project_manager: 'Project Manager', pm_gm: 'PM / GM Site', it: 'IT Service Desk', erp_review: 'Reviewer ERP', coo_ceo: 'COO / CEO', coo: 'COO', ceo: 'CEO', document_validation: 'Validasi Dokumen', document: 'Validasi Dokumen' };
 const typeLabels = { leave: 'Cuti / Izin', travel: 'Perjalanan Dinas', settlement: 'Settlement', medical_claim: 'Medical Claim', it_request: 'IT Request', erp_request: 'ERP Request' };
 const rupiah = (value) => `Rp ${Number(value ?? 0).toLocaleString('id-ID')}`;
 

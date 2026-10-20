@@ -24,6 +24,7 @@ final class ApprovalViewData
             'step_order' => $approval->step_order, 'step_code' => $approval->step_code, 'approver_role' => $approval->approver_role,
             'status' => $approval->status->value, 'due_at' => $approval->due_at?->toISOString(), 'acted_at' => $approval->acted_at?->toISOString(),
             'comments' => $canSeeMedicalComments ? $approval->comments : null, 'chain_generation' => $approval->chain_generation,
+            'escalation' => self::escalationContext($approval),
             'actions' => $canSeeMedicalComments ? $approval->actions->map(fn ($action) => [
                 // `action` is the canonical field. The UI already falls back to it
                 // when `status` is absent; do not misrepresent an action as a status.
@@ -246,6 +247,41 @@ final class ApprovalViewData
             'modules' => config('eform.erp_request.modules', []),
             'allowed_documents' => config('eform.erp_request.allowed_documents', []),
             'employees' => [],
+        ];
+    }
+
+    /**
+     * Konteks eskalasi untuk tahap COO/CEO: catatan dari IT, siapa yang
+     * mengeskalasi, dan role tujuan (coo/ceo) agar penerima tidak perlu
+     * menelusuri dokumen.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function escalationContext(ApprovalRequest $approval): ?array
+    {
+        if ($approval->step_code !== 'coo_ceo') {
+            return null;
+        }
+        $parent = $approval->approvable;
+        if (! $parent instanceof ItRequest) {
+            return null;
+        }
+        $snapshot = (array) ($parent->employee_snapshot_json['approval_snapshot']['coo_ceo'] ?? []);
+        if (($snapshot['decision'] ?? null) === 'none') {
+            return null;
+        }
+        $note = trim((string) ($snapshot['escalation_note'] ?? ''));
+        if ($note === '' && trim((string) $approval->comments) === '') {
+            return null;
+        }
+
+        return [
+            'role' => $snapshot['role'] ?? $approval->approver_role,
+            'note' => $note !== '' ? $note : $approval->comments,
+            'decided_by' => isset($snapshot['decided_by']) ? User::query()->whereKey($snapshot['decided_by'])->value('name') : null,
+            'special_specification' => (bool) $parent->special_specification,
+            'description' => $parent->description,
+            'purpose' => $parent->purpose,
         ];
     }
 

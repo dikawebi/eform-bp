@@ -20,6 +20,12 @@ class ApprovalTransition
      */
     public static function run(ApprovalRequest $request, User $actor, ApprovalActionType $action, ?string $comments = null, ?User $delegateTo = null, ?array $options = null): ApprovalRequest
     {
+        // Catatan eskalasi COO/CEO dikirim lewat options agar tidak perlu
+        // mengubah signature pemanggil approve yang sudah ada.
+        if ($comments === null && isset($options['comments'])) {
+            $comments = trim((string) $options['comments']) !== '' ? (string) $options['comments'] : null;
+        }
+
         return DB::transaction(function () use ($request, $actor, $action, $comments, $delegateTo, $options) {
             $approval = ApprovalRequest::query()->with('approvable')->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
             $actor = User::query()->with('employee')->whereKey($actor->getKey())->lockForUpdate()->firstOrFail();
@@ -137,13 +143,17 @@ class ApprovalTransition
      * saat submit (deferred); di sini IT menetapkan target atau menutup
      * eskalasi. Dipanggil di dalam transaction induk (parent sudah di-lock).
      *
-     * @param  array{escalation?: string, escalate_user_id?: int|null}|null  $options
+     * @param  array{escalation?: string, escalate_user_id?: int|null, escalate_role?: string|null}|null  $options
      */
     private static function applyItEscalationDecision(ApprovalRequest $approval, ItRequest $parent, User $actor, ?array $options, ?string $comments): void
     {
         $decision = $options['escalation'] ?? null;
         if (! in_array($decision, ['none', 'coo_ceo'], true)) {
             throw ValidationException::withMessages(['escalation' => 'IT wajib memilih eskalasi ke COO/CEO atau tidak perlu eskalasi.']);
+        }
+        $executiveRole = (string) ($options['escalate_role'] ?? '');
+        if ($decision === 'coo_ceo' && ! in_array($executiveRole, ['coo', 'ceo'], true)) {
+            throw ValidationException::withMessages(['escalate_role' => 'Pilih tujuan eskalasi: COO atau CEO.']);
         }
 
         $coo = ApprovalRequest::query()->where('approvable_type', $approval->approvable_type)->where('approvable_id', $approval->approvable_id)->where('chain_generation', $approval->chain_generation)->where('step_code', 'coo_ceo')->lockForUpdate()->first();
@@ -170,18 +180,33 @@ class ApprovalTransition
         $target = User::query()->with('employee')->whereKey((int) ($options['escalate_user_id'] ?? 0))->first();
         $chainUserIds = ApprovalRequest::query()->where('approvable_type', $approval->approvable_type)->where('approvable_id', $approval->approvable_id)->where('chain_generation', $approval->chain_generation)->whereNotNull('approver_user_id')->pluck('approver_user_id')->map(fn ($id) => (int) $id)->all();
         $forbidden = array_merge(ApprovalActorConflicts::ids($parent, $approval), [(int) $actor->id], $approval->actions()->pluck('actor_id')->map(fn ($id) => (int) $id)->all());
-        if ($target === null || ! $target->active || $target->employee?->active !== true || ! $target->hasRole('coo_ceo') || ! $target->can('approval.act') || ApprovalActorConflicts::conflicts($parent, $target, $coo) || in_array((int) $target->getKey(), array_merge($forbidden, $chainUserIds), true)) {
+        if ($target === null || ! $target->active || $target->employee?->active !== true || ! $target->hasRole($executiveRole) || ! $target->can('approval.act') || ApprovalActorConflicts::conflicts($parent, $target, $coo) || in_array((int) $target->getKey(), array_merge($forbidden, $chainUserIds), true)) {
             throw ValidationException::withMessages(['escalate_user_id' => 'Target eskalasi harus pengguna COO/CEO yang aktif, eligible, dan tanpa konflik kepentingan.']);
         }
 
-        $coo->forceFill(['approver_user_id' => $target->getKey()])->save();
+        // Catatan eskalasi wajib agar COO/CEO langsung mendapat konteks dan
+        // tidak perlu menelusuri dokumen lebih lama.
+        $escalationNote = trim((string) $comments);
+        if ($escalationNote === '') {
+            throw ValidationException::withMessages(['comments' => 'Catatan eskalasi wajib diisi agar COO/CEO memahami alasan kebutuhan khusus.']);
+        }
+
+        // approver_role ikut dipersempit ke COO atau CEO: policy `act`
+        // memeriksa hasRole(approver_role), sehingga target hanya bisa
+        // bertindak bila memang memegang role eksekutif yang dipilih.
+        $coo->forceFill([
+            'approver_user_id' => $target->getKey(),
+            'approver_role' => $executiveRole,
+            'comments' => $escalationNote,
+        ])->save();
         $snapshot['approval_snapshot']['coo_ceo'] = [
             'user_id' => $target->getKey(), 'employee_id' => $target->employee?->id,
             'nik' => $target->employee?->employee_number, 'name' => $target->name,
-            'role' => 'coo_ceo', 'step' => 'coo_ceo', 'decided_by' => $actor->getKey(),
+            'role' => $executiveRole, 'step' => 'coo_ceo', 'decided_by' => $actor->getKey(),
+            'escalation_note' => $escalationNote,
         ];
         $parent->forceFill(['employee_snapshot_json' => $snapshot])->save();
-        activity()->performedOn($parent)->causedBy($actor)->withProperties(['approval_id' => $approval->id, 'coo_approval_id' => $coo->id, 'decision' => 'coo_ceo', 'target_user_id' => $target->getKey()])->log('approval.escalation_decided');
+        activity()->performedOn($parent)->causedBy($actor)->withProperties(['approval_id' => $approval->id, 'coo_approval_id' => $coo->id, 'decision' => 'coo_ceo', 'escalate_role' => $executiveRole, 'target_user_id' => $target->getKey(), 'escalation_note' => $escalationNote])->log('approval.escalation_decided');
     }
 
     private static function auditProperties(ApprovalRequest $approval, object $parent, ApprovalActionType $action, User $actor, ?string $comments, array $extra = []): array

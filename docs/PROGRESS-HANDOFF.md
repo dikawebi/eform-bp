@@ -57,7 +57,8 @@ Password semua akun: `password`. Seeder: `database/seeders/DemoApproverSeeder.ph
 | `demo.finance@borneoprima.com` | employee, finance | Settlement, Medical (pembayaran) |
 | `demo.it@borneoprima.com` | employee, it | IT, ERP (+ penentu eskalasi COO/CEO) |
 | `demo.erpreviewer@borneoprima.com` | employee, erp_reviewer | ERP Request |
-| `demo.cooceo@borneoprima.com` | employee, coo_ceo | IT (bila dieskalasi IT) |
+| `demo.cooceo@borneoprima.com` | employee, coo, coo_ceo | IT (bila dieskalasi IT ke COO) |
+| `demo.ceo@borneoprima.com` | employee, ceo | IT (bila dieskalasi IT ke CEO) |
 | `demo.admin@borneoprima.com` | employee, admin | Master, workflow, role, user |
 | `demo.auditor@borneoprima.com` | auditor | Lihat + laporan (read-only) |
 
@@ -75,6 +76,15 @@ Password semua akun: `password`. Seeder: `database/seeders/DemoApproverSeeder.ph
 - Permission `leave.view.all` dan `travel.view.all` tidak lagi diberikan ke Supervisor/HOD.
 - Bypass read melalui `travel.submit.onbehalf` sudah dihapus.
 - Policy tetap menjadi kontrol authorization server-side.
+
+### Eskalasi COO/CEO (IT Request Hardware & Software)
+
+- Kebutuhan khusus (`special_specification`) tidak lagi langsung di-assign ke COO/CEO saat submit; step `coo_ceo` dibuat `Cancelled` (deferred, audit `approval.step_deferred`).
+- Reviewer IT memutuskan saat approve tahap `it`: `escalation=none` atau `escalation=coo_ceo` dengan `escalate_role` (`coo`|`ceo`), `escalate_user_id`, dan `comments` wajib.
+- Target harus aktif, punya `approval.act`, memegang role yang dipilih, tanpa konflik kepentingan, dan tidak sedang menunggu di chain yang sama.
+- `approver_role` pada step `coo_ceo` diubah ke role terpilih (`coo`/`ceo`) agar `ApprovalRequestPolicy::act` tetap memeriksa role yang benar; role payung `coo_ceo` dipertahankan untuk kompatibilitas akun lama.
+- Catatan eskalasi disimpan pada `approval_requests.comments` dan snapshot `approval_snapshot.coo_ceo.escalation_note`; halaman approval penerima menampilkan kartu amber berisi catatan, role tujuan, penulis eskalasi, deskripsi perangkat, dan tujuan penggunaan.
+- Audit: `approval.escalation_decided` dengan properti `decision`, `escalate_role`, `escalation_note`, `approval_id`, `coo_approval_id`.
 
 ### Workflow UI
 

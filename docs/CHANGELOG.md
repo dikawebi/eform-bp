@@ -1,5 +1,13 @@
 # Changelog dokumentasi
 
+## 2026-10-19
+
+- Eskalasi IT Request kini memilih tujuan secara eksplisit: **COO** atau **CEO** (role baru `coo` dan `ceo`, permission sama dengan role payung lama `coo_ceo`). Field `escalate_role` wajib saat `escalation=coo_ceo`; target harus memegang role yang dipilih, aktif, punya `approval.act`, tanpa konflik, dan tidak sedang menunggu di chain yang sama. `approver_role` tahap `coo_ceo` dipersempit ke role terpilih agar policy `act` tetap ketat.
+- Catatan eskalasi wajib diisi reviewer IT dan disimpan pada tahap COO/CEO. Halaman approval penerima menampilkan kartu amber "Catatan eskalasi dari IT" berisi role tujuan, penulis eskalasi, catatan, deskripsi perangkat, dan tujuan penggunaan sehingga approver tidak perlu menelusuri dokumen.
+- Modal approval IT menampilkan radio COO/CEO (dengan sublabel jabatan), dropdown penerima yang difilter sesuai role, dan textarea catatan bergaya highlight. Validasi dan audit (`escalate_role`, `escalation_note`) ikut dicatat.
+- `DemoApproverSeeder` menambah `demo.ceo@borneoprima.com`; `demo.cooceo@borneoprima.com` kini memegang role `coo` + `coo_ceo` sehingga lolos validasi eskalasi. Total akun demo menjadi 13.
+- Label role `coo` dan `ceo` ditambahkan pada inbox approval, detail approval, dan metadata notifikasi.
+
 ## 2026-10-13
 
 - Seeder demo approver baru `DemoApproverSeeder`: 12 akun @borneoprima.com (password `password`) mencakup seluruh approver — supervisor, HOD, PM, HRGA, HRGA Manager, Finance, IT, Reviewer ERP, COO/CEO — plus pemohon, admin, auditor. Masing-masing terhubung ke master employee aktif, relasi supervisor/HOD pemohon dan mapping site→PM/GM ikut disiapkan untuk uji manual IT/ERP. Idempoten; dijalankan via `php artisan db:seed --class=DemoApproverSeeder`.
@@ -9,6 +17,8 @@
 - Pilihan visualisasi form approval IT & ERP: tab Ringkasan/Formulir (formulir asli read-only tertanam), stepper grafis rantai tahap dengan nama approver, dan tombol Cetak (sidebar/topbar/panel aksi disembunyikan saat cetak). Payload `ApprovalViewData` kini membawa `chain`, `form`, dan `form_meta` untuk kedua tipe.
 - Kontrol modul & maintenance khusus admin (`Pengaturan → Modul & Maintenance`, permission baru `module.manage` otomatis milik admin): 7 modul (Cuti, Dinas, Settlement, Medical, IT, ERP, Laporan) dapat dimatikan dengan pesan maintenance kustom. Member yang membuka modul mati mendapat halaman 503 (GET) / 503 (aksi tulis), menu modul hilang, dan pemegang `module.manage` tetap lolos untuk verifikasi. Middleware `module:*`, tabel `module_availabilities` (default aktif), dan audit `module.updated`.
 - Format cetak serah terima ke Commercial sebagai dasar PR (route `it-requests.print`, khusus status completed): Memo Penerusan (kop, penerima, tabel item, dasar persetujuan, kolom tanda tangan), Daftar Item (tabel PR + bukti approval), dan Formulir Lengkap. Tombol Cetak untuk Commercial + modal pilih format di detail IT; authorization ikut policy view, format lain/belum completed ditolak.
+- Sapaan dasbor memakai nama karyawan dari master (`employeeName`); jatuh ke nama akun bila pengguna belum tertaut NIK.
+- Dropdown karyawan Bagian 01 form IT/ERP: panel opsi tidak lagi terpotong (`overflow` section), tampil bersama grid identitas, plus ikon pencarian/chevron, highlight hover, sublabel departemen · jabatan, dan counter hasil. Mencentang "karyawan baru" mengosongkan `employee_id` agar tidak tersimpan penerima master yang salah.
 - Daftar IT Request dan ERP Request kini searchable, filter, dan sortable langsung di header tabel: baris judul untuk sort (nomor, jenis/tipe, status, tanggal + kolom Tanggal baru), baris kedua untuk pencarian nomor/penerima (Enter) dan dropdown filter, plus Atur ulang saat filter aktif. Server-side mengikuti pola modul Cuti.
 - Filter Perangkat multi-select berkotak-cari di header IT (bisa pilih beberapa perangkat sekaligus); pencarian global juga mencakup tipe perangkat. Filter Tanggal mendukung satu tanggal atau range (dari–sampai) di kedua daftar; validasi allowlist + urutan tanggal di server.
 

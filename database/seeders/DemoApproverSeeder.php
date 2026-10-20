@@ -45,7 +45,8 @@ class DemoApproverSeeder extends Seeder
         'auditor' => ['email' => 'demo.auditor@borneoprima.com', 'name' => 'DEMO Auditor', 'roles' => ['auditor']],
         'it' => ['email' => 'demo.it@borneoprima.com', 'name' => 'DEMO IT', 'roles' => ['employee', 'it']],
         'erp_reviewer' => ['email' => 'demo.erpreviewer@borneoprima.com', 'name' => 'DEMO ERP Reviewer', 'roles' => ['employee', 'erp_reviewer']],
-        'coo_ceo' => ['email' => 'demo.cooceo@borneoprima.com', 'name' => 'DEMO COO CEO', 'roles' => ['employee', 'coo_ceo']],
+        'coo_ceo' => ['email' => 'demo.cooceo@borneoprima.com', 'name' => 'DEMO COO', 'roles' => ['employee', 'coo', 'coo_ceo']],
+        'ceo' => ['email' => 'demo.ceo@borneoprima.com', 'name' => 'DEMO CEO', 'roles' => ['employee', 'ceo']],
     ];
 
     public function run(): void

@@ -16,7 +16,7 @@ function DashboardIcon({ type }) {
     return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[type]}</svg>;
 }
 
-export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingApproval = null, pendingActions = [], canViewReports = false, loading = false, error = null }) {
+export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingApproval = null, pendingActions = [], canViewReports = false, employeeName = null, loading = false, error = null }) {
     const total = summary.total_pengajuan ?? Object.values(summary).reduce((sum, item) => sum + Object.values(item ?? {}).reduce((a, b) => a + Number(b), 0), 0);
     const statusCounts = Object.values(statusBreakdown).flatMap((items) => Object.entries(items ?? {}));
     const inProcess = summary.dalam_proses ?? statusCounts.filter(([status]) => ['submitted', 'in_review', 'processing', 'payment_processing'].includes(status)).reduce((sum, [, count]) => sum + Number(count), 0);
@@ -46,7 +46,7 @@ export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingA
                         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
                             <div className="max-w-2xl">
                                 <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-200">eForm BP / Command Center</p>
-                                <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Selamat datang kembali.</h1>
+                                <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Selamat datang kembali{employeeName ? `, ${employeeName}` : ""}.</h1>
                                 <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100">Pantau pengajuan, approval, dan penyelesaian biaya Anda dari satu ruang kerja yang terarah.</p>
                             </div>
                             <Link href="/leaves/create" className="ui-button-primary inline-flex w-fit items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[#0066FF] hover:bg-blue-50">

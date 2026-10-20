@@ -24,6 +24,8 @@ const stepLabels = {
     it: 'IT',
     erp_review: 'Reviewer ERP',
     coo_ceo: 'COO/CEO',
+    coo: 'COO',
+    ceo: 'CEO',
     hrga: 'HRGA',
     finance: 'Finance',
     document_validation: 'Validasi Dokumen',
