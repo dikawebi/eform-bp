@@ -65,6 +65,175 @@ class EmployeeController extends Controller
         ]);
     }
 
+    /**
+     * Struktur organisasi per departemen berdasarkan atasan langsung
+     * (supervisor_id). Atasan di luar departemen dianggap puncak grup.
+     */
+    public function orgChart(Request $request): Response
+    {
+        $this->authorize('viewAny', Employee::class);
+
+        $validated = $request->validate([
+            'active' => ['nullable', 'in:all,1,0'],
+        ]);
+
+        $activeFilter = $validated['active'] ?? '1';
+
+        $employees = Employee::query()
+            ->select([
+                'id',
+                'employee_number',
+                'name',
+                'department',
+                'level',
+                'job_title',
+                'site',
+                'supervisor_id',
+                'hod_id',
+                'active',
+            ])
+            ->with(['supervisor:id,name', 'hod:id,name'])
+            ->when($activeFilter !== 'all', function ($query) use ($activeFilter) {
+                $query->where('active', $activeFilter === '1');
+            })
+            ->orderBy('name')
+            ->get();
+
+        $byId = [];
+        foreach ($employees as $employee) {
+            $byId[$employee->id] = [
+                'id' => $employee->id,
+                'employee_number' => $employee->employee_number,
+                'name' => $employee->name,
+                'department' => $employee->department,
+                'level' => $employee->level,
+                'job_title' => $employee->job_title,
+                'site' => $employee->site,
+                'active' => (bool) $employee->active,
+                'supervisor_id' => $employee->supervisor_id,
+                'supervisor_name' => $employee->supervisor?->name,
+                'hod_name' => $employee->hod?->name,
+                'children' => [],
+            ];
+        }
+
+        $memberIdsByDepartment = [];
+        foreach ($employees as $employee) {
+            $memberIdsByDepartment[$employee->department][] = (int) $employee->id;
+        }
+
+        uksort($memberIdsByDepartment, fn ($a, $b) => strcasecmp((string) $a, (string) $b));
+
+        $decorate = function (array $node) use (&$decorate): array {
+            $children = [];
+            $total = 0;
+
+            foreach ($node['children'] as $child) {
+                $child = $decorate($child);
+                $children[] = $child;
+                $total += 1 + $child['total_reports'];
+            }
+
+            $node['children'] = $children;
+            $node['direct_reports'] = count($children);
+            $node['total_reports'] = $total;
+
+            return $node;
+        };
+
+        $groups = [];
+        $rootCount = 0;
+
+        foreach ($memberIdsByDepartment as $department => $memberIds) {
+            $memberSet = array_fill_keys($memberIds, true);
+            $childIdsByParent = [];
+            $rootIds = [];
+
+            foreach ($memberIds as $memberId) {
+                $parentId = $byId[$memberId]['supervisor_id'] !== null
+                    ? (int) $byId[$memberId]['supervisor_id']
+                    : null;
+
+                if ($parentId !== null && $parentId !== $memberId && isset($memberSet[$parentId])) {
+                    $childIdsByParent[$parentId][] = $memberId;
+                } else {
+                    $rootIds[] = $memberId;
+                }
+            }
+
+            $visited = [];
+            $build = function (int $id) use (&$build, &$visited, $byId, $childIdsByParent): ?array {
+                if (isset($visited[$id])) {
+                    return null;
+                }
+
+                $visited[$id] = true;
+                $node = $byId[$id];
+                $childIds = $childIdsByParent[$id] ?? [];
+
+                usort($childIds, fn (int $a, int $b) => strcasecmp($byId[$a]['name'], $byId[$b]['name']));
+
+                $children = [];
+                foreach ($childIds as $childId) {
+                    $child = $build($childId);
+                    if ($child !== null) {
+                        $children[] = $child;
+                    }
+                }
+
+                $node['children'] = $children;
+
+                return $node;
+            };
+
+            usort($rootIds, fn (int $a, int $b) => strcasecmp($byId[$a]['name'], $byId[$b]['name']));
+
+            $tree = [];
+            foreach ($rootIds as $rootId) {
+                $node = $build($rootId);
+                if ($node !== null) {
+                    $tree[] = $decorate($node);
+                }
+            }
+
+            // Jaring pengaman: relasi melingkar tetap tampil sebagai akar.
+            foreach ($memberIds as $memberId) {
+                if (! isset($visited[$memberId])) {
+                    $node = $build($memberId);
+                    if ($node !== null) {
+                        $tree[] = $decorate($node);
+                    }
+                }
+            }
+
+            $rootCount += count($tree);
+
+            $groups[] = [
+                'department' => (string) $department,
+                'total' => count($memberIds),
+                'roots' => count($tree),
+                'tree' => $tree,
+            ];
+        }
+
+        $departments = array_keys($memberIdsByDepartment);
+        sort($departments, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return Inertia::render('Master/Employees/OrgChart', [
+            'groups' => $groups,
+            'departments' => $departments,
+            'summary' => [
+                'total' => count($byId),
+                'roots' => $rootCount,
+                'active' => collect($byId)->where('active', true)->count(),
+                'departments' => count($groups),
+            ],
+            'filters' => [
+                'active' => $activeFilter,
+            ],
+        ]);
+    }
+
     public function create(): Response
     {
         $this->authorize('create', Employee::class);

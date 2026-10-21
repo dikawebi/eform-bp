@@ -206,3 +206,23 @@ Jalankan `migrate:fresh --seed` hanya pada database development karena menghapus
 - `app/Http/Controllers/TravelRequestController.php`
 - `tests/Feature/TravelRequestTest.php`
 - `tests/Feature/EmployeeVisibilityTest.php`
+
+## Sidebar Workflow & Email per Modul (2026-10-20)
+
+- **Sidebar workflow digabung menjadi 1 entri:** 6 entri workflow per modul (cuti, dinas, settlement, medical, IT, ERP) diganti satu entri "Workflow" → `/settings/workflows` (`ApprovalWorkflowController@index` tanpa parameter menampilkan semua scope), group "Pengaturan", permission `workflow.manage`.
+- **Pengaturan email per modul:** tabel `mail_settings` diberi kolom `module` (nullable, unique) sehingga setiap modul dapat punya SMTP sendiri; modul tanpa baris sendiri mengikuti baris default (`module = NULL`), yang kemudian mengikuti `.env`. `MailSettingsService::effective()/apply()/emailEnabled()/sendTest()` menerima parameter modul. `InAppNotifier::context()` menyertakan `module_code`; `SendWorkflowEmail` terapkan konfigurasi SMTP sesuai modul sebelum mengirim. Halaman `Settings/Mail/Index` kini memilih modul, menyimpan per modul, dan menampilkan ringkasan sumber konfigurasi (.env / default / per modul) untuk semua modul.
+- Migration baru: `2026_10_20_000004_add_module_to_mail_settings_table.php`.
+- Verifikasi: `php artisan test` → 264 passed (1668 assertions).
+
+## Template Email Digabung & Filter per Modul (2026-10-21)
+
+- **Satu halaman**: template isi email tidak lagi punya halaman sendiri (`Settings/Mail/Templates` dihapus). `Settings/Mail/Index` sekarang punya sub-tab **SMTP** dan **Template Isi Email** per modul; `MailSettingsController@index` mengirim prop `templates`.
+- **Filter event per modul**: `MailSettingsService::emailEvents(?string $module = null)` mengembalikan seluruh 16 event saat `null` (Default/semua modul), tetapi hanya event milik modul + event `approval.*` generik saat modul dipilih. Mapping ada di `$moduleEvents` (leave, travel, settlement, medical, it, erp).
+- **UI**: input template disusun sebagai kartu per event (grid 2 kolom: Subjek/Pesan ID–EN) dengan badge sumber `Isi asli`/`Default`/`Modul`, menggantikan tabel 6 kolom yang sempit.
+- Route `settings.mail.templates.update` tetap dipakai untuk menyimpan; route GET index tidak lagi direferensikan UI.
+- **Seed template bawaan**: `EmailTemplateSeeder` mengisi 16 event (ID + EN) sebagai default `module = NULL` dengan `firstOrCreate` (aman dijalankan ulang). Dipanggil dari `FoundationSeeder`.
+- **Ikon sidebar**: `settings-workflows`, `settings-modules`, `settings-mail`, dan `erp-requests` kini punya ikon khusus di `AuthenticatedLayout.jsx`.
+- **Placeholder template**: `MailSettingsService::placeholders()` + `renderPlaceholders($text, $data)` mendukung `{nomor_dokumen}`, `{modul}`, `{pelaku}`, `{tahap}`, `{judul}`, `{pesan}`, `{tautan}` beserta alias Inggris. `SendWorkflowEmail` mengisi placeholder dari meta approval (`document_number`, `module`, `actor`, `step`) dan `stepLabel()` menerjemahkan kode tahap. UI menampilkan chip placeholder yang dapat diklik untuk menyisipkan ke field aktif.
+- **Bug fix**: properti `readonly array $data` tidak boleh dimutasi; job kini menyalin ke variabel lokal sebelum override template (sebelumnya muncul "Cannot modify readonly property" saat template terisi).
+- **Logo email inline**: `resources/views/mail/workflow.blade.php` memakai `$message->embed(public_path('images/logo-bp.png'))` sehingga logo ikut terkirim sebagai inline attachment (CID) dan tidak bergantung `APP_URL`/akses publik. PNG 160×160 dibuat dari SVG karena Gmail/Outlook tidak mendukung SVG di `<img>`.
+- Verifikasi: `npm run build` OK, `vendor/bin/pint` OK, `php artisan test` → 266 passed (1673 assertions).

@@ -606,4 +606,111 @@ class EmployeeTest extends TestCase
         $inactiveIds = collect($inactiveProps['employees']['data'])->pluck('id')->all();
         $this->assertContains($inactive->id, $inactiveIds);
     }
+
+    public function test_org_chart_groups_hierarchy_per_department(): void
+    {
+        $viewer = User::factory()->create();
+        $viewer->assignRole('hod');
+
+        $ceo = Employee::factory()->create(['name' => 'A CEO', 'department' => 'Direksi', 'active' => true]);
+        $manager = Employee::factory()->create([
+            'name' => 'B Manager',
+            'department' => 'Operasional',
+            'supervisor_id' => null,
+            'active' => true,
+        ]);
+        $staff = Employee::factory()->create([
+            'name' => 'C Staff',
+            'department' => 'Operasional',
+            'supervisor_id' => $manager->id,
+            'hod_id' => $manager->id,
+            'active' => true,
+        ]);
+        $finance = Employee::factory()->create([
+            'name' => 'D Finance',
+            'department' => 'Finance',
+            'supervisor_id' => $manager->id,
+            'active' => true,
+        ]);
+
+        $response = $this->actingAs($viewer)->get(route('master.employees.org-chart'));
+
+        $response->assertOk()->assertInertia(fn ($page) => $page->component('Master/Employees/OrgChart'));
+
+        $props = $response->original->getData()['page']['props'];
+        $this->assertSame(4, $props['summary']['total']);
+        $this->assertSame(3, $props['summary']['roots']);
+        $this->assertSame(3, $props['summary']['departments']);
+        $this->assertSame(['Direksi', 'Finance', 'Operasional'], $props['departments']);
+        $this->assertCount(3, $props['groups']);
+
+        $groups = collect($props['groups'])->keyBy('department');
+
+        $direksi = $groups['Direksi'];
+        $this->assertSame(1, $direksi['total']);
+        $this->assertSame($ceo->id, $direksi['tree'][0]['id']);
+        $this->assertSame(0, $direksi['tree'][0]['direct_reports']);
+
+        $operasional = $groups['Operasional'];
+        $this->assertSame(2, $operasional['total']);
+        $this->assertSame(1, $operasional['roots']);
+        $root = $operasional['tree'][0];
+        $this->assertSame($manager->id, $root['id']);
+        $this->assertNull($root['supervisor_name']);
+        $this->assertSame(1, $root['direct_reports']);
+        $this->assertSame(1, $root['total_reports']);
+
+        $child = $root['children'][0];
+        $this->assertSame($staff->id, $child['id']);
+        $this->assertSame('B Manager', $child['supervisor_name']);
+        $this->assertSame('B Manager', $child['hod_name']);
+        $this->assertSame(0, $child['direct_reports']);
+
+        $financeGroup = $groups['Finance'];
+        $this->assertSame(1, $financeGroup['total']);
+        $this->assertSame(1, $financeGroup['roots']);
+        $this->assertSame($finance->id, $financeGroup['tree'][0]['id']);
+        $this->assertSame('B Manager', $financeGroup['tree'][0]['supervisor_name']);
+        $this->assertSame(0, $financeGroup['tree'][0]['direct_reports']);
+    }
+
+    public function test_org_chart_active_filter_and_inactive_supervisor_become_root(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $inactiveLeader = Employee::factory()->create([
+            'name' => 'Leader Nonaktif',
+            'department' => 'HRGA',
+            'active' => false,
+        ]);
+        $activeStaff = Employee::factory()->create([
+            'name' => 'Staff Aktif',
+            'department' => 'HRGA',
+            'supervisor_id' => $inactiveLeader->id,
+            'active' => true,
+        ]);
+
+        $activeResponse = $this->actingAs($admin)->get(route('master.employees.org-chart', ['active' => '1']));
+        $activeResponse->assertOk();
+        $activeProps = $activeResponse->original->getData()['page']['props'];
+
+        $this->assertSame(1, $activeProps['summary']['total']);
+        $this->assertSame(1, $activeProps['summary']['departments']);
+        $this->assertSame(['HRGA'], $activeProps['departments']);
+        $this->assertSame($activeStaff->id, $activeProps['groups'][0]['tree'][0]['id']);
+        $this->assertSame(0, $activeProps['groups'][0]['tree'][0]['direct_reports']);
+
+        $allResponse = $this->actingAs($admin)->get(route('master.employees.org-chart', ['active' => 'all']));
+        $allResponse->assertOk();
+        $allProps = $allResponse->original->getData()['page']['props'];
+
+        $this->assertSame(2, $allProps['summary']['total']);
+        $this->assertSame(1, $allProps['summary']['roots']);
+        $this->assertCount(1, $allProps['groups']);
+
+        $root = $allProps['groups'][0]['tree'][0];
+        $this->assertSame($inactiveLeader->id, $root['id']);
+        $this->assertSame($activeStaff->id, $root['children'][0]['id']);
+    }
 }

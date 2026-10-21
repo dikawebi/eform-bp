@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\ApprovalStepStatus;
 use App\Jobs\SendWorkflowEmail;
+use App\Models\ApprovalRequest;
 use App\Models\ErpRequest;
 use App\Models\ItRequest;
 use App\Models\LeaveRequest;
@@ -16,9 +18,10 @@ use Illuminate\Database\Eloquent\Model;
 final class InAppNotifier
 {
     /**
-     * @param  array{module?: string, document_number?: string, actor?: string, step?: string}  $meta
+     * @param  array{module?: string, module_code?: string|null, document_number?: string|null, actor?: string|null, step?: string|null, approvable_type?: string, approvable_id?: int|string}  $meta
+     * @param  list<array{disk: string, path: string, name: string, mime: string}>  $attachments
      */
-    public function notifyUser(?int $userId, string $event, string $title, string $message, string $url, array $meta = []): void
+    public function notifyUser(?int $userId, string $event, string $title, string $message, string $url, array $meta = [], ?string $titleEn = null, ?string $messageEn = null, array $attachments = []): void
     {
         if ($userId === null) {
             return;
@@ -30,7 +33,7 @@ final class InAppNotifier
             return;
         }
 
-        $user->notify(new WorkflowNotification($event, $title, $message, $url, $meta));
+        $user->notify(new WorkflowNotification($event, $title, $message, $url, $meta, $titleEn, $messageEn));
 
         // Email mengikuti seluruh notifikasi database; pengiriman diantrikan
         // (afterCommit) lewat job supaya SMTP tidak memengaruhi transaksi.
@@ -38,8 +41,11 @@ final class InAppNotifier
             'event' => $event,
             'title' => $title,
             'message' => $message,
+            'title_en' => $titleEn,
+            'message_en' => $messageEn,
             'url' => $url,
             'meta' => $meta,
+            'attachments' => $attachments,
         ])->afterCommit();
     }
 
@@ -105,9 +111,10 @@ final class InAppNotifier
 
     /**
      * Metadata terstruktur untuk tampilan notifikasi yang lebih detail:
-     * modul, nomor dokumen, pelaku, dan kode tahap (bila relevan).
+     * modul, nomor dokumen, pelaku, kode tahap, dan referensi dokumen
+     * untuk menyusun progress approval pada email.
      *
-     * @return array{module: string, document_number: string|null, actor: string|null, step: string|null}
+     * @return array{module: string, module_code: string|null, document_number: string|null, actor: string|null, step: string|null, approvable_type: string, approvable_id: int|string}
      */
     public static function context(Model $subject, ?User $actor = null, ?string $step = null): array
     {
@@ -123,9 +130,67 @@ final class InAppNotifier
 
         return [
             'module' => $notifier->label($subject),
+            'module_code' => match (true) {
+                $subject instanceof LeaveRequest => 'leave',
+                $subject instanceof TravelRequest => 'travel',
+                $subject instanceof Settlement => 'settlement',
+                $subject instanceof MedicalClaim => 'medical',
+                $subject instanceof ItRequest => 'it',
+                $subject instanceof ErpRequest => 'erp',
+                default => null,
+            },
             'document_number' => $number !== null ? (string) $number : null,
             'actor' => $actor?->name,
             'step' => $step,
+            'approvable_type' => $subject->getMorphClass(),
+            'approvable_id' => $subject->getKey(),
         ];
+    }
+
+    /**
+     * Susunan tahap approval terbaru untuk ditampilkan sebagai stepper.
+     * Dipanggil saat job email berjalan (setelah commit) agar seluruh
+     * rantai sudah tersimpan, termasuk status tiap tahap.
+     *
+     * @return list<array{code: string|null, label: string, status: string, approver: string|null, acted_at: string|null}>
+     */
+    public static function approvalProgress(string $type, int $id): array
+    {
+        if ($type === '' || $id <= 0) {
+            return [];
+        }
+
+        $steps = ApprovalRequest::query()
+            ->where('approvable_type', $type)
+            ->where('approvable_id', $id)
+            ->currentChain()
+            ->with('approver:id,name')
+            ->orderBy('step_order')
+            ->orderBy('id')
+            ->get();
+
+        // Tahap setelah approver aktif disimpan sebagai Cancelled sebagai
+        // penanda "belum giliran". Tampilkan sebagai menunggu, kecuali rantai
+        // sudah berhenti (tidak ada tahap pending) sehingga benar-benar batal.
+        $pendingOrder = $steps->first(fn (ApprovalRequest $step): bool => $step->status === ApprovalStepStatus::Pending)?->step_order;
+
+        return $steps
+            ->map(function (ApprovalRequest $approval) use ($pendingOrder): array {
+                $status = $approval->status->value;
+                if ($approval->status === ApprovalStepStatus::Cancelled
+                    && $pendingOrder !== null
+                    && $approval->step_order > $pendingOrder) {
+                    $status = ApprovalStepStatus::Pending->value;
+                }
+
+                return [
+                    'code' => $approval->step_code,
+                    'label' => MailSettingsService::stepLabel($approval->step_code),
+                    'status' => $status,
+                    'approver' => $approval->approver?->name,
+                    'acted_at' => $approval->acted_at?->translatedFormat('d M Y'),
+                ];
+            })
+            ->all();
     }
 }

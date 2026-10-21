@@ -31,7 +31,7 @@ class MailSettingsUiTest extends TestCase
 
         $this->actingAs($admin)->get(route('settings.mail.index'))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Settings/Mail/Index')->has('settings')->has('hasPassword')->has('hasRow'));
+            ->assertInertia(fn ($page) => $page->component('Settings/Mail/Index')->has('settings')->has('hasPassword')->has('rows'));
         $this->actingAs($employee)->get(route('settings.mail.index'))->assertForbidden();
     }
 
@@ -106,7 +106,7 @@ class MailSettingsUiTest extends TestCase
         $this->actingAs($admin)->post(route('settings.mail.test'), ['test_address' => 'admin.test@borneoprima.com'])
             ->assertRedirect()
             ->assertSessionHasNoErrors()
-            ->assertSessionHas('success', 'Email percobaan terkirim ke admin.test@borneoprima.com. Cek folder inbox/spam.');
+            ->assertSessionHas('success', 'Email percobaan terkirim ke admin.test@borneoprima.com (Default (semua modul)). Cek folder inbox/spam.');
 
         Mail::assertQueued(WorkflowMail::class, function (WorkflowMail $mail) {
             return $mail->payload['event'] === 'mail.test'

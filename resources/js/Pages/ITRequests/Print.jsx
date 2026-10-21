@@ -72,9 +72,12 @@ export default function Print({ request, meta = {}, timeline = [], company = {} 
 
         <div className="mx-auto mb-10 max-w-4xl bg-white pb-8 text-slate-900 shadow print:m-0 print:max-w-none print:pb-0 print:shadow-none dark:bg-white dark:text-slate-900 dark:shadow-black/40 [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
             <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 to-blue-900 px-12 py-4 text-white print:px-6">
-                <div>
-                    <p className="text-[16px] font-extrabold tracking-tight">{company?.name ?? 'PT Borneo Prima'}</p>
-                    <p className="mt-0.5 text-[9.5px] text-slate-300">{address}</p>
+                <div className="flex items-center gap-3">
+                    <img src="/images/logo-bp.png" alt="Logo perusahaan" width="40" height="40" className="h-10 w-10 rounded-lg bg-white object-contain" />
+                    <div>
+                        <p className="text-[16px] font-extrabold tracking-tight">{company?.name ?? 'PT Borneo Prima'}</p>
+                        <p className="mt-0.5 text-[9.5px] text-slate-300">{address}</p>
+                    </div>
                 </div>
                 <div className="text-right">
                     <p className="text-[9px] uppercase tracking-[0.2em] text-slate-300">Nomor request</p>

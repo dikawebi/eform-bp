@@ -49,9 +49,6 @@ export default function Dashboard({ summary = {}, statusBreakdown = {}, pendingA
                                 <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Selamat datang kembali{employeeName ? `, ${employeeName}` : ""}.</h1>
                                 <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100">Pantau pengajuan, approval, dan penyelesaian biaya Anda dari satu ruang kerja yang terarah.</p>
                             </div>
-                            <Link href="/leaves/create" className="ui-button-primary inline-flex w-fit items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[#0066FF] hover:bg-blue-50">
-                                <span className="text-lg leading-none">+</span> Buat pengajuan
-                            </Link>
                         </div>
                     </section>
 

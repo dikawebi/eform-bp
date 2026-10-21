@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\ApprovalWorkflowController;
-use App\Http\Controllers\ItItemOptionController;
 use App\Http\Controllers\AuditTimelineController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ErpRequestController;
+use App\Http\Controllers\ItItemOptionController;
+use App\Http\Controllers\ItRequestController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\MailSettingsController;
 use App\Http\Controllers\MedicalClaimController;
@@ -14,8 +17,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\ErpRequestController;
-use App\Http\Controllers\ItRequestController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TravelRequestController;
 use App\Http\Controllers\UserController;
@@ -56,6 +57,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/employees/import', [EmployeeController::class, 'import'])
             ->can('create', Employee::class)
             ->name('employees.import');
+
+        Route::get('/employees/org-chart', [EmployeeController::class, 'orgChart'])
+            ->can('viewAny', Employee::class)
+            ->name('employees.org-chart');
 
         Route::get('/employees', [EmployeeController::class, 'index'])
             ->can('viewAny', Employee::class)
@@ -209,12 +214,18 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('settings/mail')->name('settings.mail.')->group(function () {
-        Route::get('/', [MailSettingsController::class, 'index'])
-            ->can('mail.manage')->name('index');
+        Route::get('/{module?}', [MailSettingsController::class, 'index'])
+            ->can('mail.manage')->name('index')->where('module', 'leave|travel|settlement|medical|it|erp');
         Route::put('/', [MailSettingsController::class, 'update'])
             ->can('mail.manage')->name('update');
         Route::post('/test', [MailSettingsController::class, 'test'])
             ->can('mail.manage')->name('test');
+        Route::prefix('templates')->name('templates.')->group(function () {
+            Route::get('/{module?}', [EmailTemplateController::class, 'index'])
+                ->can('mail.manage')->name('index')->where('module', 'leave|travel|settlement|medical|it|erp');
+            Route::put('/', [EmailTemplateController::class, 'update'])
+                ->can('mail.manage')->name('update');
+        });
     });
 
     Route::prefix('settings/roles')->name('settings.roles.')->group(function () {

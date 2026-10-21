@@ -62,18 +62,52 @@ class SendWorkflowEmail implements ShouldQueue
             array_flip(['module', 'document_number', 'actor', 'step']),
         );
 
-        // SMTP dinamis diambil dari tabel mail_settings (Pengaturan > Email).
-        MailSettingsService::apply();
+        $approvableType = (string) ($this->data['meta']['approvable_type'] ?? '');
+        $approvableId = (int) ($this->data['meta']['approvable_id'] ?? 0);
+        $progress = InAppNotifier::approvalProgress($approvableType, $approvableId);
+
+        // SMTP dinamis diambil dari tabel mail_settings per modul.
+        $module = (string) (($this->data['meta']['module_code'] ?? null));
+        MailSettingsService::apply($module !== '' ? $module : null);
+
+        // Template isi email (subjek/pesan) dapat diatur admin via Pengaturan > Email > Template.
+        // Salin ke variabel lokal karena properti $data bersifat readonly.
+        $data = $this->data;
+        $template = MailSettingsService::resolveTemplate($module !== '' ? $module : null, $event);
+
+        // Data asli dipakai untuk mengisi placeholder seperti {judul}, {pesan}, {tautan}.
+        $placeholderData = [
+            'title' => $this->data['title'] ?? null,
+            'message' => $this->data['message'] ?? null,
+            'url' => $this->actionUrl(),
+            'meta' => $this->data['meta'] ?? [],
+        ];
+
+        if ($template['subject'] !== null) {
+            $data['title'] = MailSettingsService::renderPlaceholders($template['subject'], $placeholderData);
+        }
+        if ($template['message'] !== null) {
+            $data['message'] = MailSettingsService::renderPlaceholders($template['message'], $placeholderData);
+        }
+        if ($template['subject_en'] !== null) {
+            $data['title_en'] = MailSettingsService::renderPlaceholders($template['subject_en'], $placeholderData);
+        }
+        if ($template['message_en'] !== null) {
+            $data['message_en'] = MailSettingsService::renderPlaceholders($template['message_en'], $placeholderData);
+        }
+
         $company = (array) config('eform.company', []);
         $address = collect([$company['city'] ?? null, $company['regency'] ?? null, $company['province'] ?? null])
             ->filter()
-            ->implode(' · ');
+            ->implode(' • ');
 
         Mail::to($user->email)->queue(new WorkflowMail([
             'event' => $event,
-            'title' => (string) $this->data['title'],
-            'message' => (string) $this->data['message'],
+            'title' => (string) $data['title'],
+            'message' => (string) $data['message'],
             'meta' => $meta,
+            'progress' => $progress,
+            'attachments' => (array) ($this->data['attachments'] ?? []),
             'action_url' => $this->actionUrl(),
             'company' => ['name' => $company['name'] ?? 'PT Borneo Prima', 'address' => $address],
         ]));

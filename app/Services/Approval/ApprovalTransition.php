@@ -6,10 +6,13 @@ use App\Enums\ApprovalActionType;
 use App\Enums\ApprovalStepStatus;
 use App\Enums\RequestStatus;
 use App\Models\ApprovalRequest;
+use App\Models\ErpRequest;
 use App\Models\ItRequest;
 use App\Models\MedicalClaim;
 use App\Models\Settlement;
 use App\Models\User;
+use App\Services\InAppNotifier;
+use App\Services\It\NotifyItRequestPrReady;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -73,7 +76,7 @@ class ApprovalTransition
                 $approval->forceFill(['approver_user_id' => $delegateTo->getKey(), 'comments' => $comments])->save();
                 $approval->actions()->create(['actor_id' => $actor->getKey(), 'action' => $action, 'comments' => $comments]);
                 activity()->performedOn($parent)->causedBy($actor)->withProperties(self::auditProperties($approval, $parent, $action, $actor, $comments, ['delegate_user_id' => $delegateTo->id]))->log('approval.delegated');
-                app(\App\Services\InAppNotifier::class)->notifyUser($delegateTo->id, 'approval.assigned', 'Approval didelegasikan kepada Anda', 'Ada pengajuan yang didelegasikan dan menunggu pemeriksaan Anda.', route('approvals.show', $approval), \App\Services\InAppNotifier::context($parent, $actor, $approval->step_code));
+                app(InAppNotifier::class)->notifyUser($delegateTo->id, 'approval.assigned', 'Approval didelegasikan kepada Anda', 'Ada pengajuan yang didelegasikan dan menunggu pemeriksaan Anda.', route('approvals.show', $approval), InAppNotifier::context($parent, $actor, $approval->step_code));
 
                 return $approval->refresh();
             }
@@ -97,14 +100,18 @@ class ApprovalTransition
                 if ($next) {
                     $next->forceFill(['status' => ApprovalStepStatus::Pending])->save();
                     activity()->performedOn($parent)->causedBy($actor)->withProperties(['approval_id' => $next->id, 'generation' => $approval->chain_generation, 'approver_user_id' => $next->approver_user_id, 'reason' => 'previous_step_approved'])->log('approval.step_activated');
-                    app(\App\Services\InAppNotifier::class)->notifyUser($next->approver_user_id, 'approval.assigned', 'Approval baru menunggu Anda', 'Tahap berikutnya dari pengajuan telah menunggu pemeriksaan Anda.', route('approvals.show', $next), \App\Services\InAppNotifier::context($parent, $actor, $next->step_code));
+                    app(InAppNotifier::class)->notifyUser($next->approver_user_id, 'approval.assigned', 'Approval baru menunggu Anda', 'Tahap berikutnya dari pengajuan telah menunggu pemeriksaan Anda.', route('approvals.show', $next), InAppNotifier::context($parent, $actor, $next->step_code));
                 } else {
                     $now = now();
                     if ($parent instanceof Settlement) {
                         $parent->forceFill(['status' => RequestStatus::PaymentProcessing, 'approved_at' => $now])->save();
-                    } elseif ($parent instanceof \App\Models\ItRequest || $parent instanceof \App\Models\ErpRequest) {
+                    } elseif ($parent instanceof ItRequest || $parent instanceof ErpRequest) {
                         $parent->forceFill(['status' => RequestStatus::Completed, 'approved_at' => $parent->approved_at ?? $now, 'completed_at' => $now, 'updated_by' => $actor->id])->save();
-                        activity()->performedOn($parent)->causedBy($actor)->withProperties(['from' => $parentFrom->value, 'to' => RequestStatus::Completed->value, 'approval_id' => $approval->id])->log($parent instanceof \App\Models\ItRequest ? 'it.completed' : 'erp.completed');
+                        activity()->performedOn($parent)->causedBy($actor)->withProperties(['from' => $parentFrom->value, 'to' => RequestStatus::Completed->value, 'approval_id' => $approval->id])->log($parent instanceof ItRequest ? 'it.completed' : 'erp.completed');
+
+                        if ($parent instanceof ItRequest) {
+                            NotifyItRequestPrReady::run($parent, $actor);
+                        }
                     } else {
                         $parent->forceFill(['status' => RequestStatus::Approved, 'approved_at' => $now])->save();
                     }
@@ -131,7 +138,7 @@ class ApprovalTransition
                 ApprovalActionType::Reject => 'Pengajuan Anda ditolak. Silakan lihat catatan pada transaksi.',
                 default => 'Status pengajuan Anda telah diperbarui.',
             };
-            app(\App\Services\InAppNotifier::class)->notifyOwner($parent, $event, $title, $message, $actor);
+            app(InAppNotifier::class)->notifyOwner($parent, $event, $title, $message, $actor);
 
             return $approval->refresh();
         });

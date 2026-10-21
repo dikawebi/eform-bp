@@ -89,8 +89,9 @@ function MenuIcon({ menuKey }) {
         ),
         'erp-requests': (
             <>
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
+                <path d="M12 3 3 8l9 5 9-5-9-5Z" />
+                <path d="m3 12 9 5 9-5" />
+                <path d="m3 16 9 5 9-5" />
             </>
         ),
         approvals: (
@@ -126,10 +127,28 @@ function MenuIcon({ menuKey }) {
     paths['settings-settlement'] = paths.settlements;
     paths['settings-medical'] = paths['medical-claims'];
     paths['settings-it-request'] = paths['it-requests'];
-    paths['settings-erp-request'] = (
+    paths['settings-erp-request'] = paths['erp-requests'];
+    paths['settings-workflows'] = (
         <>
-            <path d="M12 3 3 8l9 5 9-5-9-5Z" />
-            <path d="M3 13l9 5 9-5" />
+            <rect x="3" y="3" width="7" height="5" rx="1" />
+            <rect x="14" y="16" width="7" height="5" rx="1" />
+            <path d="M10 5.5h4a2 2 0 0 1 2 2V16" />
+        </>
+    );
+    paths['settings-modules'] = (
+        <>
+            <path d="M4 6h6M14 6h6" />
+            <circle cx="12" cy="6" r="2" />
+            <path d="M4 12h10M18 12h2" />
+            <circle cx="16" cy="12" r="2" />
+            <path d="M4 18h4M12 18h8" />
+            <circle cx="10" cy="18" r="2" />
+        </>
+    );
+    paths['settings-mail'] = (
+        <>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m3.5 7 8.5 6 8.5-6" />
         </>
     );
     paths['settings-roles'] = (
@@ -529,8 +548,7 @@ export default function AuthenticatedLayout({
                                 eForm BP — PT Borneo Prima
                             </p>
                             <p className="app-topbar-muted truncate text-xs">
-                                Cuti/Izin, Perjalanan Dinas, Settlement, dan
-                                Medical Claim
+                                Sistem pengajuan, persetujuan, dan klaim internal
                             </p>
                         </div>
 

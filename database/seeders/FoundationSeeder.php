@@ -22,6 +22,7 @@ class FoundationSeeder extends Seeder
             ApprovalWorkflowSeeder::class,
             ItItemOptionSeeder::class,
             ModuleAvailabilitySeeder::class,
+            EmailTemplateSeeder::class,
         ]);
 
         $this->assignEmployeeLinkedRoles();

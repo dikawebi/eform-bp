@@ -5,17 +5,22 @@ namespace Tests\Feature;
 use App\Data\Approval\ApprovalViewData;
 use App\Enums\ApprovalStepStatus;
 use App\Enums\RequestStatus;
+use App\Http\Controllers\ItRequestController;
+use App\Jobs\SendWorkflowEmail;
 use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\ErpRequest;
+use App\Models\ItItemOption;
 use App\Models\ItRequest;
 use App\Models\SitePmGmAssignment;
 use App\Models\User;
+use App\Services\It\ItRequestPdf;
 use Database\Seeders\ApprovalWorkflowSeeder;
 use Database\Seeders\ItItemOptionSeeder;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Activitylog\Models\Activity;
@@ -353,7 +358,7 @@ class ItErpRequestTest extends TestCase
         $this->assertDatabaseHas('it_item_options', ['code' => 'vr_headset', 'is_active' => true]);
 
         // Nonaktifkan via update: hilang dari form tetapi riwayat tetap terbaca.
-        $option = \App\Models\ItItemOption::where('code', 'laptop')->firstOrFail();
+        $option = ItItemOption::where('code', 'laptop')->firstOrFail();
         $this->actingAs($admin)->put(route('master.it-items.update', $option), [
             'label' => 'Laptop', 'requires_note' => false, 'sort_order' => 0, 'is_active' => false,
         ])->assertRedirect();
@@ -361,8 +366,8 @@ class ItErpRequestTest extends TestCase
 
         // Opsi nonaktif hilang dari meta form, tetapi draf lama yang memakainya tetap valid.
         $this->actingAs($user)->get(route('it-requests.create'))->assertOk();
-        $deviceCodes = collect(\App\Http\Controllers\ItRequestController::itemOptions('device'))->pluck('value')->all();
-        $accessoryCodes = collect(\App\Http\Controllers\ItRequestController::itemOptions('accessory'))->pluck('value')->all();
+        $deviceCodes = collect(ItRequestController::itemOptions('device'))->pluck('value')->all();
+        $accessoryCodes = collect(ItRequestController::itemOptions('accessory'))->pluck('value')->all();
         $this->assertNotContains('laptop', $deviceCodes);
         $this->assertContains('vr_headset', $accessoryCodes);
 
@@ -377,12 +382,12 @@ class ItErpRequestTest extends TestCase
         [$user, $employee] = $this->employee('employee');
 
         $this->actingAs($user)->post(route('it-requests.store'), [...$this->itPayload($employee), 'device_type' => 'laptop', 'accessories' => ['acc_1']])->assertRedirect();
-        $option = \App\Models\ItItemOption::where('code', 'laptop')->firstOrFail();
+        $option = ItItemOption::where('code', 'laptop')->firstOrFail();
 
         $this->actingAs($admin)->delete(route('master.it-items.destroy', $option))->assertSessionHasErrors('code');
         $this->assertDatabaseHas('it_item_options', ['code' => 'laptop']);
 
-        $unused = \App\Models\ItItemOption::where('code', 'desktop')->firstOrFail();
+        $unused = ItItemOption::where('code', 'desktop')->firstOrFail();
         $this->actingAs($admin)->delete(route('master.it-items.destroy', $unused))->assertRedirect();
         $this->assertDatabaseMissing('it_item_options', ['code' => 'desktop']);
     }
@@ -423,6 +428,44 @@ class ItErpRequestTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('requests.data.0.can_print', false));
     }
 
+    public function test_completed_it_request_notifies_it_with_pdf_attachment_ready_for_pr(): void
+    {
+        [$user, $employee, $hodUser, $itUser, $pmUser] = $this->itActors();
+        Queue::fake();
+        Storage::fake('eform-private');
+
+        $this->actingAs($user)->post(route('it-requests.store'), $this->itPayload($employee))->assertRedirect();
+        $itRequest = ItRequest::query()->latest('id')->firstOrFail();
+        $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
+
+        foreach (['hod' => $hodUser, 'it' => $itUser, 'pm_gm' => $pmUser] as $stepCode => $actor) {
+            $approval = $itRequest->approvalRequests()->where('step_code', $stepCode)->firstOrFail();
+            $this->actingAs($actor)->post(route('approvals.action', [$approval, 'approve']))->assertRedirect();
+        }
+
+        $this->assertSame(RequestStatus::Completed, $itRequest->refresh()->status);
+
+        $notification = $itUser->notifications()->get()
+            ->first(fn ($item) => data_get($item->data, 'event') === 'it.pr_ready');
+        $this->assertNotNull($notification);
+        $this->assertStringContainsString('lanjutkan proses pembuatan PR', (string) data_get($notification->data, 'message'));
+
+        $path = 'it-requests/pr-ready/'.$itRequest->request_number.'.pdf';
+        Storage::disk('eform-private')->assertExists($path);
+
+        Queue::assertPushed(SendWorkflowEmail::class, function (SendWorkflowEmail $job) use ($itUser, $path): bool {
+            return $job->userId === $itUser->id
+                && ($job->data['event'] ?? null) === 'it.pr_ready'
+                && ($job->data['attachments'][0]['path'] ?? null) === $path
+                && ($job->data['attachments'][0]['mime'] ?? null) === 'application/pdf';
+        });
+
+        $html = ItRequestPdf::html($itRequest->refresh());
+        $this->assertStringContainsString('data:image/png;base64,', $html);
+        $this->assertStringContainsString('IT &amp; Telecommunication Acquisition Request', $html);
+        $this->assertStringContainsString($itRequest->request_number, $html);
+    }
+
     public function test_it_fills_pr_msd_number_after_completion_and_audits_it(): void
     {
         [$user, $employee, $hodUser, $itUser, $pmUser] = $this->itActors();
@@ -456,7 +499,8 @@ class ItErpRequestTest extends TestCase
         $this->assertNull($itRequest->refresh()->pr_msd_number);
     }
 
-    public function test_print_is_forbidden_before_completed_or_for_stranger(): void    {
+    public function test_print_is_forbidden_before_completed_or_for_stranger(): void
+    {
         [$user, $employee] = $this->itActors();
         [$stranger] = $this->employee('employee');
 
