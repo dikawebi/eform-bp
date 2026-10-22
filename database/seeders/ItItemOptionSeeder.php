@@ -12,7 +12,6 @@ class ItItemOptionSeeder extends Seeder
         $devices = [
             ['laptop', 'Laptop'],
             ['desktop', 'Desktop'],
-            ['workstation_cad', 'Workstation / CAD'],
             ['upgrade', 'Upgrade perangkat'],
         ];
         foreach ($devices as $order => [$code, $label]) {
@@ -23,7 +22,7 @@ class ItItemOptionSeeder extends Seeder
         }
 
         $accessories = [
-            'Monitor 20 inci', 'External hard drive', 'Digital camera',
+            'Monitor', 'External hard drive', 'Digital camera',
             'Printer B/W laser', 'Printer colour laser', 'Printer A4 inkjet',
             'Printer plotter', 'GPS unit', 'Rig/mobile radio', 'Handheld radio',
             'UPS/stabilizer', 'Wireless keyboard/mouse', 'Notebook battery',

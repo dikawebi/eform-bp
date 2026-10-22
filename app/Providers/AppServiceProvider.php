@@ -7,6 +7,7 @@ use App\Models\ItRequest;
 use App\Policies\ErpRequestPolicy;
 use App\Policies\ItRequestPolicy;
 use App\Models\ApprovalWorkflow;
+use app\Models\ApprovalRequest;
 use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
