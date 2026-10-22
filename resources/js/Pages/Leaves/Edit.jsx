@@ -78,7 +78,7 @@ export default function Edit({ leave, meta, canEdit, availableActions }) {
             <AuthenticatedLayout
                 title="Ubah Cuti/Izin"
                 breadcrumbs={[
-                    { label: 'Dashboard', href: '/dashboard' },
+                    { label: 'Dashboard', href: route('dashboard') },
                     { label: 'Cuti/Izin', href: '/leaves' },
                     { label: leave?.request_number ?? 'Detail', href: `/leaves/${leave?.id}` },
                     { label: 'Ubah' },
@@ -111,7 +111,7 @@ export default function Edit({ leave, meta, canEdit, availableActions }) {
         <AuthenticatedLayout
             title="Ubah Cuti/Izin"
             breadcrumbs={[
-                { label: 'Dashboard', href: '/dashboard' },
+                { label: 'Dashboard', href: route('dashboard') },
                 { label: 'Cuti/Izin', href: '/leaves' },
                 { label: leave?.request_number ?? 'Detail', href: `/leaves/${leave?.id}` },
                 { label: 'Ubah' },

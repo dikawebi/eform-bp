@@ -82,7 +82,7 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         $menus = [
-            ['label' => 'Dashboard', 'url' => '/dashboard', 'permission' => 'dashboard.view'],
+            ['label' => 'Dashboard', 'url' => route('dashboard', [], false), 'permission' => 'dashboard.view'],
             ['label' => 'Cuti/Izin', 'url' => '/leaves', 'permission' => 'leave.view.own', 'module' => 'leave'],
             ['label' => 'Perjalanan Dinas', 'url' => '/travels', 'permission' => 'travel.view.own', 'module' => 'travel'],
             ['label' => 'Settlement', 'url' => '/settlements', 'permission' => 'settlement.create.own', 'module' => 'settlement'],

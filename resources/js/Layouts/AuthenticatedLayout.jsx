@@ -6,7 +6,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 const DEFAULT_MENUS = [
-    { key: 'dashboard', label: 'Dashboard', href: '/dashboard' },
+    { key: 'dashboard', label: 'Dashboard', href: route('dashboard', {}, false) },
     { key: 'leaves', label: 'Cuti/Izin', href: '/leaves' },
     { key: 'travels', label: 'Perjalanan Dinas', href: '/travels' },
     { key: 'settlements', label: 'Settlement', href: '/settlements' },
@@ -23,7 +23,7 @@ const DEFAULT_MENUS = [
 
 function keyFromUrl(url) {
     switch (String(url || '')) {
-        case '/dashboard':
+        case route('dashboard', {}, false):
             return 'dashboard';
         case '/leaves':
             return 'leaves';
@@ -290,8 +290,9 @@ function isMenuActive(menu, currentUrl) {
         .split('#')[0];
     const cleanHref = String(href).split('?')[0];
 
-    if (cleanHref === '/dashboard') {
-        return cleanUrl === '/dashboard' || cleanUrl === '/';
+    const dashboardHref = route('dashboard', {}, false);
+    if (cleanHref === dashboardHref) {
+        return cleanUrl === dashboardHref;
     }
 
     return cleanUrl === cleanHref || cleanUrl.startsWith(`${cleanHref}/`);
@@ -311,7 +312,7 @@ function SidebarContent({ menus, currentUrl, onNavigate, pendingApprovalCount = 
         <div className="app-sidebar flex grow flex-col gap-y-5 overflow-y-auto px-4 pb-4">
             <div className="flex h-16 shrink-0 items-center gap-2">
                 <Link
-                    href="/dashboard"
+                    href={route('dashboard')}
                     className="flex items-center gap-2"
                     onClick={onNavigate}
                 >
@@ -369,7 +370,7 @@ function NotificationBell() {
     const unread = Number(props.unreadNotifications ?? 0);
 
     const openNotification = (notification) => {
-        const visit = () => router.visit(notification.url || '/dashboard');
+        const visit = () => router.visit(notification.url || route('dashboard'));
         if (notification.read_at) {
             visit();
             return;
@@ -534,7 +535,7 @@ export default function AuthenticatedLayout({
                         </button>
 
                         <Link
-                            href="/dashboard"
+                            href={route('dashboard')}
                             className="flex items-center gap-2 lg:hidden"
                         >
                             <ApplicationLogo className="block h-8 w-auto fill-current text-gray-800" />

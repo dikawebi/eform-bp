@@ -41,7 +41,7 @@ export default function GuestLayout({ children }) {
                 <div className="bp-login-side-inner">
                     <div className="bp-login-features">
                         {[
-                            ['workflow', 'Pengajuan Terstruktur', 'Cuti/izin, perjalanan dinas, settlement, medical claim, hingga permintaan IT & ERP dalam satu alur kerja.'],
+                            ['workflow', 'Pengajuan Terstruktur', 'Permintaan IT dan ERP dalam satu alur kerja yang terstruktur.'],
                             ['approval', 'Approval Terkendali', 'Setiap persetujuan mengikuti matrix dan kewenangan yang berlaku.'],
                             ['audit', 'Audit Terlacak', 'Status, dokumen, dan perubahan tercatat rapi dalam satu portal.'],
                         ].map(([icon, title, description]) => (

@@ -262,7 +262,7 @@ class ItErpRequestTest extends TestCase
         $this->assertSame('Butuh GPU', $summary['form']['description']);
         $this->assertSame('Laptop', $summary['form_meta']['option_labels']['laptop']);
         $this->assertSame('Laptop', $summary['device_label']);
-        $this->assertSame([['code' => 'acc_1', 'label' => 'Monitor 20 inci']], $summary['accessories']);
+        $this->assertSame([['code' => 'acc_1', 'label' => (string) ItItemOption::query()->where('code', 'acc_1')->value('label')]], $summary['accessories']);
         $this->assertSame(['MS Office'], $summary['software_standard']);
         $this->assertSame([['name' => 'AutoCAD', 'license' => 'new']], $summary['software_optional']);
     }

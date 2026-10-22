@@ -1,6 +1,13 @@
 <?php
 
 return [
+    // Akun administrator awal. Dipakai ProductionAdminSeeder; password hanya
+    // dipakai saat akun belum ada dan tidak menimpa password akun existing.
+    'admin' => [
+        'name' => env('ADMIN_NAME', 'Administrator'),
+        'email' => env('ADMIN_EMAIL', 'admin.it@borneoprima.com'),
+        'initial_password' => env('ADMIN_INITIAL_PASSWORD'),
+    ],
     // Referensi perusahaan untuk label/dokumen. Tidak dipersist agar seeding
     // foundation tidak menambah master organisasi di luar scope MVP.
     'company' => [

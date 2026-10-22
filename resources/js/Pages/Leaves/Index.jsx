@@ -33,7 +33,7 @@ export default function Index({ leaves, filters, statuses }) {
     return (
         <AuthenticatedLayout
             title="Cuti/Izin"
-            breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Cuti/Izin' }]}
+            breadcrumbs={[{ label: 'Dashboard', href: route('dashboard') }, { label: 'Cuti/Izin' }]}
         >
             <Head title="Cuti/Izin" />
 

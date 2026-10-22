@@ -264,7 +264,7 @@ class MailSettingsService
             'title_en' => 'eForm BP Test Email — '.ucfirst((string) $moduleLabel),
             'message_en' => 'This is a test email from the Settings > Email page for the '.$moduleLabel.' module. If this email arrives, the SMTP configuration for this module is correct.',
             'meta' => ['module' => 'Pengaturan Email'],
-            'action_url' => rtrim((string) Config::get('app.url'), '/').'/dashboard',
+            'action_url' => route('dashboard'),
             'company' => ['name' => $company['name'] ?? 'PT Borneo Prima', 'address' => $address2],
         ]));
     }

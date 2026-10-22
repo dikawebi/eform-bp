@@ -35,7 +35,7 @@ export default function Create({ meta }) {
         <AuthenticatedLayout
             title="Buat Cuti/Izin"
             breadcrumbs={[
-                { label: 'Dashboard', href: '/dashboard' },
+                { label: 'Dashboard', href: route('dashboard') },
                 { label: 'Cuti/Izin', href: '/leaves' },
                 { label: 'Buat' },
             ]}

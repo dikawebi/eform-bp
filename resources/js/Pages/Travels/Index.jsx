@@ -16,7 +16,7 @@ export default function Index({ travels, filters, statuses }) {
     const completed = rows.filter((row) => ['approved', 'advance_paid', 'completed'].includes(statusValue(row.status))).length;
     const pageAdvance = rows.reduce((sum, row) => sum + Number(row.total_advance || 0), 0);
 
-    return <AuthenticatedLayout title="Perjalanan Dinas" breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Perjalanan Dinas' }]}>
+    return <AuthenticatedLayout title="Perjalanan Dinas" breadcrumbs={[{ label: 'Dashboard', href: route('dashboard') }, { label: 'Perjalanan Dinas' }]}>
         <Head title="Perjalanan Dinas" />
         <div className="mx-auto max-w-7xl space-y-5 px-4 py-7 sm:px-6 lg:px-8">
             <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-600">Ruang Kerja / Perjalanan Dinas</p><h1 className="mt-1 text-2xl font-extrabold tracking-tight">Perjalanan Dinas</h1><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Kelola rute, biaya, advance, dan status perjalanan.</p></div><Link href={route('travels.create')} className="ui-button-primary w-fit rounded-lg px-4 py-2.5 text-sm">+ Buat perjalanan</Link></header>

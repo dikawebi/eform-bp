@@ -90,11 +90,11 @@ class ModuleAvailabilityTest extends TestCase
     {
         ModuleAvailability::updateOrCreate(['module' => 'it_request'], ['is_enabled' => false, 'maintenance_message' => null]);
 
-        $this->actingAs($this->member())->get('/dashboard')
+        $this->actingAs($this->member())->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->where('menus', fn ($menus): bool => collect($menus)->every(fn ($menu): bool => ($menu['url'] ?? '') !== '/it-requests')));
 
-        $this->actingAs($this->admin())->get('/dashboard')
+        $this->actingAs($this->admin())->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->where('menus', fn ($menus): bool => collect($menus)->contains(fn ($menu): bool => ($menu['url'] ?? '') === '/it-requests')));
     }

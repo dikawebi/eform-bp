@@ -55,6 +55,9 @@ QUEUE_CONNECTION=database
 SESSION_DRIVER=database
 CACHE_STORE=database
 MAIL_MAILER=log             # smtp di server
+ADMIN_NAME=Administrator
+ADMIN_EMAIL=admin.it@borneoprima.com
+ADMIN_INITIAL_PASSWORD=...  # wajib di production, minimal 12 karakter
 ```
 
 `config/eform.php` saat ini menetapkan tipe cuti `annual_leave`, `roster_leave`, `coff`, `permission`, `sick`, `other`; kategori biaya cuti `land_transport`, `hotel`, `meal`, `other`; source settlement eligible `advance_paid` atau `settlement_required`; partial settlement false. Medical menerima `receipt`, `prescription`, `doctor_letter`, wajib `receipt`, maksimum 5120 KB.

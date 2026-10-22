@@ -9,7 +9,7 @@ export default function ModuleMaintenance({ label = 'Modul', message = '' }) {
             <h1 className="mt-4 text-2xl font-extrabold tracking-tight">{label} dalam maintenance</h1>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{message !== '' ? message : 'Modul ini sedang dinonaktifkan oleh administrator. Silakan coba lagi nanti.'}</p>
             <div className="mt-6 flex justify-center gap-2">
-                <Link href="/dashboard" className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-bold text-white">Kembali ke Dashboard</Link>
+                <Link href={route('dashboard')} className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-bold text-white">Kembali ke Dashboard</Link>
                 <Link href="/approvals" className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold dark:border-slate-700">Buka Approval</Link>
             </div>
         </div>

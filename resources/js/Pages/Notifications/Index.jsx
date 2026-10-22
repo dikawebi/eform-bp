@@ -11,7 +11,7 @@ export default function Index({ notifications }) {
             event.preventDefault();
             router.post(route('notifications.read', item.id), {}, {
                 preserveScroll: true,
-                onSuccess: () => router.visit(item.url || '/dashboard'),
+                onSuccess: () => router.visit(item.url || route('dashboard')),
             });
         }
     };
@@ -38,7 +38,7 @@ export default function Index({ notifications }) {
                             </div>
                             <div className="flex shrink-0 gap-2 pl-5 sm:pl-0">
                                 {!item.read_at && <button type="button" onClick={() => router.post(route('notifications.read', item.id), {}, { preserveScroll: true })} className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Tandai dibaca</button>}
-                                <Link href={item.url || '/dashboard'} onClick={(event) => open(item, event)} className="rounded-md px-2 py-1 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50">Buka →</Link>
+                                <Link href={item.url || route('dashboard')} onClick={(event) => open(item, event)} className="rounded-md px-2 py-1 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50">Buka →</Link>
                             </div>
                         </li>)}
                     </ul> : <div className="p-5"><EmptyState title="Belum ada notifikasi" description="Pembaruan penting workflow akan tampil di sini." /></div>}
