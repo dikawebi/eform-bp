@@ -53,6 +53,7 @@ class MailSettingsService
             'approval.delegated' => 'Approval didelegasikan',
             'approval.cancelled' => 'Approval dibatalkan',
             'approval.withdrawn' => 'Pengajuan ditarik',
+            'user.employee_linked' => 'Akun terhubung ke data karyawan',
             'leave.submitted' => 'Cuti/izin diserahkan',
             'travel.submitted' => 'Perjalanan dinas diserahkan',
             'settlement.submitted' => 'Settlement diserahkan',

@@ -74,6 +74,12 @@ class EmailTemplateSeeder extends Seeder
                 'subject_en' => 'Request {document_number} withdrawn',
                 'message_en' => 'The {module} request number {document_number} has been withdrawn by {actor} and no longer awaits your decision.',
             ],
+            'user.employee_linked' => [
+                'subject' => 'Akun Anda berhasil terhubung ke data karyawan',
+                'message' => 'Akun eForm BP Anda telah dihubungkan ke data karyawan NIK {nomor_dokumen} oleh {pelaku}. Anda sekarang dapat membuat pengajuan untuk data karyawan tersebut. Buka eForm BP melalui tautan berikut: {tautan}',
+                'subject_en' => 'Your account has been linked to employee data',
+                'message_en' => 'Your eForm BP account has been linked to employee NIK {document_number} by {actor}. You can now create requests for this employee. Open eForm BP using the following link: {tautan}',
+            ],
             'leave.submitted' => [
                 'subject' => 'Pengajuan cuti/izin {nomor_dokumen} diserahkan',
                 'message' => 'Pengajuan cuti/izin nomor {nomor_dokumen} telah diserahkan oleh {pelaku} dan sedang menunggu proses persetujuan.',

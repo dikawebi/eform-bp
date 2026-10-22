@@ -35,7 +35,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request, InAppNotifier $notifier): RedirectResponse
     {
         $this->authorize('create', User::class);
         $data = $request->validated();
@@ -55,6 +55,11 @@ class UserController extends Controller
 
             return $user;
         });
+
+        $linkedEmployee = $user->employee()->first();
+        if ($linkedEmployee !== null) {
+            $notifier->notifyEmployeeLinked($user, $linkedEmployee, $request->user());
+        }
 
         return redirect()->route('settings.users.index')->with('success', "Akun {$user->email} berhasil dibuat.");
     }
@@ -83,10 +88,11 @@ class UserController extends Controller
         return back()->with('success', 'Permintaan penautan terkirim ke admin dan HRGA.');
     }
 
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user, InAppNotifier $notifier): RedirectResponse
     {
         $this->authorize('update', $user);
         $data = $request->validated();
+        $previousEmployeeId = (int) (Employee::query()->where('user_id', $user->id)->value('id') ?? 0);
 
         DB::transaction(function () use ($data, $request, $user): void {
             $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
@@ -112,6 +118,14 @@ class UserController extends Controller
             }
             activity()->causedBy($request->user())->withProperties(['email' => $locked->email])->log('user.updated');
         });
+
+        $newEmployeeId = (int) ($data['employee_id'] ?? 0);
+        if ($newEmployeeId > 0 && $newEmployeeId !== $previousEmployeeId) {
+            $linkedEmployee = Employee::query()->find($newEmployeeId);
+            if ($linkedEmployee !== null) {
+                $notifier->notifyEmployeeLinked($user->refresh(), $linkedEmployee, $request->user());
+            }
+        }
 
         return redirect()->route('settings.users.index')->with('success', 'Akun berhasil diperbarui.');
     }

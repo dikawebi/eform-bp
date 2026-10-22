@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ApprovalStepStatus;
 use App\Jobs\SendWorkflowEmail;
 use App\Models\ApprovalRequest;
+use App\Models\Employee;
 use App\Models\ErpRequest;
 use App\Models\ItRequest;
 use App\Models\LeaveRequest;
@@ -47,6 +48,25 @@ final class InAppNotifier
             'meta' => $meta,
             'attachments' => $attachments,
         ])->afterCommit();
+    }
+
+    public function notifyEmployeeLinked(User $user, Employee $employee, ?User $actor = null): void
+    {
+        $this->notifyUser(
+            $user->getKey(),
+            'user.employee_linked',
+            'Akun berhasil terhubung ke data karyawan',
+            "Akun eForm BP Anda ({$user->email}) telah dihubungkan ke data karyawan NIK {$employee->employee_number} ({$employee->name}). Anda sekarang dapat membuat pengajuan untuk data karyawan tersebut.",
+            route('dashboard'),
+            [
+                'module' => 'Akun Pengguna',
+                'module_code' => null,
+                'document_number' => $employee->employee_number,
+                'actor' => $actor?->name,
+            ],
+            'Account linked to employee data',
+            "Your eForm BP account ({$user->email}) has been linked to employee NIK {$employee->employee_number} ({$employee->name}). You can now create requests for this employee.",
+        );
     }
 
     public function notifyOwner(Model $subject, string $event, string $title, string $message, ?User $actor = null): void

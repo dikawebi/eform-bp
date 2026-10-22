@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Employee;
 use App\Models\User;
+use App\Notifications\WorkflowNotification;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -64,7 +65,7 @@ class UserManagementTest extends TestCase
             $this->assertDatabaseHas('notifications', [
                 'notifiable_type' => 'user',
                 'notifiable_id' => $recipient->id,
-                'type' => \App\Notifications\WorkflowNotification::class,
+                'type' => WorkflowNotification::class,
             ]);
         }
         $notification = $admin->notifications()->latest('id')->firstOrFail();
@@ -90,6 +91,36 @@ class UserManagementTest extends TestCase
         $user = User::where('email', 'hrga.baru@borneoprima.com')->firstOrFail();
         $this->assertTrue($user->hasRole('hrga'));
         $this->assertSame($user->id, (int) $employee->fresh()->user_id);
+
+        $notification = $user->notifications()->latest('id')->firstOrFail();
+        $this->assertSame('user.employee_linked', $notification->data['event'] ?? null);
+        $this->assertStringContainsString($employee->employee_number, $notification->data['message'] ?? '');
+    }
+
+    public function test_linking_existing_user_to_employee_notifies_the_user(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $user = User::factory()->create([
+            'name' => 'Akun Karyawan',
+            'email' => 'akun.karyawan@borneoprima.com',
+            'active' => true,
+        ]);
+        $user->assignRole('employee');
+        $employee = Employee::factory()->create(['user_id' => null, 'active' => true]);
+
+        $this->actingAs($admin)->put(route('settings.users.update', $user), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'roles' => ['employee'],
+            'employee_id' => $employee->id,
+            'active' => true,
+        ])->assertRedirect(route('settings.users.index'));
+
+        $this->assertSame($user->id, (int) $employee->fresh()->user_id);
+
+        $notification = $user->notifications()->latest('id')->firstOrFail();
+        $this->assertSame('user.employee_linked', $notification->data['event'] ?? null);
+        $this->assertStringContainsString($employee->employee_number, $notification->data['message'] ?? '');
     }
 
     public function test_admin_cannot_deactivate_own_account(): void
@@ -154,7 +185,7 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas('notifications', [
             'notifiable_type' => 'user',
             'notifiable_id' => $admin->id,
-            'type' => \App\Notifications\WorkflowNotification::class,
+            'type' => WorkflowNotification::class,
         ]);
     }
 

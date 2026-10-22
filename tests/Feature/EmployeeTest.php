@@ -540,6 +540,32 @@ class EmployeeTest extends TestCase
             'subject_id' => $employee->id,
             'description' => 'employee.updated',
         ]);
+
+        $notification = $link->notifications()->latest('id')->firstOrFail();
+        $this->assertSame('user.employee_linked', $notification->data['event'] ?? null);
+        $this->assertStringContainsString($employee->employee_number, $notification->data['message'] ?? '');
+    }
+
+    public function test_creating_employee_with_linked_user_notifies_the_account(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $link = User::factory()->create();
+
+        $this->actingAs($admin)->post(route('master.employees.store'), [
+            'employee_number' => 'NIK-LINK-001',
+            'name' => 'Karyawan Terhubung',
+            'department' => 'HRGA',
+            'level' => 'Staff',
+            'job_title' => 'Staff',
+            'employment_status' => 'permanent',
+            'poh_status' => 'local',
+            'user_id' => $link->id,
+        ])->assertRedirect();
+
+        $notification = $link->notifications()->latest('id')->firstOrFail();
+        $this->assertSame('user.employee_linked', $notification->data['event'] ?? null);
+        $this->assertStringContainsString('NIK-LINK-001', $notification->data['message'] ?? '');
     }
 
     // ---------- G-02/G-03 ----------

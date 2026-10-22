@@ -6,6 +6,7 @@ use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\InAppNotifier;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -244,7 +245,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function store(StoreEmployeeRequest $request): RedirectResponse
+    public function store(StoreEmployeeRequest $request, InAppNotifier $notifier): RedirectResponse
     {
         $this->authorize('create', Employee::class);
 
@@ -278,6 +279,11 @@ class EmployeeController extends Controller
             ->withProperties(['employee_number' => $employee->employee_number])
             ->log('employee.created');
 
+        $linkedUser = Employee::query()->whereKey($employee->id)->whereNotNull('user_id')->first()?->user;
+        if ($linkedUser !== null) {
+            $notifier->notifyEmployeeLinked($linkedUser, $employee, $request->user());
+        }
+
         return redirect()
             ->route('master.employees.show', $employee)
             ->with('success', 'Data karyawan berhasil dibuat.');
@@ -307,7 +313,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function update(UpdateEmployeeRequest $request, Employee $employee): RedirectResponse
+    public function update(UpdateEmployeeRequest $request, Employee $employee, InAppNotifier $notifier): RedirectResponse
     {
         $this->authorize('update', $employee);
 
@@ -345,6 +351,13 @@ class EmployeeController extends Controller
                 'user_id_new' => $employee->user_id,
             ])
             ->log('employee.updated');
+
+        if ($employee->user_id !== null && (int) $employee->user_id !== (int) $oldUserId) {
+            $linkedUser = User::query()->find($employee->user_id);
+            if ($linkedUser !== null) {
+                $notifier->notifyEmployeeLinked($linkedUser, $employee, $request->user());
+            }
+        }
 
         return redirect()
             ->route('master.employees.show', $employee)
