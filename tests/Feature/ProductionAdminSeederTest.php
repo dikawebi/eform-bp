@@ -74,7 +74,7 @@ class ProductionAdminSeederTest extends TestCase
         (new ProductionAdminSeeder)->run();
     }
 
-    public function test_production_requires_an_admin_email(): void
+    public function test_it_uses_the_default_admin_email_when_config_is_empty(): void
     {
         config([
             'eform.admin.email' => null,
@@ -82,9 +82,11 @@ class ProductionAdminSeederTest extends TestCase
         ]);
         $this->app['env'] = 'production';
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('ADMIN_EMAIL wajib diisi');
-
         (new ProductionAdminSeeder)->run();
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'admin.it@borneoprima.com',
+            'active' => true,
+        ]);
     }
 }

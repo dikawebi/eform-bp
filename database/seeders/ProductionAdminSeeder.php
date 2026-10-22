@@ -27,10 +27,6 @@ class ProductionAdminSeeder extends Seeder
         }
 
         if ($email === '') {
-            if (app()->environment('production')) {
-                throw new RuntimeException('ADMIN_EMAIL wajib diisi pada production.');
-            }
-
             $email = 'admin.it@borneoprima.com';
         }
 
