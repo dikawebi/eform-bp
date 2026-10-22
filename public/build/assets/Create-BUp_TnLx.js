@@ -1,0 +1,1 @@
+import{j as t}from"./app-BQYgrcUs.js";import o from"./Form-DIWhRiFv.js";import"./InputError-DcWx0YUi.js";import"./AuthenticatedLayout-CCaWkTgT.js";import"./transition-B1s43OGE.js";import"./Modal-CN9hAHeo.js";import"./WorkflowStepper-CFbsnm_X.js";function n(r){return t.jsx(o,{...r})}export{n as default};

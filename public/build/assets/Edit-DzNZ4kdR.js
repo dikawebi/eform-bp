@@ -1,0 +1,1 @@
+import{j as r}from"./app-BQYgrcUs.js";import o from"./ErpRequestForm-UPpawZXR.js";import"./InputError-DcWx0YUi.js";import"./EmployeeLookup-Bc6VfWDy.js";import"./AuthenticatedLayout-CCaWkTgT.js";import"./transition-B1s43OGE.js";import"./Modal-CN9hAHeo.js";import"./WorkflowStepper-CFbsnm_X.js";function x(t){return r.jsx(o,{...t,edit:!0})}export{x as default};
