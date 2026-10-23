@@ -82,11 +82,13 @@ Enum `RequestStatus` digunakan pada request, settlement, dan medical claim: `dra
 
 Submit hanya menerima `draft` atau `returned`. Submit mengunci row, memastikan employee aktif, menghitung ulang, menyimpan snapshot, membuat approval chain, lalu mengubah status menjadi `in_review`. Approved tidak diedit langsung; revisi harus melalui returned flow. Approval action dan status transition dicatat Activitylog.
 
-Workflow default tersimpan sebagai `leave_default`, `travel_default`, `settlement_default`, dan `medical_default`:
+Workflow default tersimpan sebagai `leave_default`, `travel_default`, `settlement_default`, `medical_default`, `it_default`, dan `erp_default`:
 
 - Cuti/dinas: supervisor (boleh skip jika tidak ada), HOD, PM bila `is_project_trip`, lalu HRGA. Resolver dan role berasal dari tabel workflow, bukan controller.
 - Settlement: HRGA lalu Finance.
 - Medical: HRGA lalu `document_validation` oleh HRGA Manager.
+- IT Request: HOD, IT, PM/GM site, lalu COO/CEO hanya jika IT memutuskan eskalasi untuk kebutuhan khusus.
+- ERP Request: HOD, Reviewer ERP, dan PM/GM site untuk perubahan role/modul sesuai workflow.
 
 Approver dipilih dari snapshot supervisor/HOD/PM atau active users dengan role, permission `approval.act`, employee aktif; self-approval/conflict ditolak. Step tidak aktif diberi `cancelled`/`skipped` sesuai chain.
 
@@ -114,6 +116,14 @@ Pembuatan dan penyelesaian menggunakan transaction serta row lock. Complete hany
 
 Benefit yang dikonfigurasi: `rawat_jalan`, `rawat_inap`, `kacamata`, `persalinan`, `lainnya`. Item menyimpan `patient_name`, `relationship`, tanggal, fasilitas, dan nominal. Submit wajib memiliki attachment `receipt`; total dihitung dari item. `medical.view.aggregate`/`medical.view.all` tidak sama dengan akses sensitive.
 
+### IT Request dan Spesifikasi IT
+
+Pemohon hanya menyampaikan kebutuhan bisnis: jenis perangkat, accessories, software, alasan penggantian, serta deskripsi dan tujuan bila membutuhkan spesifikasi khusus. Setelah HOD menyetujui, reviewer IT wajib mengisi **spesifikasi teknis** sebelum dapat menyetujui tahap IT. Spesifikasi dapat disimpan sebagai draft, menggunakan template internal IT, atau diisi manual sebagai baris `label + value`.
+
+Setelah IT menyetujui, spesifikasi dikunci sebagai snapshot di `it_request_specifications` dan baru terlihat oleh pemohon serta approver berikutnya. IT tidak dapat mengubah jenis perangkat; jika tidak sesuai, request harus dikembalikan kepada pemohon. Template aktif dikelola di **Administrasi → Template Spesifikasi IT** dengan permission `it.master.manage`. Harga, quotation, dan proses pembelian tetap di luar eForm. PDF IT Request memuat spesifikasi yang ditetapkan IT; request lama tanpa spesifikasi tetap dapat ditampilkan dengan keterangan bahwa spesifikasi belum tersedia.
+
+`ItSpecTemplateSeeder` menyediakan 5 template awal untuk laptop office, laptop high spec, desktop office, desktop high spec, dan upgrade berdasarkan assessment IT. Seeder bersifat idempoten dan tidak menimpa template yang sudah diubah admin.
+
 ## 5. Database dan kontrak antar layer
 
 Header transaksi menyimpan foreign key `employee_id`, status, total server-side, timestamps, creator/updater, dan snapshot employee. React/Inertia hanya mengirim input; Form Request memvalidasi, Policy mengotorisasi, service/action menghitung dan mengubah status dalam transaction, controller mengembalikan props Inertia. Jangan menjadikan total/status dari client sebagai sumber kebenaran.
@@ -127,6 +137,8 @@ Tabel utama:
 - `settlements`: `settlement_number`, `source_type` enum, `source_id`, `source_key`, FK `leave_request_id`/`travel_request_id`, employee, status, advance/actual/difference, `difference_type`, final/partial flag, snapshot.
 - `settlement_items`: tanggal, deskripsi, kategori `transport|hotel|meal|other`, amount, receipt number.
 - `medical_claims`/`medical_claim_items`: claim, benefit, total, snapshot, pasien/relationship/tanggal/fasilitas/nominal.
+- `it_requests`/`it_request_specifications`: kebutuhan perangkat, spesifikasi IT (snapshot, `locked_at`, `locked_by`), dan data penerima.
+- `it_spec_templates`: template internal IT berisi `specs_json`, jenis perangkat, status aktif, dan urutan.
 - `attachments`: polymorphic `attachable_type`/`attachable_id`, document metadata, `stored_path`, MIME, size, SHA-256, uploader.
 - Approval: `approval_workflows`, `approval_workflow_steps`, `approval_requests`, `approval_actions`.
 

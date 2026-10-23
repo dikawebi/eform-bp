@@ -48,6 +48,9 @@ final class ItRequestPdf
             'employee:id,employee_number,name,department,job_title',
             'approvalRequests.approver:id,name',
             'approvalRequests.actions.actor:id,name',
+            'specification.template:id,name',
+            'specification.specifiedBy:id,name',
+            'specification.lockedBy:id,name',
         ]);
 
         return view('pdf.it-request', [
@@ -140,6 +143,17 @@ final class ItRequestPdf
                 ? ($replacementLabels[$request->replacement_reason] ?? $request->replacement_reason)
                 : null,
             'replacement_note' => $request->replacement_note,
+            'specification' => $request->specification && $request->specification->isLocked()
+                ? [
+                    'rows' => array_values((array) $request->specification->specs_json),
+                    'notes' => $request->specification->notes,
+                    'template' => $request->specification->template?->name,
+                    'specified_by' => $request->specification->specifiedBy?->name,
+                    'specified_at' => $request->specification->specified_at?->translatedFormat('d M Y H:i'),
+                    'locked_by' => $request->specification->lockedBy?->name,
+                    'locked_at' => $request->specification->locked_at?->translatedFormat('d M Y H:i'),
+                ]
+                : null,
             'signatures' => $signatures,
         ];
     }

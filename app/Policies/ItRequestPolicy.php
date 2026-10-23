@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\ItRequest;
 use App\Models\User;
 use App\Services\EmployeeVisibility;
+use App\Services\It\ItSpecificationAccess;
 
 class ItRequestPolicy
 {
@@ -57,6 +58,11 @@ class ItRequestPolicy
     public function print(User $user, ItRequest $request): bool
     {
         return $request->status === RequestStatus::Completed && $user->can('it_request.review');
+    }
+
+    public function saveSpecification(User $user, ItRequest $request): bool
+    {
+        return ItSpecificationAccess::canEdit($request, $user);
     }
 
     /**

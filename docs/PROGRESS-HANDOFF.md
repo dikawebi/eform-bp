@@ -86,6 +86,19 @@ Password semua akun: `password`. Seeder: `database/seeders/DemoApproverSeeder.ph
 - Catatan eskalasi disimpan pada `approval_requests.comments` dan snapshot `approval_snapshot.coo_ceo.escalation_note`; halaman approval penerima menampilkan kartu amber berisi catatan, role tujuan, penulis eskalasi, deskripsi perangkat, dan tujuan penggunaan.
 - Audit: `approval.escalation_decided` dengan properti `decision`, `escalate_role`, `escalation_note`, `approval_id`, `coo_approval_id`.
 
+### Spesifikasi Teknis IT Request
+
+- Pemohon hanya mengisi kebutuhan bisnis (perangkat, accessories, software, deskripsi/tujuan).
+- Reviewer IT mengisi spesifikasi pada tahap `it` melalui `POST it-requests/{id}/specification`; boleh draft terlebih dahulu.
+- Spesifikasi memakai baris fleksibel `label + value`, notes, dan template aktif dari `it_spec_templates`.
+- Approve tahap IT diblokir server-side bila spesifikasi belum ada; lock dilakukan di `ApprovalTransition`/`SaveItRequestSpecification`.
+- Setelah IT approve, spesifikasi menjadi snapshot `it_request_specifications` (`locked_at`, `locked_by`) dan terlihat oleh pemohon serta approver berikutnya.
+- IT tidak boleh mengubah jenis perangkat; jika tidak sesuai, gunakan Return.
+- Template dikelola di `master/it-spec-templates` dengan permission `it.master.manage`.
+- `ItSpecTemplateSeeder` menyediakan 5 template awal (laptop/desktop standard dan high spec, upgrade assessment), idempoten dan terdaftar di `FoundationSeeder`.
+- PDF IT Request memuat section spesifikasi IT; request lama tanpa spesifikasi tetap valid.
+- Test: `tests/Feature/ItSpecificationTest.php`; helper `ItErpRequestTest` menyimpan spesifikasi sebelum approve IT.
+
 ### Workflow UI
 
 - Komponen reusable: `resources/js/Components/WorkflowStepper.jsx`

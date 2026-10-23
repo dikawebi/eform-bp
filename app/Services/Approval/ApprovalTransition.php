@@ -13,6 +13,7 @@ use App\Models\Settlement;
 use App\Models\User;
 use App\Services\InAppNotifier;
 use App\Services\It\NotifyItRequestPrReady;
+use App\Services\It\SaveItRequestSpecification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -79,6 +80,12 @@ class ApprovalTransition
                 app(InAppNotifier::class)->notifyUser($delegateTo->id, 'approval.assigned', 'Approval didelegasikan kepada Anda', 'Ada pengajuan yang didelegasikan dan menunggu pemeriksaan Anda.', route('approvals.show', $approval), InAppNotifier::context($parent, $actor, $approval->step_code));
 
                 return $approval->refresh();
+            }
+
+            if ($action === ApprovalActionType::Approve
+                && $parent instanceof ItRequest
+                && $approval->step_code === 'it') {
+                SaveItRequestSpecification::lockForApproval($parent, $actor);
             }
 
             $approval->forceFill(['status' => match ($action) {

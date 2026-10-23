@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\ApprovalRequest;
+use App\Models\ModuleAvailability;
+use App\Services\InAppNotifier;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -63,7 +65,7 @@ class HandleInertiaRequests extends Middleware
                 'event' => (string) data_get($notification->data, 'event', ''),
                 'title' => (string) data_get($notification->data, 'title', 'Notifikasi eForm BP'),
                 'message' => (string) data_get($notification->data, 'message', ''),
-                'url' => \App\Services\InAppNotifier::resolveUrl($notification->data),
+                'url' => InAppNotifier::resolveUrl($notification->data),
                 'meta' => (array) data_get($notification->data, 'meta', []),
                 'read_at' => $notification->read_at?->toISOString(),
                 'created_at' => $notification->created_at?->toISOString(),
@@ -93,9 +95,11 @@ class HandleInertiaRequests extends Middleware
             ['label' => 'Laporan', 'url' => '/reports', 'permission' => 'report.view', 'module' => 'report'],
             ['key' => 'master', 'label' => 'Karyawan', 'url' => '/master/employees', 'group' => 'Administrasi', 'permission' => ['employee.view.any', 'employee.manage']],
             ['key' => 'master-it-items', 'label' => 'Perangkat & Accessories IT', 'url' => '/master/it-items', 'group' => 'Administrasi', 'permission' => 'it.master.manage'],
+            ['key' => 'master-it-spec-templates', 'label' => 'Template Spesifikasi IT', 'url' => '/master/it-spec-templates', 'group' => 'Administrasi', 'permission' => 'it.master.manage'],
             ['key' => 'settings-workflows', 'label' => 'Workflow', 'url' => '/settings/workflows', 'group' => 'Pengaturan', 'permission' => 'workflow.manage'],
             ['key' => 'settings-roles', 'label' => 'Role dan Permission', 'url' => '/settings/roles', 'group' => 'Pengaturan', 'permission' => 'role.manage'],
             ['key' => 'settings-users', 'label' => 'Pengguna', 'url' => '/settings/users', 'group' => 'Pengaturan', 'permission' => 'user.manage'],
+            ['key' => 'settings-sequences', 'label' => 'Number Sequence', 'url' => '/settings/sequences', 'group' => 'Pengaturan', 'permission' => 'sequence.manage'],
             ['key' => 'settings-modules', 'label' => 'Modul & Maintenance', 'url' => '/settings/modules', 'group' => 'Pengaturan', 'permission' => 'module.manage'],
             ['key' => 'settings-mail', 'label' => 'Email & Notifikasi', 'url' => '/settings/mail', 'group' => 'Pengaturan', 'permission' => 'mail.manage'],
         ];
@@ -117,7 +121,7 @@ class HandleInertiaRequests extends Middleware
 
             // Modul yang dimatikan admin disembunyikan; pemegang
             // module.manage tetap melihatnya untuk verifikasi.
-            if (isset($menu['module']) && ! \App\Models\ModuleAvailability::isEnabled($menu['module']) && ! $user->can('module.manage')) {
+            if (isset($menu['module']) && ! ModuleAvailability::isEnabled($menu['module']) && ! $user->can('module.manage')) {
                 return false;
             }
 

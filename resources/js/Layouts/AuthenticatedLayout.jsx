@@ -44,6 +44,7 @@ function keyFromUrl(url) {
         case '/master/employees':
             return 'master';
         case '/settings/workflows':
+        case '/settings/sequences':
             return 'settings';
         default:
             return null;
@@ -135,6 +136,12 @@ function MenuIcon({ menuKey }) {
             <path d="M10 5.5h4a2 2 0 0 1 2 2V16" />
         </>
     );
+    paths['settings-sequences'] = (
+        <>
+            <path d="M5 5h14M5 12h14M5 19h14" />
+            <path d="M9 3v4M15 10v4M9 17v4" />
+        </>
+    );
     paths['settings-modules'] = (
         <>
             <path d="M4 6h6M14 6h6" />
@@ -166,6 +173,12 @@ function MenuIcon({ menuKey }) {
         </>
     );
     paths['master-it-items'] = paths['it-requests'];
+    paths['master-it-spec-templates'] = (
+        <>
+            <path d="M6 3h9l3 3v15H6z" />
+            <path d="M9 8h6M9 12h6M9 16h4" />
+        </>
+    );
 
     return (
         <svg

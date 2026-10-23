@@ -14,6 +14,8 @@ use App\Services\Approval\ApprovalActionAvailability;
 use App\Services\Approval\WithdrawRequest;
 use App\Services\EmployeeVisibility;
 use App\Services\It\ItRequestNumber;
+use App\Services\It\ItSpecificationAccess;
+use App\Services\It\ItSpecificationPresenter;
 use App\Services\It\SubmitItRequest;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -125,7 +127,7 @@ class ItRequestController extends Controller
 
         $it = DB::transaction(function () use ($request, $user) {
             $data = $request->validated();
-            $it = new ItRequest();
+            $it = new ItRequest;
             $it->forceFill([
                 'request_number' => ItRequestNumber::generate(),
                 'employee_id' => $data['employee_id'] ?? null,
@@ -166,8 +168,23 @@ class ItRequestController extends Controller
     public function show(Request $request, ItRequest $it_request): Response
     {
         $this->authorize('view', $it_request);
-        $it_request->load(['employee:id,employee_number,name,department', 'attachments', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
+        $it_request->load([
+            'employee:id,employee_number,name,department',
+            'attachments',
+            'approvalRequests.approver:id,name',
+            'approvalRequests.actions.actor:id,name',
+            'specification.template:id,name',
+            'specification.specifiedBy:id,name',
+            'specification.lockedBy:id,name',
+        ]);
         $user = $request->user();
+        $canEditSpecification = $user->can('saveSpecification', $it_request);
+        $pendingSpecificationApproval = $canEditSpecification
+            ? ItSpecificationAccess::pendingItApproval($it_request, $user)
+            : null;
+        $specification = $it_request->specification;
+        $specificationVisible = $specification !== null
+            && ($specification->isLocked() || $canEditSpecification);
 
         $dto = $this->dto($it_request);
         $timeline = $this->approvalTimeline($it_request);
@@ -178,6 +195,7 @@ class ItRequestController extends Controller
             'meta' => ['device_options' => self::itemOptions('device'), 'accessory_options' => self::itemOptions('accessory'), 'option_labels' => ItItemOption::query()->pluck('label', 'code')->all()],
             'timeline' => $timeline,
             'activities' => $activities,
+            'specification' => $specificationVisible ? ItSpecificationPresenter::make($specification) : null,
             'availableActions' => [
                 'can_edit' => $user->can('update', $it_request),
                 'can_submit' => $user->can('submit', $it_request),
@@ -185,6 +203,10 @@ class ItRequestController extends Controller
                 'can_upload' => $user->can('upload', $it_request),
                 'can_print' => $user->can('print', $it_request),
                 'can_fill_pr' => $user->can('fillPrNumber', $it_request),
+                'can_edit_specification' => $canEditSpecification,
+                'specification_url' => $pendingSpecificationApproval
+                    ? route('approvals.show', $pendingSpecificationApproval)
+                    : null,
             ],
             'approvalActions' => ApprovalActionAvailability::for($it_request, $user),
         ]);
@@ -198,10 +220,20 @@ class ItRequestController extends Controller
     {
         $this->authorize('print', $it_request);
 
-        $it_request->load(['employee:id,employee_number,name,department,job_title', 'approvalRequests.approver:id,name', 'approvalRequests.actions.actor:id,name']);
+        $it_request->load([
+            'employee:id,employee_number,name,department,job_title',
+            'approvalRequests.approver:id,name',
+            'approvalRequests.actions.actor:id,name',
+            'specification.template:id,name',
+            'specification.specifiedBy:id,name',
+            'specification.lockedBy:id,name',
+        ]);
 
         return Inertia::render('ITRequests/Print', [
             'request' => $this->dto($it_request),
+            'specification' => $it_request->specification?->isLocked()
+                ? ItSpecificationPresenter::make($it_request->specification)
+                : null,
             'meta' => [
                 'device_options' => self::itemOptions('device'),
                 'accessory_options' => self::itemOptions('accessory'),
@@ -304,7 +336,7 @@ class ItRequestController extends Controller
     {
         $this->authorize('upload', $it_request);
         $file = $request->file('file');
-        $path = $file->store('it/' . $it_request->id, 'eform-private');
+        $path = $file->store('it/'.$it_request->id, 'eform-private');
         try {
             DB::transaction(function () use ($request, $it_request, $file, $path) {
                 $it = ItRequest::lockForUpdate()->findOrFail($it_request->id);

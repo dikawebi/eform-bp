@@ -1,5 +1,13 @@
 # Changelog dokumentasi
 
+## 2026-10-23
+
+- **Spesifikasi teknis IT Request ditetapkan oleh IT:** tabel baru `it_spec_templates` dan `it_request_specifications`. Reviewer IT dapat menyimpan draft spesifikasi (baris fleksibel `label + value`, catatan teknis, dan template internal) pada tahap `it`, lalu Approve terpisah. Approve tahap IT ditolak server-side bila spesifikasi belum tersimpan. Spesifikasi dikunci sebagai snapshot saat IT approve dan baru terlihat oleh pemohon/approver berikutnya. IT tidak dapat mengubah jenis perangkat; request harus dikembalikan kepada pemohon jika tidak sesuai. Audit baru: `it.specification_saved`, `it.specification_locked`, `it.spec_template.created`, `it.spec_template.updated`.
+- **Master Template Spesifikasi IT:** halaman `master/it-spec-templates` dengan permission `it.master.manage`, mendukung template per jenis perangkat, urutan, status aktif, dan baris spesifikasi. Template hanya membantu pengisian; nilai final tetap disimpan sebagai snapshot pada request.
+- **Seeder template spesifikasi IT:** `ItSpecTemplateSeeder` mengisi 5 template awal: Laptop Standard Office, Laptop High Spec, Desktop Standard Office, Desktop High Spec, dan Upgrade Berdasarkan Assessment IT. Seeder idempoten (`firstOrCreate`) dan terdaftar di `FoundationSeeder`, sehingga editan admin tidak tertimpa saat dijalankan ulang.
+- **Tampilan dan PDF:** halaman approval IT menampilkan editor spesifikasi dan peringatan sebelum Approve; halaman detail IT Request menampilkan spesifikasi read-only setelah IT approve. PDF IT Request mendapat section **Spesifikasi Teknis Ditetapkan IT**; request lama tanpa spesifikasi menampilkan keterangan bahwa data belum tersedia.
+- **Test:** `ItSpecificationTest` mencakup draft, authorization, validasi, lock saat approve, snapshot template, audit, dan PDF. Seluruh alur approval IT lama disesuaikan agar menyimpan spesifikasi sebelum approve.
+
 ## 2026-10-21
 
 - **Notifikasi IT siap membuat PR setelah approval IT Request selesai:** saat seluruh tahap approval Hardware & Software selesai (`completed`), `NotifyItRequestPrReady` mengirim notifikasi in-app dan email ke seluruh user role `it` yang aktif, memiliki `it_request.review`, dan tertaut karyawan aktif. Event baru `it.pr_ready` dapat diatur di Pengaturan > Email > Template. Email menyertakan lampiran PDF dokumen IT Request (format yang sama dengan halaman Save to PDF) melalui dukungan attachment pada `InAppNotifier`/`SendWorkflowEmail`/`WorkflowMail`; file disimpan private di `eform-private` (`it-requests/pr-ready/{nomor}.pdf`). PDF dibuat oleh `ItRequestPdf` dan header dokumen kini memuat logo perusahaan. Bila pembuatan PDF gagal, notifikasi tetap dikirim tanpa lampiran dan kegagalan dicatat di log.

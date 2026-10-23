@@ -1,0 +1,1 @@
+import{j as e}from"./app-kP1PEEdx.js";function p({className:r="",disabled:t,children:o,...a}){return e.jsx("button",{...a,className:`ui-button-primary border border-transparent px-4 py-2 text-xs uppercase tracking-widest ${t&&"opacity-25"} `+r,disabled:t,children:o})}export{p as P};

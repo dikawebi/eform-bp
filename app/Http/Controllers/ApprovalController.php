@@ -6,12 +6,16 @@ use App\Data\Approval\ApprovalViewData;
 use App\Enums\ApprovalStepStatus;
 use App\Http\Requests\ApprovalActionRequest;
 use App\Models\ApprovalRequest;
+use App\Models\ItRequest;
+use App\Models\ItSpecTemplate;
 use App\Models\User;
 use App\Services\Approval\ApprovalActorConflicts;
 use App\Services\Approval\ApproveApprovalRequest;
 use App\Services\Approval\DelegateApprovalRequest;
 use App\Services\Approval\RejectApprovalRequest;
 use App\Services\Approval\ReturnApprovalRequest;
+use App\Services\It\ItSpecificationAccess;
+use App\Services\It\ItSpecificationPresenter;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,10 +39,22 @@ class ApprovalController extends Controller
     {
         $this->authorize('view', $approval);
         $approval->load(['approvable', 'workflow.steps', 'actions.actor']);
+        if ($approval->approvable instanceof ItRequest) {
+            $approval->approvable->loadMissing([
+                'specification.template:id,name',
+                'specification.specifiedBy:id,name',
+                'specification.lockedBy:id,name',
+            ]);
+        }
 
         $canAct = $request->user()->can('act', $approval);
         $conflict = $approval->approvable !== null && ApprovalActorConflicts::conflicts($approval->approvable, $request->user(), $approval);
         $canAct = $canAct && ! $conflict;
+        $itRequest = $approval->approvable instanceof ItRequest ? $approval->approvable : null;
+        $isItStep = $itRequest !== null && $approval->step_code === 'it';
+        $hasItSpecification = ! $isItStep || $itRequest->specification()->exists();
+        $canEditItSpecification = $isItStep && $canAct
+            && ItSpecificationAccess::canEdit($itRequest, $request->user());
         $delegates = $canAct ? User::query()->where('active', true)->role($approval->approver_role)->permission('approval.act')
             ->with('employee:id,user_id,name')->orderBy('name')->orderBy('id')->get()
             ->filter(fn (User $user) => (! $user->employee || $user->employee->active)
@@ -47,7 +63,7 @@ class ApprovalController extends Controller
         // Keputusan eskalasi COO/CEO: hanya tahap IT dari IT Request
         // (Hardware & Software) bertanda kebutuhan khusus.
         $needsEscalation = $canAct && $approval->step_code === 'it'
-            && $approval->approvable instanceof \App\Models\ItRequest
+            && $approval->approvable instanceof ItRequest
             && (bool) $approval->approvable->special_specification;
         $escalateUsers = $needsEscalation ? User::query()->where('active', true)->role(['coo', 'ceo'])->permission('approval.act')
             ->with(['employee:id,user_id,name', 'roles:id,name'])->orderBy('name')->orderBy('id')->get()
@@ -67,9 +83,25 @@ class ApprovalController extends Controller
                 ];
             })->values()->all() : [];
         $availableActions = [
-            'approve' => $canAct, 'return' => $canAct, 'reject' => $canAct,
+            'approve' => $canAct && $hasItSpecification, 'return' => $canAct, 'reject' => $canAct,
             'delegate' => $canAct && $delegates !== [], 'eligibleDelegates' => $delegates,
             'needsEscalationDecision' => $needsEscalation, 'eligibleEscalateUsers' => $escalateUsers,
+            'requires_it_specification' => $isItStep,
+            'has_it_specification' => $hasItSpecification,
+            'can_edit_it_specification' => $canEditItSpecification,
+            'it_specification' => $isItStep ? [
+                'can_edit' => $canEditItSpecification,
+                'save_url' => route('it-requests.specification.store', $itRequest),
+                'specification' => ItSpecificationPresenter::make($itRequest->specification),
+                'templates' => ItSpecTemplate::availableFor($itRequest->device_type)
+                    ->map(fn (ItSpecTemplate $template): array => [
+                        'id' => $template->id,
+                        'code' => $template->code,
+                        'name' => $template->name,
+                        'device_type' => $template->device_type,
+                        'specs' => array_values((array) $template->specs_json),
+                    ])->values()->all(),
+            ] : null,
         ];
 
         return Inertia::render('Approvals/Show', ['approval' => ApprovalViewData::make($approval, $request->user()), 'availableActions' => $availableActions]);

@@ -118,6 +118,7 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
 
         $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        $this->saveItSpecification($itUser, $itRequest);
         $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), ['escalation' => 'none'])->assertRedirect();
 
         $this->assertSame(ApprovalStepStatus::Skipped, $itRequest->approvalRequests()->where('step_code', 'coo_ceo')->firstOrFail()->status);
@@ -142,6 +143,7 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
 
         $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        $this->saveItSpecification($itUser, $itRequest);
         $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
             'escalation' => 'coo_ceo', 'escalate_role' => 'coo', 'escalate_user_id' => $cooUser->id,
             'comments' => 'GPU diperlukan untuk pemodelan CAD; tanpa GPU proyek tertunda.',
@@ -176,6 +178,7 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($hodUser)->post(route('approvals.action', [$hod, 'approve']))->assertRedirect();
 
         $it = $itRequest->approvalRequests()->where('step_code', 'it')->firstOrFail();
+        $this->saveItSpecification($itUser, $itRequest);
         $this->actingAs($itUser)->post(route('approvals.action', [$it, 'approve']), [
             'escalation' => 'coo_ceo', 'escalate_role' => 'ceo', 'escalate_user_id' => $ceoUser->id,
             'comments' => 'Investasi strategis untuk lini produksi baru.',
@@ -401,6 +404,9 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
 
         foreach (['hod' => $hodUser, 'it' => $itUser, 'pm_gm' => $pmUser] as $step => $actor) {
+            if ($step === 'it') {
+                $this->saveItSpecification($actor, $itRequest);
+            }
             $approval = $itRequest->approvalRequests()->where('step_code', $step)->firstOrFail();
             $this->actingAs($actor)->post(route('approvals.action', [$approval, 'approve']))->assertRedirect();
         }
@@ -439,6 +445,9 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
 
         foreach (['hod' => $hodUser, 'it' => $itUser, 'pm_gm' => $pmUser] as $stepCode => $actor) {
+            if ($stepCode === 'it') {
+                $this->saveItSpecification($actor, $itRequest);
+            }
             $approval = $itRequest->approvalRequests()->where('step_code', $stepCode)->firstOrFail();
             $this->actingAs($actor)->post(route('approvals.action', [$approval, 'approve']))->assertRedirect();
         }
@@ -475,6 +484,9 @@ class ItErpRequestTest extends TestCase
         $this->actingAs($user)->post(route('it-requests.submit', $itRequest))->assertSessionHasNoErrors();
 
         foreach (['hod' => $hodUser, 'it' => $itUser, 'pm_gm' => $pmUser] as $step => $actor) {
+            if ($step === 'it') {
+                $this->saveItSpecification($actor, $itRequest);
+            }
             $approval = $itRequest->approvalRequests()->where('step_code', $step)->firstOrFail();
             $this->actingAs($actor)->post(route('approvals.action', [$approval, 'approve']))->assertRedirect();
         }
@@ -637,6 +649,17 @@ class ItErpRequestTest extends TestCase
         $employee = Employee::factory()->create(['user_id' => $user->id, 'active' => true]);
 
         return [$user, $employee];
+    }
+
+    private function saveItSpecification(User $itUser, ItRequest $itRequest): void
+    {
+        $this->actingAs($itUser)->post(route('it-requests.specification.store', $itRequest), [
+            'specs' => [
+                ['label' => 'CPU', 'value' => 'Intel Core i7'],
+                ['label' => 'RAM', 'value' => '32 GB'],
+            ],
+            'notes' => 'Spesifikasi pengujian.',
+        ])->assertSessionHasNoErrors();
     }
 
     private function itPayload(Employee $employee): array

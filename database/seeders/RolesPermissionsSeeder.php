@@ -108,6 +108,7 @@ class RolesPermissionsSeeder extends Seeder
         'workflow.manage',
         'module.manage',
         'mail.manage',
+        'sequence.manage',
         'role.manage',
         'user.manage',
         'report.export',

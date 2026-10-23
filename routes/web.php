@@ -4,11 +4,14 @@ use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\ApprovalWorkflowController;
 use App\Http\Controllers\AuditTimelineController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentSequenceController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ErpRequestController;
 use App\Http\Controllers\ItItemOptionController;
 use App\Http\Controllers\ItRequestController;
+use App\Http\Controllers\ItRequestSpecificationController;
+use App\Http\Controllers\ItSpecTemplateController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\MailSettingsController;
 use App\Http\Controllers\MedicalClaimController;
@@ -104,6 +107,16 @@ Route::middleware('auth')->group(function () {
         Route::delete('/it-items/{it_item}', [ItItemOptionController::class, 'destroy'])
             ->can('it.master.manage')
             ->name('it-items.destroy');
+
+        Route::get('/it-spec-templates', [ItSpecTemplateController::class, 'index'])
+            ->can('it.master.manage')
+            ->name('it-spec-templates.index');
+        Route::post('/it-spec-templates', [ItSpecTemplateController::class, 'store'])
+            ->can('it.master.manage')
+            ->name('it-spec-templates.store');
+        Route::match(['put', 'patch'], '/it-spec-templates/{it_spec_template}', [ItSpecTemplateController::class, 'update'])
+            ->can('it.master.manage')
+            ->name('it-spec-templates.update');
     });
 
     // Phase 2 — Cuti/Izin (PRD §2 modul A, §5.1, §6). Auth diperiksa di
@@ -162,6 +175,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{it_request}/submit', [ItRequestController::class, 'submit'])->name('submit');
         Route::post('/{it_request}/cancel', [ItRequestController::class, 'cancel'])->name('cancel');
         Route::post('/{it_request}/pr-number', [ItRequestController::class, 'updatePrNumber'])->name('pr-number.update');
+        Route::post('/{it_request}/specification', [ItRequestSpecificationController::class, 'store'])->name('specification.store');
         Route::post('/{it_request}/attachments', [ItRequestController::class, 'uploadAttachment'])->name('attachments.store');
     });
 
@@ -204,6 +218,13 @@ Route::middleware('auth')->group(function () {
             ->can('viewAny', ApprovalWorkflow::class)->name('scope');
         Route::put('/{workflow}', [ApprovalWorkflowController::class, 'update'])
             ->can('update', 'workflow')->name('update');
+    });
+
+    Route::prefix('settings/sequences')->name('settings.sequences.')->group(function () {
+        Route::get('/', [DocumentSequenceController::class, 'index'])
+            ->can('sequence.manage')->name('index');
+        Route::put('/', [DocumentSequenceController::class, 'update'])
+            ->can('sequence.manage')->name('update');
     });
 
     Route::prefix('settings/modules')->name('settings.modules.')->group(function () {

@@ -11,6 +11,7 @@ use App\Models\MedicalClaim;
 use App\Models\Settlement;
 use App\Models\TravelRequest;
 use App\Models\User;
+use App\Services\It\ItSpecificationPresenter;
 use Illuminate\Database\Eloquent\Model;
 
 final class ApprovalViewData
@@ -69,11 +70,19 @@ final class ApprovalViewData
                     'url' => route('settlements.show', $parent),
                 ];
             } elseif ($parent instanceof ItRequest) {
-                $parent->loadMissing('employee:id,employee_number,name,department');
-                $optionLabels = \App\Models\ItItemOption::query()->pluck('label', 'code')->all();
+                $parent->loadMissing([
+                    'employee:id,employee_number,name,department',
+                    'specification.template:id,name',
+                    'specification.specifiedBy:id,name',
+                    'specification.lockedBy:id,name',
+                ]);
+                $optionLabels = ItItemOption::query()->pluck('label', 'code')->all();
                 $deviceLabel = $parent->device_type !== null && $parent->device_type !== ''
                     ? ($optionLabels[$parent->device_type] ?? $parent->device_type)
                     : null;
+                $canSeeDraftSpecification = $approval->step_code === 'it'
+                    && (int) $approval->approver_user_id === (int) $viewer->getKey();
+                $specification = $parent->specification;
                 $summary = [
                     'id' => $parent->id, 'type' => 'it_request', 'request_number' => $parent->request_number,
                     'status' => $parent->status->value, 'request_type' => $parent->request_type,
@@ -95,6 +104,10 @@ final class ApprovalViewData
                         'position' => $parent->recipient_position, 'is_new_employee' => (bool) $parent->is_new_employee,
                     ], fn ($value) => $value !== null && $value !== '' && $value !== false),
                     'employee' => $parent->employee?->only(['employee_number', 'name', 'department']),
+                    'specification' => $specification !== null
+                        && ($specification->isLocked() || $canSeeDraftSpecification)
+                            ? ItSpecificationPresenter::make($specification)
+                            : null,
                     'url' => route('it-requests.show', $parent),
                 ];
             } elseif ($parent instanceof ErpRequest) {

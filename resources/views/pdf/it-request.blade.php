@@ -100,6 +100,32 @@
     </tbody>
 </table>
 
+<div class="section">Spesifikasi Teknis Ditetapkan IT</div>
+@if ($doc['specification'])
+    <table class="items">
+        <thead>
+            <tr><th>Komponen</th><th>Spesifikasi</th></tr>
+        </thead>
+        <tbody>
+            @foreach ($doc['specification']['rows'] as $row)
+                <tr><td class="key">{{ $row['label'] ?? '-' }}</td><td>{{ $row['value'] ?? '-' }}</td></tr>
+            @endforeach
+            @if ($doc['specification']['notes'])
+                <tr><td class="key">Catatan IT</td><td>{!! nl2br(e($doc['specification']['notes'])) !!}</td></tr>
+            @endif
+        </tbody>
+    </table>
+    <div class="note">
+        Ditetapkan oleh {{ $doc['specification']['locked_by'] ?? $doc['specification']['specified_by'] ?? '-' }}
+        pada {{ $doc['specification']['locked_at'] ?? $doc['specification']['specified_at'] ?? '-' }}
+        @if ($doc['specification']['template'])
+            · Template: {{ $doc['specification']['template'] }}
+        @endif
+    </div>
+@else
+    <div class="note">Spesifikasi IT belum tersedia untuk request ini.</div>
+@endif
+
 <div class="section">Deskripsi &amp; Tujuan</div>
 <table class="items">
     <tbody>

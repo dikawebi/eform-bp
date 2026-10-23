@@ -56,7 +56,7 @@ function SignatureRow({ request, timeline }) {
     </div>;
 }
 
-export default function Print({ request, meta = {}, timeline = [], company = {} }) {
+export default function Print({ request, specification = null, meta = {}, timeline = [], company = {} }) {
     const accessories = (request.accessories ?? []).map((code) => accessoryLabel(meta, code));
     const softwareOptional = request.software_optional ?? [];
     const address = [company?.city, company?.regency, company?.province].filter(Boolean).join(' · ');
@@ -121,6 +121,26 @@ export default function Print({ request, meta = {}, timeline = [], company = {} 
                             <tr><td className="border-b border-slate-300 px-2.5 py-1 text-[10.5px] font-bold text-blue-900">Software tambahan</td><td className="border-b border-slate-300 px-2.5 py-1">{softwareOptional.length ? softwareOptional.map((item) => `${item.name}${item.license === 'existing' ? ' (lisensi tersedia)' : ' (lisensi baru)'}`).join(', ') : '—'}</td></tr>
                         </tbody>
                     </table>
+
+                    <SectionTitle>Spesifikasi Teknis Ditetapkan IT</SectionTitle>
+                    {specification ? <>
+                        <table className="w-full border-collapse text-[12px]">
+                            <thead>
+                                <tr className="bg-indigo-50 text-left text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-blue-900">
+                                    <th className="px-2.5 py-1">Komponen</th>
+                                    <th className="px-2.5 py-1">Spesifikasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(specification.specs ?? []).map((row, index) => <tr key={`${row.label}-${index}`}>
+                                    <td className="border-b border-slate-300 px-2.5 py-1 text-[10.5px] font-bold text-blue-900">{row.label}</td>
+                                    <td className="border-b border-slate-300 px-2.5 py-1">{row.value}</td>
+                                </tr>)}
+                                {specification.notes && <tr><td className="border-b border-slate-300 px-2.5 py-1 text-[10.5px] font-bold text-blue-900">Catatan IT</td><td className="whitespace-pre-line border-b border-slate-300 px-2.5 py-1">{specification.notes}</td></tr>}
+                            </tbody>
+                        </table>
+                        <p className="mt-1.5 text-[10px] text-slate-600">Ditetapkan oleh {specification.locked_by ?? specification.specified_by ?? '—'} · {fmtDate(specification.locked_at ?? specification.specified_at)}{specification.template_name ? ` · Template: ${specification.template_name}` : ''}</p>
+                    </> : <p className="rounded-md bg-slate-50 px-2.5 py-1.5 text-[11px] text-slate-600">Spesifikasi IT belum tersedia untuk request ini.</p>}
 
                     <SectionTitle>Deskripsi &amp; Tujuan</SectionTitle>
                     <div className="grid grid-cols-2 gap-x-5 gap-y-1.5">

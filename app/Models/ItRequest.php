@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\RequestStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ItRequest extends Model
@@ -71,6 +72,11 @@ class ItRequest extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function specification(): HasOne
+    {
+        return $this->hasOne(ItRequestSpecification::class);
     }
 
     public function isEditable(): bool

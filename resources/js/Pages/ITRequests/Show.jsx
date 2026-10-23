@@ -1,5 +1,6 @@
 import StatusBadge from '@/Components/StatusBadge';
 import ApprovalActions from '@/Components/ApprovalActions';
+import ItSpecificationEditor from '@/Components/ItSpecificationEditor';
 import ITRequestForm from './ITRequestForm';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -10,7 +11,7 @@ const approvalStatuses = { pending: 'Menunggu tindakan', approved: 'Disetujui', 
 const activityLabels = { created: 'Dibuat', submitted: 'Diajukan', updated: 'Diperbarui', attachment_uploaded: 'Lampiran diunggah', cancelled: 'Dibatalkan' };
 const activityLabel = (value = '') => activityLabels[String(value).split('.').pop()] ?? value;
 
-export default function Show({ request, meta = {}, timeline = [], activities = [], availableActions = {}, approvalActions = null }) {
+export default function Show({ request, specification = null, meta = {}, timeline = [], activities = [], availableActions = {}, approvalActions = null }) {
     const { props } = usePage();
     const errors = props.errors ?? {};
     const input = useRef();
@@ -57,6 +58,11 @@ export default function Show({ request, meta = {}, timeline = [], activities = [
                  </form>
              </section>}
              <ITRequestForm request={request} meta={{ ...meta, software_standard: request.software_standard ?? [] }} readOnly embedded approvalTimeline={timeline} />
+             {(specification || availableActions.can_edit_specification) && <div className="space-y-3">
+                 {availableActions.can_edit_specification && !specification && <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">Spesifikasi teknis IT belum diisi.</p><p className="mt-1">Lengkapi spesifikasi pada halaman approval sebelum menyetujui request.</p>{availableActions.specification_url && <Link href={availableActions.specification_url} className="mt-2 inline-block font-bold underline">Buka halaman approval</Link>}</div>}
+                 {specification && <ItSpecificationEditor specification={specification} canEdit={false} />}
+                 {availableActions.can_edit_specification && specification && availableActions.specification_url && <div className="text-right"><Link href={availableActions.specification_url} className="text-sm font-bold text-blue-700 hover:underline">Kelola spesifikasi di halaman approval →</Link></div>}
+             </div>}
              <section className="rounded bg-white p-5 shadow-sm"><h3 className="font-semibold">Lampiran</h3>{request.attachments?.length ? <ul className="mt-3 space-y-2 text-sm">{request.attachments.map((file) => <li key={file.id} className="flex flex-wrap items-center justify-between gap-2"><span>{file.original_name} <span className="text-gray-500">({file.document_type})</span></span>{file.download_url && <a className="text-indigo-600 hover:underline" href={file.download_url}>Unduh</a>}</li>)}</ul> : <p className="mt-3 text-sm text-gray-500">Belum ada lampiran.</p>}{availableActions.can_upload && <form onSubmit={upload} className="mt-4 flex flex-wrap gap-2 border-t pt-4"><select aria-label="Jenis dokumen" value={documentType} onChange={(e) => setDocumentType(e.target.value)} className="rounded border text-sm"><option value="justification">Justifikasi kebutuhan</option><option value="quotation">Penawaran / quotation</option><option value="supporting_document">Dokumen pendukung</option></select><input aria-label="File lampiran" ref={input} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" /><button disabled={uploading} className="rounded bg-gray-900 px-3 py-2 text-sm text-white">Unggah</button></form>}</section>
              <section className="rounded bg-white p-5 shadow-sm"><h3 className="font-semibold">Proses Approval</h3>{timeline.map((event, index) => <div key={index} className="mt-3 rounded border p-3 text-sm"><p className="font-semibold">{approvalLabels[event.step_code] ?? event.step_code}</p><p className="text-gray-500">Status: {approvalStatuses[event.status] ?? event.status} · Ditugaskan kepada: {event.actor ?? 'Belum ditentukan'}</p>{event.acted_by && <p>Diproses oleh: <strong>{event.acted_by}</strong></p>}{event.comments && <p className="mt-1 text-gray-500">Catatan: {event.comments}</p>}</div>)}</section>
              <section className="rounded bg-white p-5 shadow-sm"><h3 className="font-semibold">Riwayat Aktivitas</h3>{activities.length ? activities.map((item) => <div key={item.id ?? `${item.at}-${item.event}`} className="mt-3 border-l-2 pl-3 text-sm"><p className="font-medium">{activityLabel(item.action ?? item.event)}</p><p className="text-gray-500">{item.actor ?? 'Sistem'}{item.at ? ` · ${item.at}` : ''}</p></div>) : <p className="mt-3 text-sm text-gray-500">Belum ada aktivitas.</p>}</section>
